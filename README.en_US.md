@@ -139,7 +139,7 @@ Refer to the [Code Synchronization](https://docs.soybeanjs.cn/guide/sync) docume
 
 ## Ecosystem
 
-- [react-soybean-admin](https://github.com/mufeng889/react-soybean-admin): SoybeanAdmin based version of React.
+- [skyroc-admin](https://github.com/Ohh-889/skyroc-admin): SoybeanAdmin's React version implementation.
 - [electron-mock-admin](https://github.com/lixin59/electron-mock-api): A Mock Api management system that helps front-end developers quickly implement interface mocks.
 - [T-Shell](https://github.com/TheBlindM/T-Shell): A terminal emulator and SSH client with configurable command prompts.
 - [pea](https://github.com/haitang1894/pea) : Adopting SpringBoot3.2 + JDK21, MyBatis-Plus, SpringSecurity security framework, etc., suitable for the simple permission system developed by [soybean-admin](https://gitee.com/honghuangdc/soybean-admin).
@@ -194,7 +194,7 @@ Here are the most active contributors from the past year. Thank you all for your
 
   <div>
   	<p>QQ Group</p>
-    <img src="https://soybeanjs-1300612522.cos.ap-guangzhou.myqcloud.com/uPic/qq-soybean-admin-4.jpg" style="width:200px" />
+    <img src="https://soybeanjs-1300612522.cos.ap-guangzhou.myqcloud.com/uPic/qq-soybean-admin-5.jpg" style="width:200px" />
   </div>
 	<!-- <div>
 		<p>WeChat Group</p>
