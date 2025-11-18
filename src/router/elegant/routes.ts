@@ -77,7 +77,7 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'disk',
     path: '/disk',
-    component: 'layout.disk$view.disk',
+    component: 'layout.base$view.disk',
     meta: {
       title: 'disk',
       i18nKey: 'route.disk',
@@ -160,7 +160,7 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'personal-center',
     path: '/personal-center',
-    component: 'layout.disk$view.personal-center',
+    component: 'layout.base$view.personal-center',
     meta: {
       title: 'personal-center',
       i18nKey: 'route.personal-center',
