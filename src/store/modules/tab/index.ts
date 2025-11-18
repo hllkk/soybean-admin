@@ -27,10 +27,10 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
   const themeStore = useThemeStore();
   const { routerPush } = useRouterPush(false);
 
-  /** Tabs */
-  const tabs = ref<App.Global.Tab[]>([]);
+  /** 标签页按模块分组存储 */
+  const moduleTabs = ref<Map<UnionKey.MenuModule, App.Global.Tab[]>>(new Map());
 
-  /** Get active tab */
+  /** Home tab */
   const homeTab = ref<App.Global.Tab>();
 
   /** Init home tab */
@@ -38,8 +38,29 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
     homeTab.value = getDefaultHomeTab(router, routeStore.routeHome);
   }
 
-  /** Get all tabs */
-  const allTabs = computed(() => getAllTabs(tabs.value, homeTab.value));
+  /** 获取当前模块的标签页 */
+  const currentModuleTabs = computed(() => {
+    const module = routeStore.currentModule;
+    return moduleTabs.value.get(module) || [];
+  });
+
+  /** Get all tabs (返回当前模块的所有标签页，包括首页) */
+  const allTabs = computed(() => {
+    const moduleTabsList = currentModuleTabs.value;
+    if (!homeTab.value) {
+      return [];
+    }
+
+    // 确保首页标签始终被添加到当前模块的标签页列表中
+    // 创建一个新的标签页对象，包含当前模块信息
+    const currentHomeTab = {
+      ...homeTab.value,
+      // 将首页标签的模块设置为当前模块
+      module: routeStore.currentModule
+    };
+
+    return getAllTabs(moduleTabsList, currentHomeTab);
+  });
 
   /** Active tab id */
   const activeTabId = ref<string>('');
@@ -59,14 +80,35 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    * @param currentRoute Current route
    */
   function initTabStore(currentRoute: App.Global.TabRoute) {
+    // 初始化首页标签
+    initHomeTab();
+
     const storageTabs = localStg.get('globalTabs');
 
     if (themeStore.tab.cache && storageTabs) {
+      // 按模块重新组织存储的标签页
       const extractedTabs = extractTabsByAllRoutes(router, storageTabs);
-      tabs.value = updateTabsByI18nKey(extractedTabs);
+      const updatedTabs = updateTabsByI18nKey(extractedTabs);
+
+      // 从路由信息中获取模块信息并分组
+      updatedTabs.forEach(tab => {
+        // 查找对应的路由以获取模块信息
+        const route = router.getRoutes().find(r => r.name === tab.routeKey);
+        if (route) {
+          const module = (route.meta.module as UnionKey.MenuModule) || 'admin';
+          const moduleTabsList = moduleTabs.value.get(module) || [];
+          moduleTabsList.push(tab);
+          moduleTabs.value.set(module, moduleTabsList);
+        }
+      });
     }
 
-    addTab(currentRoute);
+    // 确保首页标签被激活（如果当前路由是首页）
+    if (homeTab.value && currentRoute.path === homeTab.value.routePath) {
+      setActiveTabId(homeTab.value.id);
+    } else {
+      addTab(currentRoute);
+    }
   }
 
   /**
@@ -77,15 +119,24 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    */
   function addTab(route: App.Global.TabRoute, active = true) {
     const tab = getTabByRoute(route);
+    const module = (route.meta.module as UnionKey.MenuModule) || 'admin';
 
-    const isHomeTab = tab.id === homeTab.value?.id;
+    // 检查是否是首页标签
+    const isHomeTab = homeTab.value && (tab.id === homeTab.value.id || tab.routePath === homeTab.value.routePath);
 
-    if (!isHomeTab && !isTabInTabs(tab.id, tabs.value)) {
-      tabs.value.push(tab);
+    const moduleTabsList = moduleTabs.value.get(module) || [];
+
+    // 非首页标签才需要添加到模块标签页列表
+    if (!isHomeTab && !isTabInTabs(tab.id, moduleTabsList)) {
+      moduleTabsList.push(tab);
+      moduleTabs.value.set(module, moduleTabsList);
     }
 
+    // 无论是否是首页标签，都可以激活它
     if (active) {
-      setActiveTabId(tab.id);
+      // 如果是首页，使用首页标签的ID
+      const targetTabId = isHomeTab && homeTab.value ? homeTab.value.id : tab.id;
+      setActiveTabId(targetTabId);
     }
   }
 
@@ -95,17 +146,21 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    * @param tabId Tab id
    */
   async function removeTab(tabId: string) {
-    const removeTabIndex = tabs.value.findIndex(tab => tab.id === tabId);
+    const module = routeStore.currentModule;
+    const moduleTabsList = moduleTabs.value.get(module) || [];
+    const removeTabIndex = moduleTabsList.findIndex(tab => tab.id === tabId);
+
     if (removeTabIndex === -1) return;
 
-    const removedTabRouteKey = tabs.value[removeTabIndex].routeKey;
+    const removedTabRouteKey = moduleTabsList[removeTabIndex].routeKey;
     const isRemoveActiveTab = activeTabId.value === tabId;
 
     // if remove the last tab, then switch to the second last tab
-    const nextTab = tabs.value[removeTabIndex + 1] || tabs.value[removeTabIndex - 1] || homeTab.value;
+    const nextTab = moduleTabsList[removeTabIndex + 1] || moduleTabsList[removeTabIndex - 1] || homeTab.value;
 
     // remove tab
-    tabs.value.splice(removeTabIndex, 1);
+    moduleTabsList.splice(removeTabIndex, 1);
+    moduleTabs.value.set(module, moduleTabsList);
 
     // if current tab is removed, then switch to next tab
     if (isRemoveActiveTab && nextTab) {
@@ -127,7 +182,9 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    * @param routeName route name
    */
   async function removeTabByRouteName(routeName: RouteKey) {
-    const tab = findTabByRouteName(routeName, tabs.value);
+    const module = routeStore.currentModule;
+    const moduleTabsList = moduleTabs.value.get(module) || [];
+    const tab = findTabByRouteName(routeName, moduleTabsList);
     if (!tab) return;
 
     await removeTab(tab.id);
@@ -139,10 +196,12 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    * @param excludes Exclude tab ids
    */
   async function clearTabs(excludes: string[] = []) {
-    const remainTabIds = [...getFixedTabIds(tabs.value), ...excludes];
+    const module = routeStore.currentModule;
+    const moduleTabsList = moduleTabs.value.get(module) || [];
+    const remainTabIds = [...getFixedTabIds(moduleTabsList), ...excludes];
 
-    // Identify tabs to be removed and collect their routeKeys if strategy is 'close'
-    const tabsToRemove = tabs.value.filter(tab => !remainTabIds.includes(tab.id));
+    // Identify tabs to be removed and collect their routeKeys
+    const tabsToRemove = moduleTabsList.filter(tab => !remainTabIds.includes(tab.id));
     const routeKeysToReset: RouteKey[] = [];
 
     for (const tab of tabsToRemove) {
@@ -158,10 +217,10 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
 
     const isRemoveActiveTab = removedTabsIds.includes(activeTabId.value);
     // filterTabsByIds returns tabs NOT in removedTabsIds, so these are the tabs that will remain
-    const updatedTabs = filterTabsByIds(removedTabsIds, tabs.value);
+    const updatedTabs = filterTabsByIds(removedTabsIds, moduleTabsList);
 
     function update() {
-      tabs.value = updatedTabs;
+      moduleTabs.value.set(module, updatedTabs);
     }
 
     if (!isRemoveActiveTab) {
@@ -220,7 +279,9 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    * @param tabId
    */
   async function clearLeftTabs(tabId: string) {
-    const tabIds = tabs.value.map(tab => tab.id);
+    const module = routeStore.currentModule;
+    const moduleTabsList = moduleTabs.value.get(module) || [];
+    const tabIds = moduleTabsList.map(tab => tab.id);
     const index = tabIds.indexOf(tabId);
     if (index === -1) return;
 
@@ -240,7 +301,9 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
       return;
     }
 
-    const tabIds = tabs.value.map(tab => tab.id);
+    const module = routeStore.currentModule;
+    const moduleTabsList = moduleTabs.value.get(module) || [];
+    const tabIds = moduleTabsList.map(tab => tab.id);
     const index = tabIds.indexOf(tabId);
     if (index === -1) return;
 
@@ -257,8 +320,10 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    */
   function setTabLabel(label: string, tabId?: string) {
     const id = tabId || activeTabId.value;
+    const module = routeStore.currentModule;
+    const moduleTabsList = moduleTabs.value.get(module) || [];
 
-    const tab = tabs.value.find(item => item.id === id);
+    const tab = moduleTabsList.find(item => item.id === id);
     if (!tab) return;
 
     tab.oldLabel = tab.label;
@@ -273,8 +338,10 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    */
   function resetTabLabel(tabId?: string) {
     const id = tabId || activeTabId.value;
+    const module = routeStore.currentModule;
+    const moduleTabsList = moduleTabs.value.get(module) || [];
 
-    const tab = tabs.value.find(item => item.id === id);
+    const tab = moduleTabsList.find(item => item.id === id);
     if (!tab) return;
 
     tab.newLabel = undefined;
@@ -288,14 +355,20 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
   function isTabRetain(tabId: string) {
     if (tabId === homeTab.value?.id) return true;
 
-    const fixedTabIds = getFixedTabIds(tabs.value);
+    const module = routeStore.currentModule;
+    const moduleTabsList = moduleTabs.value.get(module) || [];
+    const fixedTabIds = getFixedTabIds(moduleTabsList);
 
     return fixedTabIds.includes(tabId);
   }
 
   /** Update tabs by locale */
   function updateTabsByLocale() {
-    tabs.value = updateTabsByI18nKey(tabs.value);
+    // 更新所有模块的标签页
+    moduleTabs.value.forEach((tabsList, module) => {
+      const updatedTabs = updateTabsByI18nKey(tabsList);
+      moduleTabs.value.set(module, updatedTabs);
+    });
 
     if (homeTab.value) {
       homeTab.value = updateTabByI18nKey(homeTab.value);
@@ -306,7 +379,13 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
   function cacheTabs() {
     if (!themeStore.tab.cache) return;
 
-    localStg.set('globalTabs', tabs.value);
+    // 合并所有模块的标签页进行缓存
+    const allTabsList: App.Global.Tab[] = [];
+    moduleTabs.value.forEach(tabsList => {
+      allTabsList.push(...tabsList);
+    });
+
+    localStg.set('globalTabs', allTabsList);
   }
 
   // cache tabs when page is closed or refreshed
@@ -334,6 +413,7 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
     isTabRetain,
     updateTabsByLocale,
     getTabIdByRoute,
-    cacheTabs
+    cacheTabs,
+    currentModuleTabs
   };
 });
