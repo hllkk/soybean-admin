@@ -20,6 +20,8 @@ interface PkgVersionInfo {
   version: string;
 }
 
+const offset = [-32, 12] as const;
+
 const { name, version, dependencies, devDependencies } = pkg;
 
 function transformVersionData(tuple: [string, string]): PkgVersionInfo {
@@ -66,20 +68,22 @@ const latestBuildTime = BUILD_TIME;
       </NDescriptions>
     </NCard>
     <NCard :title="$t('page.about.prdDep')" :bordered="false" size="small" segmented class="card-wrapper">
-      <NDescriptions label-placement="left" bordered size="small" :column="column">
-        <NDescriptionsItem v-for="item in pkgJson.dependencies" :key="item.name" :label="item.name">
-          {{ item.version }}
-        </NDescriptionsItem>
-      </NDescriptions>
+      <NGrid cols="2 m:4 l:4 xl:6 2xl:8" :x-gap="12" :y-gap="8" responsive="screen">
+        <NGridItem v-for="item in pkgJson.dependencies" :key="item.name">
+          <NBadge :value="item.version" type="info" :offset="offset">
+            <NCard class="w-210px">{{ item.name }}</NCard>
+          </NBadge>
+        </NGridItem>
+      </NGrid>
     </NCard>
     <NCard :title="$t('page.about.devDep')" :bordered="false" size="small" segmented class="card-wrapper">
-      <NDescriptions label-placement="left" bordered size="small" :column="column">
-        <NDescriptionsItem v-for="item in pkgJson.devDependencies" :key="item.name" :label="item.name">
-          {{ item.version }}
-        </NDescriptionsItem>
-      </NDescriptions>
+      <NGrid cols="2 m:4 l:4 xl:6 2xl:8" :x-gap="12" :y-gap="8" responsive="screen">
+        <NGridItem v-for="item in pkgJson.devDependencies" :key="item.name">
+          <NBadge :value="item.version" type="info" :offset="offset">
+            <NCard class="w-210px">{{ item.name }}</NCard>
+          </NBadge>
+        </NGridItem>
+      </NGrid>
     </NCard>
   </NSpace>
 </template>
-
-<style scoped></style>

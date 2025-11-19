@@ -1,5 +1,8 @@
 declare namespace Api {
   namespace System {
+    /** data scope */
+    type DataScope = '1' | '2' | '3' | '4' | '5' | '6';
+
     /** user */
     type User = Common.CommonRecord<{
       /** 用户ID */
@@ -54,6 +57,40 @@ declare namespace Api {
 
     /** user list */
     type UserList = Common.PaginatingQueryRecord<User>;
+
+    /** role */
+    type Role = Common.CommonRecord<{
+      /** 数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限） */
+      dataScope: DataScope;
+      /** 部门树选择项是否关联显示 */
+      deptCheckStrictly: boolean;
+      /** 用户是否存在此角色标识 默认不存在 */
+      flag: boolean;
+      /** 菜单树选择项是否关联显示 */
+      menuCheckStrictly: boolean;
+      /** 备注 */
+      remark?: string;
+      /** 角色ID */
+      roleId: CommonType.IdType;
+      /** 角色权限字符串 */
+      roleKey: string;
+      /** 角色名称 */
+      roleName: string;
+      /** 显示顺序 */
+      roleSort: number;
+      /** 角色状态（0正常 1停用） */
+      status: Common.EnableStatus;
+      /** 是否管理员 */
+      superAdmin: boolean;
+    }>;
+
+    /** role search params */
+    type RoleSearchParams = CommonType.RecordNullable<
+      Pick<Api.System.Role, 'roleName' | 'roleKey' | 'status'> & Api.Common.CommonSearchParams
+    >;
+
+    /** role list */
+    type RoleList = Common.PaginatingQueryRecord<Role>;
 
     type OnlineUser = Common.CommonRecord<{
       /** 用户账号 */

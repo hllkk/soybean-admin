@@ -81,6 +81,39 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       render: row => {
         return <NTag bordered={false}>{row.gender}</NTag>;
       }
+    },
+    {
+      key: 'deptName',
+      title: $t('page.system.user.deptName'),
+      align: 'center',
+      width: 120,
+      ellipsis: true
+    },
+    {
+      key: 'email',
+      title: $t('page.system.user.email'),
+      align: 'center',
+      width: 120,
+      ellipsis: true
+    },
+    {
+      key: 'phonenumber',
+      title: $t('page.system.user.userPhone'),
+      align: 'center',
+      width: 120,
+      ellipsis: true
+    },
+    {
+      key: 'status',
+      title: $t('page.system.user.status'),
+      align: 'center',
+      width: 80
+    },
+    {
+      key: 'createTime',
+      title: $t('page.system.user.createTime'),
+      align: 'center',
+      width: 120
     }
   ]
 });
@@ -177,7 +210,7 @@ function handleClickTree(keys: CommonType.IdType[]) {
           size="small"
           :flex-height="!appStore.isMobile"
           :loading="loading"
-          :scroll-x="962"
+          :scroll-x="1200"
           remote
           :row-key="row => row.userId"
           :pagination="mobilePagination"

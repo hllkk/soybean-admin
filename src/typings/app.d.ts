@@ -599,6 +599,8 @@ declare namespace App {
             userName: string;
             nickName: string;
             userPhone: string;
+            deptName: string;
+            email: string;
             gender: string;
             status: string;
             createTime: string;
@@ -608,6 +610,31 @@ declare namespace App {
               nickName: FormMsg;
               userPhone: FormMsg;
               status: FormMsg;
+            };
+          };
+          role: {
+            list: string;
+            roleName: string;
+            roleKey: string;
+            roleSort: string;
+            dataScope: string;
+            status: string;
+            createTime: string;
+            addRole: string;
+            editRole: string;
+            remark: string;
+            menuPermission: string;
+            assignDataScope: string;
+            assignUser: string;
+            assignUserPermissions: string;
+            dataScopeInfo: string;
+            form: {
+              roleName: FormMsg;
+              roleKey: FormMsg;
+              roleSort: FormMsg;
+              status: FormMsg;
+              createTime: FormMsg;
+              remark: FormMsg;
             };
           };
           dept: {

@@ -345,6 +345,8 @@ const local: App.I18n.Schema = {
         userName: 'User Name',
         nickName: 'Nick Name',
         userPhone: 'User Phone',
+        deptName: 'Department Name',
+        email: 'Email',
         status: 'Status',
         createTime: 'Create Time',
         empty: 'No User Found',
@@ -365,6 +367,49 @@ const local: App.I18n.Schema = {
           status: {
             required: 'Please select status',
             invalid: 'Status format is incorrect'
+          }
+        }
+      },
+      role: {
+        list: 'Role List',
+        roleName: 'Role Name',
+        roleKey: 'Role Key',
+        roleSort: 'Role Sort',
+        dataScope: 'Data Scope',
+        status: 'Status',
+        createTime: 'Create Time',
+        addRole: 'Add Role',
+        editRole: 'Edit Role',
+        remark: 'Remark',
+        menuPermission: 'Menu Permission',
+        assignDataScope: 'Assign Data Permissions',
+        assignUser: 'Assign User',
+        assignUserPermissions: 'Assign User Permissions',
+        dataScopeInfo: 'Data Permission Scope Cannot Be Empty.',
+        form: {
+          roleName: {
+            required: 'Please enter Role Name',
+            invalid: 'Role Name cannot be empty'
+          },
+          roleKey: {
+            required: 'Please enter Role Key',
+            invalid: 'Role Key cannot be empty'
+          },
+          roleSort: {
+            required: 'Please enter Role Sort',
+            invalid: 'Role Sort cannot be empty'
+          },
+          status: {
+            required: 'Please select Status',
+            invalid: 'Status cannot be empty'
+          },
+          createTime: {
+            required: 'Please select Create Time',
+            invalid: 'Create Time cannot be empty'
+          },
+          remark: {
+            required: 'Please enter Remark',
+            invalid: 'Remark cannot be empty'
           }
         }
       },

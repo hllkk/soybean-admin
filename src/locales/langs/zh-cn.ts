@@ -342,6 +342,8 @@ const local: App.I18n.Schema = {
         userName: '用户名',
         nickName: '昵称',
         userPhone: '手机号',
+        deptName: '部门',
+        email: '邮箱',
         status: '状态',
         createTime: '创建时间',
         empty: '暂无用户信息',
@@ -362,6 +364,49 @@ const local: App.I18n.Schema = {
           status: {
             required: '请选择状态',
             invalid: '状态格式不正确'
+          }
+        }
+      },
+      role: {
+        list: '角色列表',
+        roleName: '角色名称',
+        roleKey: '角色字符',
+        roleSort: '显示顺序',
+        dataScope: '数据范围',
+        status: '状态',
+        createTime: '创建时间',
+        addRole: '新增角色',
+        editRole: '编辑角色',
+        remark: '备注',
+        menuPermission: '菜单权限',
+        assignDataScope: '分配数据权限',
+        dataScopeInfo: '数据权限范围不能为空',
+        assignUser: '分配用户',
+        assignUserPermissions: '分配用户权限',
+        form: {
+          roleName: {
+            required: '请输入角色名称',
+            invalid: '角色名称不能为空'
+          },
+          roleKey: {
+            required: '请输入角色权限字符串',
+            invalid: '角色权限字符串不能为空'
+          },
+          roleSort: {
+            required: '请输入显示顺序',
+            invalid: '显示顺序不能为空'
+          },
+          status: {
+            required: '请选择状态',
+            invalid: '状态不能为空'
+          },
+          createTime: {
+            required: '请选择创建时间',
+            invalid: '创建时间不能为空'
+          },
+          remark: {
+            required: '请输入备注',
+            invalid: '备注不能为空'
           }
         }
       },
