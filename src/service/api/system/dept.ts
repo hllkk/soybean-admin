@@ -7,3 +7,12 @@ export function fetchGetDeptTree() {
     method: 'get'
   });
 }
+
+/** 获取部门列表 */
+export function fetchGetDeptList(params?: Api.System.DeptSearchParams) {
+  return request<Api.System.Dept[]>({
+    url: '/dept/list',
+    method: 'get',
+    params
+  });
+}

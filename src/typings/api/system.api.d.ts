@@ -301,5 +301,38 @@ declare namespace Api {
       /** 备注 */
       remark: string;
     }>;
+
+    /** dept */
+    type Dept = Api.Common.CommonRecord<{
+      /** 部门id */
+      deptId: CommonType.IdType;
+      /** 租户编号 */
+      tenantId: CommonType.IdType;
+      /** 父部门id */
+      parentId: CommonType.IdType;
+      /** 祖级列表 */
+      ancestors: string;
+      /** 部门名称 */
+      deptName: string;
+      /** 部门类别编码 */
+      deptCategory: string;
+      /** 显示顺序 */
+      orderNum: number;
+      /** 负责人 */
+      leader: number;
+      /** 联系电话 */
+      phone: string;
+      /** 邮箱 */
+      email: string;
+      /** 部门状态（0正常 1停用） */
+      status: Common.EnableStatus;
+      /** 子部门 */
+      children: Dept[];
+    }>;
+
+    /** dept search params */
+    type DeptSearchParams = CommonType.RecordNullable<
+      Pick<Api.System.Dept, 'deptName' | 'status'> & Api.Common.CommonSearchParams
+    >;
   }
 }

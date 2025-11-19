@@ -436,8 +436,24 @@ const local: App.I18n.Schema = {
       },
       dept: {
         title: '部门管理',
+        deptName: '部门名称',
+        deptCategory: '部门类别',
         deptList: '部门列表',
-        empty: '暂无部门信息'
+        empty: '暂无部门信息',
+        sort: '排序',
+        createTime: '创建时间',
+        status: '状态',
+        expandAll: '全部展开',
+        form: {
+          deptName: {
+            required: '请输入部门名称',
+            invalid: '部门名称不能为空'
+          },
+          status: {
+            required: '请选择状态',
+            invalid: '状态不能为空'
+          }
+        }
       }
     },
     about: {

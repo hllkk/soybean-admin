@@ -439,8 +439,24 @@ const local: App.I18n.Schema = {
       },
       dept: {
         title: 'Department Management',
+        deptName: 'Department Name',
+        deptCategory: 'Department Category',
         deptList: 'Department List',
-        empty: 'No Department Found'
+        empty: 'No Department Found',
+        sort: 'Sort',
+        createTime: 'Create Time',
+        status: 'Status',
+        expandAll: 'Expand All',
+        form: {
+          deptName: {
+            required: 'Please enter Department Name',
+            invalid: 'Department Name cannot be empty'
+          },
+          status: {
+            required: 'Please select Status',
+            invalid: 'Status cannot be empty'
+          }
+        }
       }
     },
     about: {

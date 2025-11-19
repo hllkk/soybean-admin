@@ -660,8 +660,18 @@ declare namespace App {
           };
           dept: {
             title: string;
+            deptName: string;
+            deptCategory: string;
+            sort: string;
             deptList: string;
             empty: string;
+            status: string;
+            createTime: string;
+            expandAll: string;
+            form: {
+              deptName: FormMsg;
+              status: FormMsg;
+            };
           };
         };
         about: {
