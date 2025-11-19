@@ -190,6 +190,96 @@ declare namespace Api {
       | 'gitlab'
       | 'github';
 
+    /**
+     * icon type
+     *
+     * - "1": iconify icon
+     * - "2": local icon
+     */
+    type IconType = '1' | '2';
+
+    /**
+     * menu type
+     *
+     * - "M": "目录"
+     * - "C": "菜单"
+     * - "F": "按钮"
+     */
+    type MenuType = 'M' | 'C';
+
+    /**
+     * 是否外链
+     *
+     * - "0": "是"
+     * - "1": "否"
+     * - "2": "iframe"
+     */
+    type IsMenuFrame = '0' | '1' | '2';
+
+    type VisibleStatus = '0' | '1';
+
+    type Menu = Common.CommonRecord<{
+      /** 菜单 ID */
+      menuId: CommonType.IdType;
+      /** 父菜单 ID */
+      parentId: CommonType.IdType;
+      /** 菜单名称 */
+      menuName: string;
+      /** 显示顺序 */
+      orderNum: number;
+      /** 路由名称 */
+      routeName: string;
+      /** 路由地址 */
+      routePath: string;
+      /** 组件路径 */
+      component: string;
+      /** 路由参数 */
+      queryParam: string;
+      /** 国际化Key */
+      i18nKey?: string;
+      /** 是否为外链（0是 1否 2iframe） */
+      isFrame: IsMenuFrame;
+      /** 是否缓存（0缓存 1不缓存） */
+      keepAlive: Common.EnableStatus;
+      /** 菜单类型（M目录 C菜单 F按钮） */
+      menuType: MenuType;
+      /** 显示状态（0显示 1隐藏） */
+      hidden: VisibleStatus;
+      /** 菜单状态（0正常 1停用） */
+      status: Common.EnableStatus;
+      /** 权限标识 */
+      perms?: string;
+      /** 菜单图标 */
+      icon: string;
+      /** 备注 */
+      remark?: string;
+      /** 父菜单名称 */
+      parentName: string;
+      /** 模块标识（admin系统管理 disk网盘管理） */
+      module?: string;
+      /** 子菜单 */
+      children: MenuList;
+      label?: string;
+      code?: string;
+    }>;
+
+    /** menu list */
+    type MenuList = Menu[];
+
+    /** menu search params */
+    type MenuSearchParams = CommonType.RecordNullable<Pick<Menu, 'menuName' | 'status' | 'menuType' | 'parentId'>>;
+
+    type MenuButton = {
+      buttonId: CommonType.IdType;
+      menuId: CommonType.IdType;
+      buttonName: string;
+      buttonCode: string;
+      orderNum?: number;
+      status: Common.EnableStatus;
+    };
+
+    type MenuButtonList = MenuButton[];
+
     /** 字典数据 */
     type DictData = Common.CommonRecord<{
       /** 样式属性（其他样式扩展） */

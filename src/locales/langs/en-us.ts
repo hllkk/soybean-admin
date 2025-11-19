@@ -413,6 +413,27 @@ const local: App.I18n.Schema = {
           }
         }
       },
+      menu: {
+        title: 'Menu Management',
+        rootName: 'Root Menu',
+        addMenu: 'Add Menu',
+        cascadeDelete: 'Cascade Delete Selected Menus',
+        menuList: 'Menu List',
+        empty: 'No Menu Found',
+        adminManage: 'Admin Menu Management',
+        diskManage: 'Disk Menu Management',
+        addChildMenu: 'Add Child Menu',
+        menuDetail: 'Menu Detail',
+        menuType: 'Menu Type',
+        buttonPermissionList: 'Button Permission List',
+        status: 'Status',
+        form: {
+          menuName: {
+            required: 'Please enter Menu Name',
+            invalid: 'Menu Name cannot be empty'
+          }
+        }
+      },
       dept: {
         title: 'Department Management',
         deptList: 'Department List',

@@ -6,3 +6,9 @@ export const yesOrNoRecord: Record<CommonType.YesOrNo, App.I18n.I18nKey> = {
 };
 
 export const yesOrNoOptions = transformRecordToOption(yesOrNoRecord);
+
+/** menu type */
+export const menuTypeRecord: Record<Api.System.MenuType, string> = {
+  M: '目录',
+  C: '菜单'
+};

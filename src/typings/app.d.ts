@@ -637,6 +637,24 @@ declare namespace App {
               remark: FormMsg;
             };
           };
+          menu: {
+            title: string;
+            rootName: string;
+            addMenu: string;
+            cascadeDelete: string;
+            menuList: string;
+            empty: string;
+            adminManage: string;
+            diskManage: string;
+            addChildMenu: string;
+            menuDetail: string;
+            menuType: string;
+            buttonPermissionList: string;
+            status: string;
+            form: {
+              menuName: FormMsg;
+            };
+          };
           dept: {
             title: string;
             deptList: string;

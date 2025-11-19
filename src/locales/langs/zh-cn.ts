@@ -410,6 +410,27 @@ const local: App.I18n.Schema = {
           }
         }
       },
+      menu: {
+        title: '菜单管理',
+        rootName: '根目录',
+        addMenu: '新增菜单',
+        cascadeDelete: '级联删除菜单',
+        addChildMenu: '新增子菜单',
+        menuDetail: '菜单详情',
+        menuType: '菜单类型',
+        buttonPermissionList: '按钮权限列表',
+        status: '状态',
+        menuList: '菜单列表',
+        empty: '暂无菜单信息',
+        adminManage: '后台菜单管理',
+        diskManage: '网盘菜单管理',
+        form: {
+          menuName: {
+            required: '请输入菜单名称',
+            invalid: '菜单名称不能为空'
+          }
+        }
+      },
       dept: {
         title: '部门管理',
         deptList: '部门列表',

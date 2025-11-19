@@ -25,4 +25,16 @@ declare namespace CommonType {
   type RecordNullable<T> = {
     [K in keyof T]?: T[K] | null;
   };
+
+  /** The configuration options for constructing tree structure data */
+  type TreeConfig = {
+    /** id field name */
+    idField: string;
+    /** parent id field name */
+    parentIdField?: string;
+    /** children field name */
+    childrenField?: string;
+    /** filter function */
+    filterFn?: (node: any) => boolean;
+  };
 }
