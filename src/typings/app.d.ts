@@ -649,7 +649,10 @@ declare namespace App {
             addChildMenu: string;
             menuDetail: string;
             menuType: string;
+            buttonName: string;
+            buttonCode: string;
             buttonPermissionList: string;
+            createTime: string;
             status: string;
             form: {
               menuName: FormMsg;

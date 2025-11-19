@@ -426,6 +426,9 @@ const local: App.I18n.Schema = {
         menuDetail: 'Menu Detail',
         menuType: 'Menu Type',
         buttonPermissionList: 'Button Permission List',
+        buttonName: 'Button Name',
+        buttonCode: 'Button Code',
+        createTime: 'Create Time',
         status: 'Status',
         form: {
           menuName: {

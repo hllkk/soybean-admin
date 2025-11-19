@@ -41,109 +41,6 @@ const tabItems = computed(() => {
   ];
 });
 
-const btnColumns: DataTableColumns<Api.System.MenuButton> = [
-  {
-    key: 'index',
-    width: 64,
-    align: 'center',
-    title() {
-      return (
-        <NButton circle type="primary" size="small" onClick={() => addBtnMenu()}>
-          {{
-            icon: () => (
-              <NIcon>
-                <SvgIcon icon="ic-round-plus" />
-              </NIcon>
-            )
-          }}
-        </NButton>
-      );
-    },
-    render(_, index) {
-      return index + 1;
-    }
-  },
-  {
-    title: $t('page.system.menu.buttonName'),
-    key: 'buttonName',
-    minWidth: 120
-  },
-  {
-    title: $t('page.system.menu.buttonCode'),
-    key: 'buttonCode',
-    align: 'center',
-    minWidth: 120
-  },
-  {
-    title: $t('page.system.menu.status'),
-    key: 'status',
-    minWidth: 80,
-    align: 'center',
-    render(row) {
-      return <DictTag size="small" value={row.status} dictCode="sys_normal_disable" />;
-    }
-  },
-  {
-    title: $t('page.system.menu.createTime'),
-    key: 'createTime',
-    align: 'center',
-    minWidth: 150
-  },
-  {
-    title: $t('common.action'),
-    key: 'actions',
-    width: 80,
-    align: 'center',
-    render(row) {
-      const divider = () => {
-        if (!hasAuth('system:menu:edit') || !hasAuth('system:menu:remove')) {
-          return null;
-        }
-        return <NDivider vertical />;
-      };
-
-      const editBtn = () => {
-        if (!hasAuth('system:menu:edit')) {
-          return null;
-        }
-        return (
-          <ButtonIcon
-            text
-            type="primary"
-            icon="material-symbols:drive-file-rename-outline-outline"
-            tooltipContent={$t('common.edit')}
-            onClick={() => handleUpdateBtnMenu(row)}
-          />
-        );
-      };
-
-      const deleteBtn = () => {
-        if (!hasAuth('system:menu:remove')) {
-          return null;
-        }
-        return (
-          <ButtonIcon
-            text
-            type="error"
-            icon="material-symbols:delete-outline"
-            tooltipContent={$t('common.delete')}
-            popconfirmContent={$t('common.confirmDelete')}
-            onPositiveClick={() => handleDeleteBtnMenu(row.buttonId!)}
-          />
-        );
-      };
-
-      return (
-        <div class="flex-center gap-8px">
-          {editBtn()}
-          {divider()}
-          {deleteBtn()}
-        </div>
-      );
-    }
-  }
-];
-
 const getMeunTree = async () => {
   // if (treeDataMap.value[activeTab.value].length > 0) return;
   startLoading();
@@ -225,6 +122,119 @@ function renderSuffix({ option }: { option: TreeOption }) {
     </div>
   );
 }
+
+function addBtnMenu() {}
+
+function handleUpdateBtnMenu(row: Api.System.MenuButton) {
+  window.$message?.info(`${row.buttonId}`);
+}
+
+function handleDeleteBtnMenu(buttonId: CommonType.IdType) {
+  window.$message?.info(`${buttonId}`);
+}
+
+const btnColumns: DataTableColumns<Api.System.MenuButton> = [
+  {
+    key: 'index',
+    width: 64,
+    align: 'center',
+    title() {
+      return (
+        <NButton circle type="primary" size="small" onClick={() => addBtnMenu()}>
+          {{
+            icon: () => (
+              <NIcon>
+                <SvgIcon icon="ic-round-plus" />
+              </NIcon>
+            )
+          }}
+        </NButton>
+      );
+    },
+    render(_, index) {
+      return index + 1;
+    }
+  },
+  {
+    title: $t('page.system.menu.buttonName'),
+    key: 'buttonName',
+    minWidth: 120
+  },
+  {
+    title: $t('page.system.menu.buttonCode'),
+    key: 'buttonCode',
+    align: 'center',
+    minWidth: 120
+  },
+  {
+    title: $t('page.system.menu.status'),
+    key: 'status',
+    minWidth: 80,
+    align: 'center',
+    render(row) {
+      return <NTag size="small">{row.status}</NTag>;
+    }
+  },
+  {
+    title: $t('page.system.menu.createTime'),
+    key: 'createTime',
+    align: 'center',
+    minWidth: 150
+  },
+  {
+    title: $t('common.action'),
+    key: 'actions',
+    width: 80,
+    align: 'center',
+    render(row) {
+      const divider = () => {
+        if (!hasAuth('system:menu:edit') || !hasAuth('system:menu:remove')) {
+          return null;
+        }
+        return <NDivider vertical />;
+      };
+
+      const editBtn = () => {
+        if (!hasAuth('system:menu:edit')) {
+          return null;
+        }
+        return (
+          <ButtonIcon
+            text
+            type="primary"
+            icon="material-symbols:drive-file-rename-outline-outline"
+            tooltipContent={$t('common.edit')}
+            onClick={() => handleUpdateBtnMenu(row)}
+          />
+        );
+      };
+
+      const deleteBtn = () => {
+        if (!hasAuth('system:menu:remove')) {
+          return null;
+        }
+        return (
+          <ButtonIcon
+            text
+            type="error"
+            icon="material-symbols:delete-outline"
+            tooltipContent={$t('common.delete')}
+            popconfirmContent={$t('common.confirmDelete')}
+            onPositiveClick={() => handleDeleteBtnMenu(row.buttonId!)}
+          />
+        );
+      };
+
+      return (
+        <div class="flex-center gap-8px">
+          {editBtn()}
+          {divider()}
+          {deleteBtn()}
+        </div>
+      );
+    }
+  }
+];
 
 function handleTabChange(tab: string) {
   activeTab.value = tab;
