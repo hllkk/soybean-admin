@@ -26,6 +26,7 @@ const local: App.I18n.Schema = {
     deleteSuccess: '删除成功',
     confirmDelete: '确认删除吗？',
     edit: '编辑',
+    save: '保存',
     warning: '警告',
     error: '错误',
     index: '序号',
@@ -343,11 +344,21 @@ const local: App.I18n.Schema = {
         nickName: '昵称',
         userPhone: '手机号',
         deptName: '部门',
-        email: '邮箱',
+        userEmail: '邮箱',
+        postIds: '岗位',
+        roleIds: '角色',
+        addUser: '新增用户',
+        editUser: '编辑用户',
         status: '状态',
         createTime: '创建时间',
         empty: '暂无用户信息',
         gender: '性别',
+        unknown: '未知',
+        male: '男',
+        female: '女',
+        statusEnabled: '启用',
+        statusDisabled: '停用',
+        remark: '备注',
         form: {
           userName: {
             required: '请输入用户名',
@@ -364,6 +375,18 @@ const local: App.I18n.Schema = {
           status: {
             required: '请选择状态',
             invalid: '状态格式不正确'
+          },
+          deptId: {
+            required: '请选择部门',
+            invalid: '部门格式不正确'
+          },
+          userEmail: {
+            required: '请输入邮箱',
+            invalid: '邮箱格式不正确'
+          },
+          remark: {
+            required: '请输入备注',
+            invalid: '备注格式不正确'
           }
         }
       },

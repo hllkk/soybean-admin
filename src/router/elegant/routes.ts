@@ -188,7 +188,7 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'system_dept',
           i18nKey: 'route.system_dept',
           order: 4,
-          icon: 'mingcute:department-line'
+          icon: 'proicons-branch-fork'
         }
       },
       {

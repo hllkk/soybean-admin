@@ -350,6 +350,7 @@ declare namespace App {
         batchDelete: string;
         cancel: string;
         close: string;
+        save: string;
         check: string;
         expandColumn: string;
         columnSetting: string;
@@ -600,16 +601,29 @@ declare namespace App {
             nickName: string;
             userPhone: string;
             deptName: string;
-            email: string;
+            userEmail: string;
             gender: string;
+            postIds: string;
+            roleIds: string;
             status: string;
+            statusEnabled: string;
+            statusDisabled: string;
+            addUser: string;
+            editUser: string;
             createTime: string;
             empty: string;
+            unknown: string;
+            male: string;
+            female: string;
+            remark: string;
             form: {
               userName: FormMsg;
               nickName: FormMsg;
               userPhone: FormMsg;
               status: FormMsg;
+              deptId: FormMsg;
+              userEmail: FormMsg;
+              remark: FormMsg;
             };
           };
           role: {
@@ -750,6 +764,7 @@ declare namespace App {
       baseURL: string;
       /** The proxy pattern of the backend service base url */
       proxyPattern: string;
+      ws?: boolean;
     }
 
     interface OtherServiceConfigItem extends ServiceConfigItem {

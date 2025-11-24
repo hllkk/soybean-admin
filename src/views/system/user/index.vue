@@ -2,13 +2,16 @@
 import { computed, ref } from 'vue';
 import { NEllipsis } from 'naive-ui';
 import { useLoading } from '@sa/hooks';
+import { userGenderRecord } from '@/constants/common';
 import { fetchGetDeptTree } from '@/service/api/system/dept';
-import { fetchGetUserList } from '@/service/api/system/user';
+import { fetchBatchDeleteUser, fetchGetUserList } from '@/service/api/system/user';
 import { useAppStore } from '@/store/modules/app';
+import { useDownload } from '@/hooks/business/download';
 import { defaultTransform, useNaivePaginatedTable, useTableOperate } from '@/hooks/common/table';
 import { useAuth } from '@/hooks/business/auth';
 import { $t } from '@/locales';
 import UserSearch from './modules/user-search.vue';
+import UserOperateModal from './modules/user-operate-modal.vue';
 
 defineOptions({
   name: 'UserList'
@@ -16,6 +19,7 @@ defineOptions({
 
 const { hasAuth } = useAuth();
 const appStore = useAppStore();
+const { download } = useDownload();
 
 const { loading: treeLoading, startLoading: startTreeLoading, endLoading: endTreeLoading } = useLoading();
 
@@ -37,8 +41,9 @@ const searchParams = ref<Api.System.UserSearchParams>({
 const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagination } = useNaivePaginatedTable({
   api: fetchGetUserList,
   transform: response => defaultTransform(response),
-  onPaginationParamsChange(params) {
-    console.log(params);
+  onPaginationParamsChange({ page, pageSize }) {
+    searchParams.value.current = page;
+    searchParams.value.size = pageSize;
   },
   columns: () => [
     {
@@ -50,7 +55,8 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       key: 'index',
       title: $t('common.index'),
       width: 48,
-      align: 'center'
+      align: 'center',
+      render: (_, index) => index + 1
     },
     {
       key: 'userName',
@@ -79,7 +85,28 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       width: 80,
       ellipsis: true,
       render: row => {
-        return <NTag bordered={false}>{row.gender}</NTag>;
+        switch (row.gender) {
+          case 0:
+            return (
+              <NTag bordered={false} type="warning">
+                {$t(userGenderRecord[row.gender]) || row.gender}
+              </NTag>
+            );
+          case 1:
+            return (
+              <NTag bordered={false} type="primary">
+                {$t(userGenderRecord[row.gender]) || row.gender}
+              </NTag>
+            );
+          case 2:
+            return (
+              <NTag bordered={false} type="info">
+                {$t(userGenderRecord[row.gender]) || row.gender}
+              </NTag>
+            );
+          default:
+            return <NTag bordered={false}>{$t(userGenderRecord[row.gender]) || row.gender}</NTag>;
+        }
       }
     },
     {
@@ -87,17 +114,20 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       title: $t('page.system.user.deptName'),
       align: 'center',
       width: 120,
-      ellipsis: true
+      ellipsis: true,
+      render: row => {
+        return row.deptName || '-';
+      }
     },
     {
-      key: 'email',
-      title: $t('page.system.user.email'),
+      key: 'userEmail',
+      title: $t('page.system.user.userEmail'),
       align: 'center',
       width: 120,
       ellipsis: true
     },
     {
-      key: 'phonenumber',
+      key: 'userPhone',
       title: $t('page.system.user.userPhone'),
       align: 'center',
       width: 120,
@@ -107,19 +137,117 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       key: 'status',
       title: $t('page.system.user.status'),
       align: 'center',
-      width: 80
+      width: 80,
+      render: row => {
+        if (row.status) {
+          return (
+            <NTag bordered={false} type="success">
+              {$t('page.system.user.statusEnabled')}
+            </NTag>
+          );
+        }
+        return (
+          <NTag bordered={false} type="error">
+            {$t('page.system.user.statusDisabled')}
+          </NTag>
+        );
+      }
     },
     {
       key: 'createTime',
       title: $t('page.system.user.createTime'),
       align: 'center',
       width: 120
+    },
+    {
+      key: 'operate',
+      title: $t('common.operate'),
+      align: 'center',
+      width: 150,
+      render: row => {
+        if (row.userName === 'SuperAdmin') {
+          return null;
+        }
+        const editBtn = () => {
+          return (
+            <ButtonIcon
+              text
+              type="primary"
+              icon="material-symbols:drive-file-rename-outline-outline"
+              tooltipContent={$t('common.edit')}
+              onClick={() => edit(row.userId!)}
+            />
+          );
+        };
+
+        const passwordBtn = () => {
+          return (
+            <ButtonIcon
+              text
+              type="primary"
+              icon="material-symbols:key-vertical-outline"
+              tooltipContent="重置密码"
+              onClick={() => handleResetPwd(row.userId!)}
+            />
+          );
+        };
+
+        const deleteBtn = () => {
+          return (
+            <ButtonIcon
+              text
+              type="error"
+              icon="material-symbols:delete-outline"
+              tooltipContent={$t('common.delete')}
+              popconfirmContent={$t('common.confirmDelete')}
+              onPositiveClick={() => handleDelete(row.userId!)}
+            />
+          );
+        };
+
+        const buttons = [];
+        if (hasAuth('system:user:edit')) buttons.push(editBtn());
+        if (hasAuth('system:user:resetPwd')) buttons.push(passwordBtn());
+        if (hasAuth('system:user:remove')) buttons.push(deleteBtn());
+
+        return (
+          <div class="flex-center gap-8px">
+            {buttons.map((btn, index) => (
+              <>
+                {index !== 0 && <NDivider vertical />}
+                {btn}
+              </>
+            ))}
+          </div>
+        );
+      }
     }
   ]
 });
 
 // 操作的辅助方法
-const { checkedRowKeys } = useTableOperate(data, 'id', getData);
+const { drawerVisible, operateType, editingData, handleAdd, handleEdit, checkedRowKeys, onDeleted, onBatchDeleted } =
+  useTableOperate(data, 'id', getData);
+
+function edit(userId: CommonType.IdType) {
+  handleEdit(userId);
+}
+
+async function handleBatchDelete() {
+  // request
+  const { error } = await fetchBatchDeleteUser(checkedRowKeys.value);
+  if (error) return;
+  onBatchDeleted();
+}
+
+function handleResetPwd(userId: CommonType.IdType) {
+  window.$message?.success(`重置密码成功，用户ID: ${userId}`);
+}
+
+function handleDelete(userId: CommonType.IdType) {
+  onDeleted();
+  window.$message?.success(`删除用户成功，用户ID: ${userId}`);
+}
 
 async function getTreeData() {
   startTreeLoading();
@@ -133,6 +261,10 @@ async function getTreeData() {
 function handleResetTreeData() {
   deptPattern.value = undefined;
   getTreeData();
+}
+
+function handleExport() {
+  download('/user/export', searchParams.value, `${$t('page.system.user.title')}_${new Date().getTime()}.xlsx`);
 }
 
 function handleResetSearchParams() {
@@ -152,7 +284,7 @@ const selectable = computed(() => {
   return !loading.value;
 });
 function handleClickTree(keys: CommonType.IdType[]) {
-  console.log(keys);
+  window.$message?.success(`选中的部门ID: ${keys.join(', ')}`);
 }
 </script>
 
@@ -201,6 +333,10 @@ function handleClickTree(keys: CommonType.IdType[]) {
             :show-add="hasAuth('system:user:add')"
             :show-delete="hasAuth('system:user:remove')"
             :show-export="hasAuth('system:user:export')"
+            @add="handleAdd"
+            @delete="handleBatchDelete"
+            @export="handleExport"
+            @refresh="getData"
           ></TableHeaderOperation>
         </template>
         <NDataTable
@@ -220,6 +356,14 @@ function handleClickTree(keys: CommonType.IdType[]) {
             <NEmpty :description="$t('page.system.user.empty')" class="h-full min-h-200px justify-center" />
           </template>
         </NDataTable>
+        <UserOperateModal
+          v-model:visible="drawerVisible"
+          :operate-type="operateType"
+          :row-data="editingData"
+          :dept-data="deptData"
+          :dept-id="searchParams.deptId"
+          @submitted="getDataByPage"
+        />
       </NCard>
     </div>
   </TableSiderLayout>

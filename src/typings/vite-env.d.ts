@@ -110,6 +110,10 @@ declare namespace Env {
     readonly VITE_PROXY_LOG?: CommonType.YesOrNo;
     /** The launch editor */
     readonly VITE_DEVTOOLS_LAUNCH_EDITOR?: import('vite-plugin-vue-devtools').VitePluginVueDevToolsOptions['launchEditor'];
+    /** The base api of the application */
+    readonly VITE_APP_BASE_API: string;
+    readonly VITE_APP_WEBSOCKET: CommonType.YesOrNo;
+    readonly VITE_APP_SSE: CommonType.YesOrNo;
   }
 }
 

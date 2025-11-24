@@ -19,6 +19,9 @@ declare namespace CommonType {
   /** The id type */
   type IdType = string | number;
 
+  /** The res error code */
+  type ErrorCode = '401' | '403' | '404' | 'default';
+
   type YesOrNo = 'Y' | 'N';
 
   /** add null to all properties */

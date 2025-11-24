@@ -20,6 +20,9 @@ declare namespace UnionKey {
   /** Device type */
   type DeviceType = 'pc' | 'android' | 'ios' | 'xcx';
 
+  /** User gender */
+  type UserGender = 0 | 1 | 2;
+
   /**
    * The layout mode
    *

@@ -8,3 +8,12 @@ export function fetchGetRoleList(params?: Api.System.RoleSearchParams) {
     params
   });
 }
+
+/** 获取角色选择框列表 */
+export function fetchGetRoleSelect(roleIds?: CommonType.IdType[]) {
+  return request<Api.System.Role[]>({
+    url: '/role/select',
+    method: 'get',
+    params: { roleIds }
+  });
+}

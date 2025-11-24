@@ -87,3 +87,11 @@ export function fetchGetUserList(params?: Api.System.UserSearchParams) {
     params
   });
 }
+
+/** 批量删除用户信息 */
+export function fetchBatchDeleteUser(userIds: CommonType.IdType[]) {
+  return request<boolean>({
+    url: `/user/batch/${userIds.join(',')}`,
+    method: 'delete'
+  });
+}

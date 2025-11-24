@@ -34,7 +34,7 @@ declare namespace Api {
      * - "1": enabled
      * - "2": disabled
      */
-    type EnableStatus = '1' | '2';
+    // type EnableStatus = '1' | '2';
 
     /**
      * 是否状态
@@ -57,7 +57,7 @@ declare namespace Api {
       /** record update time */
       updateTime: string;
       /** record status */
-      status: EnableStatus | null;
+      status: boolean;
     } & T;
 
     /** common tree record */

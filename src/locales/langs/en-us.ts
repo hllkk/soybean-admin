@@ -26,6 +26,7 @@ const local: App.I18n.Schema = {
     deleteSuccess: 'Delete Success',
     confirmDelete: 'Are you sure you want to delete?',
     edit: 'Edit',
+    save: 'Save',
     warning: 'Warning',
     error: 'Error',
     index: 'Index',
@@ -346,11 +347,21 @@ const local: App.I18n.Schema = {
         nickName: 'Nick Name',
         userPhone: 'User Phone',
         deptName: 'Department Name',
-        email: 'Email',
+        userEmail: 'Email',
         status: 'Status',
+        postIds: 'Posts',
         createTime: 'Create Time',
         empty: 'No User Found',
         gender: 'Gender',
+        unknown: 'Unknown',
+        male: 'Male',
+        female: 'Female',
+        statusEnabled: 'Enabled',
+        statusDisabled: 'Disabled',
+        addUser: 'Add User',
+        editUser: 'Edit User',
+        roleIds: 'Roles',
+        remark: 'Remark',
         form: {
           userName: {
             required: 'Please enter user name',
@@ -367,6 +378,18 @@ const local: App.I18n.Schema = {
           status: {
             required: 'Please select status',
             invalid: 'Status format is incorrect'
+          },
+          deptId: {
+            required: 'Please select department',
+            invalid: 'Department format is incorrect'
+          },
+          userEmail: {
+            required: 'Please enter email',
+            invalid: 'Email format is incorrect'
+          },
+          remark: {
+            required: 'Please enter remark',
+            invalid: 'Remark format is incorrect'
           }
         }
       },

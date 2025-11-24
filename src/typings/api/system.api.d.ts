@@ -21,14 +21,14 @@ declare namespace Api {
       userEmail: string;
       /** 手机号码 */
       userPhone: string;
-      /** 用户性别（0男 1女 2未知） */
-      gender?: string;
+      /** 用户性别（0未知 1男 2女） */
+      gender: UnionKey.UserGender;
       /** 头像地址 */
       avatar: string;
       /** 密码 */
       password: string;
-      /** 帐号状态（0正常 1停用） */
-      status: Common.EnableStatus;
+      /** 是否启用 */
+      status: boolean;
       /** 最后登录IP */
       loginIp: string;
       /** 最后登录时间 */
@@ -55,6 +55,24 @@ declare namespace Api {
       } & Common.CommonSearchParams
     >;
 
+    /** user operate params */
+    type UserOperateParams = CommonType.RecordNullable<
+      Pick<
+        User,
+        | 'userId'
+        | 'deptId'
+        | 'userName'
+        | 'nickName'
+        | 'userEmail'
+        | 'userPhone'
+        | 'avatar'
+        | 'gender'
+        | 'password'
+        | 'status'
+        | 'remark'
+      > & { roleIds: CommonType.IdType[]; postIds: CommonType.IdType[] }
+    >;
+
     /** user list */
     type UserList = Common.PaginatingQueryRecord<User>;
 
@@ -79,7 +97,7 @@ declare namespace Api {
       /** 显示顺序 */
       roleSort: number;
       /** 角色状态（0正常 1停用） */
-      status: Common.EnableStatus;
+      status: boolean;
       /** 是否管理员 */
       superAdmin: boolean;
     }>;
@@ -240,13 +258,13 @@ declare namespace Api {
       /** 是否为外链（0是 1否 2iframe） */
       isFrame: IsMenuFrame;
       /** 是否缓存（0缓存 1不缓存） */
-      keepAlive: Common.EnableStatus;
+      keepAlive: boolean;
       /** 菜单类型（M目录 C菜单 F按钮） */
       menuType: MenuType;
       /** 显示状态（0显示 1隐藏） */
       hidden: VisibleStatus;
       /** 菜单状态（0正常 1停用） */
-      status: Common.EnableStatus;
+      status: boolean;
       /** 权限标识 */
       perms?: string;
       /** 菜单图标 */
@@ -275,7 +293,7 @@ declare namespace Api {
       buttonName: string;
       buttonCode: string;
       orderNum?: number;
-      status: Common.EnableStatus;
+      status: boolean;
     };
 
     type MenuButtonList = MenuButton[];
@@ -325,7 +343,7 @@ declare namespace Api {
       /** 邮箱 */
       email: string;
       /** 部门状态（0正常 1停用） */
-      status: Common.EnableStatus;
+      status: boolean;
       /** 子部门 */
       children: Dept[];
     }>;
@@ -334,5 +352,27 @@ declare namespace Api {
     type DeptSearchParams = CommonType.RecordNullable<
       Pick<Api.System.Dept, 'deptName' | 'status'> & Api.Common.CommonSearchParams
     >;
+
+    /** post */
+    type Post = Common.CommonRecord<{
+      /** 岗位ID */
+      postId: CommonType.IdType;
+      /** 租户编号 */
+      tenantId: CommonType.IdType;
+      /** 部门id */
+      deptId: CommonType.IdType;
+      /** 岗位编码 */
+      postCode: string;
+      /** 类别编码 */
+      postCategory: string;
+      /** 岗位名称 */
+      postName: string;
+      /** 显示顺序 */
+      postSort: number;
+      /** 状态（0正常 1停用） */
+      status: boolean;
+      /** 备注 */
+      remark: string;
+    }>;
   }
 }
