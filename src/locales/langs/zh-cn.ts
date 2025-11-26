@@ -246,6 +246,7 @@ const local: App.I18n.Schema = {
     system_menu: '菜单管理',
     system_post: '岗位管理',
     system_dept: '部门管理',
+    system_dict: '字典管理',
     system_notice: '通知管理',
     system_setting: '系统设置',
     log: '日志管理',

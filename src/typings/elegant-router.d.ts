@@ -33,6 +33,7 @@ declare module "@elegant-router/types" {
     "personal-center": "/personal-center";
     "system": "/system";
     "system_dept": "/system/dept";
+    "system_dict": "/system/dict";
     "system_menu": "/system/menu";
     "system_notice": "/system/notice";
     "system_post": "/system/post";
@@ -113,6 +114,7 @@ declare module "@elegant-router/types" {
     | "log_login"
     | "log_operate"
     | "system_dept"
+    | "system_dict"
     | "system_menu"
     | "system_notice"
     | "system_post"

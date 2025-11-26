@@ -251,6 +251,7 @@ const local: App.I18n.Schema = {
     system_dept: 'Department Management',
     system_notice: 'Notice Management',
     system_setting: 'System Settings',
+    system_dict: 'Dictionary Management',
     log: 'Log Management',
     log_login: 'Login Log',
     log_operate: 'Operation Log',
