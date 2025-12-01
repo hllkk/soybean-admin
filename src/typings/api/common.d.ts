@@ -57,7 +57,7 @@ declare namespace Api {
       /** record update time */
       updateTime: string;
       /** record status */
-      status: boolean;
+      status: string;
     } & T;
 
     /** common tree record */

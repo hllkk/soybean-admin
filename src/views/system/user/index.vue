@@ -2,13 +2,13 @@
 import { computed, ref } from 'vue';
 import { NEllipsis } from 'naive-ui';
 import { useLoading } from '@sa/hooks';
-import { userGenderRecord } from '@/constants/common';
 import { fetchGetDeptTree } from '@/service/api/system/dept';
 import { fetchBatchDeleteUser, fetchGetUserList } from '@/service/api/system/user';
 import { useAppStore } from '@/store/modules/app';
 import { useDownload } from '@/hooks/business/download';
 import { defaultTransform, useNaivePaginatedTable, useTableOperate } from '@/hooks/common/table';
 import { useAuth } from '@/hooks/business/auth';
+import { useDict } from '@/hooks/business/dict';
 import { $t } from '@/locales';
 import UserSearch from './modules/user-search.vue';
 import UserOperateModal from './modules/user-operate-modal.vue';
@@ -16,6 +16,9 @@ import UserOperateModal from './modules/user-operate-modal.vue';
 defineOptions({
   name: 'UserList'
 });
+
+useDict('sys_user_sex');
+useDict('sys_normal_disable');
 
 const { hasAuth } = useAuth();
 const appStore = useAppStore();
@@ -84,29 +87,8 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       align: 'center',
       width: 80,
       ellipsis: true,
-      render: row => {
-        switch (row.gender) {
-          case 0:
-            return (
-              <NTag bordered={false} type="warning">
-                {$t(userGenderRecord[row.gender]) || row.gender}
-              </NTag>
-            );
-          case 1:
-            return (
-              <NTag bordered={false} type="primary">
-                {$t(userGenderRecord[row.gender]) || row.gender}
-              </NTag>
-            );
-          case 2:
-            return (
-              <NTag bordered={false} type="info">
-                {$t(userGenderRecord[row.gender]) || row.gender}
-              </NTag>
-            );
-          default:
-            return <NTag bordered={false}>{$t(userGenderRecord[row.gender]) || row.gender}</NTag>;
-        }
+      render(row) {
+        return <DictTag value={row.gender} dictCode="sys_user_sex" />;
       }
     },
     {
@@ -138,19 +120,8 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       title: $t('page.system.user.status'),
       align: 'center',
       width: 80,
-      render: row => {
-        if (row.status) {
-          return (
-            <NTag bordered={false} type="success">
-              {$t('page.system.user.statusEnabled')}
-            </NTag>
-          );
-        }
-        return (
-          <NTag bordered={false} type="error">
-            {$t('page.system.user.statusDisabled')}
-          </NTag>
-        );
+      render(row) {
+        return <DictTag value={row.status} dictCode="sys_normal_disable" />;
       }
     },
     {
@@ -227,7 +198,7 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
 
 // 操作的辅助方法
 const { drawerVisible, operateType, editingData, handleAdd, handleEdit, checkedRowKeys, onDeleted, onBatchDeleted } =
-  useTableOperate(data, 'id', getData);
+  useTableOperate(data, 'userId', getData);
 
 function edit(userId: CommonType.IdType) {
   handleEdit(userId);

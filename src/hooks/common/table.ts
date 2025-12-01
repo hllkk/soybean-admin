@@ -190,6 +190,7 @@ export function useTableOperate<TableData>(
 
   function handleEdit(id: TableData[keyof TableData]) {
     operateType.value = 'edit';
+    console.log(data.value);
     const findItem = data.value.find(item => item[idKey] === id) || null;
     editingData.value = jsonClone(findItem);
 

@@ -21,11 +21,11 @@ interface Props {
 
 const props = defineProps<Props>();
 
-interface Emits {
-  (e: 'submitted'): void;
-}
+// interface Emits {
+//   (e: 'submitted'): void;
+// }
 
-const emit = defineEmits<Emits>();
+// const emit = defineEmits<Emits>();
 
 const { formRef, validate, restoreValidation } = useNaiveForm();
 const { createRequiredRule, patternRules } = useFormRules();
@@ -41,9 +41,9 @@ function createDefaultModel(): Model {
     nickName: '',
     userEmail: '',
     userPhone: '',
-    gender: 0,
+    gender: '1',
     password: '',
-    status: false,
+    status: '1',
     roleIds: [],
     postIds: [],
     remark: ''
@@ -66,17 +66,6 @@ const rules: Record<RuleKey, App.Global.FormRule[]> = {
   userPhone: [patternRules.phone],
   status: [createRequiredRule($t('page.system.user.form.status.required'))]
 };
-
-const genderOptions = [
-  { label: $t('page.system.user.unknown'), value: 0 },
-  { label: $t('page.system.user.male'), value: 1 },
-  { label: $t('page.system.user.female'), value: 2 }
-];
-
-const statusOptions = [
-  { label: $t('page.system.user.statusEnabled'), value: true },
-  { label: $t('page.system.user.statusDisabled'), value: false }
-];
 
 const title = computed(() => {
   const titles: Record<NaiveUI.TableOperateType, string> = {
@@ -105,7 +94,6 @@ function handleUpdateModelWhenEdit() {
     model.deptId = props.deptId;
     return;
   }
-
   if (props.operateType === 'edit' && props.rowData) {
     startDeptLoading();
     Object.assign(model, props.rowData);
@@ -160,18 +148,14 @@ watch(visible, () => {
             <PostSelect v-model:value="model.postIds" :dept-id="model.deptId" multiple clearable />
           </NFormItemGi>
           <NFormItemGi :span="12" :label="$t('page.system.user.gender')" path="gender">
-            <NRadioGroup v-model:value="model.gender">
-              <NRadio v-for="item in genderOptions" :key="item.value">
-                {{ item.label }}
-              </NRadio>
-            </NRadioGroup>
+            <DictRadio v-model:value="model.gender" dict-code="sys_user_sex" />
           </NFormItemGi>
           <NFormItemGi :span="12" :label="$t('page.system.user.status')" path="status">
-            <NRadioGroup v-model:value="model.status">
-              <NRadio v-for="item in statusOptions" :key="item.value.toString()">
-                {{ item.label }}
-              </NRadio>
-            </NRadioGroup>
+            <DictRadio
+              v-model:value="model.status"
+              dict-code="sys_normal_disable"
+              :placeholder="$t('page.system.user.form.status.required')"
+            />
           </NFormItemGi>
           <NFormItemGi :span="12" :label="$t('page.system.user.roleIds')" path="roleIds">
             <RoleSelect v-model:value="model.roleIds" multiple clearable />
@@ -186,7 +170,6 @@ watch(visible, () => {
         </NGrid>
       </NForm>
     </NSpin>
-    <div>operateType: {{ props.operateType }}</div>
     <template #footer>
       <NSpace :size="16" reverse>
         <NButton @click="closeDrawer">{{ $t('common.cancel') }}</NButton>

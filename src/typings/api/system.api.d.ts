@@ -28,7 +28,7 @@ declare namespace Api {
       /** 密码 */
       password: string;
       /** 是否启用 */
-      status: boolean;
+      status: CommonType.EnableStatus;
       /** 最后登录IP */
       loginIp: string;
       /** 最后登录时间 */
@@ -97,7 +97,7 @@ declare namespace Api {
       /** 显示顺序 */
       roleSort: number;
       /** 角色状态（0正常 1停用） */
-      status: boolean;
+      status: CommonType.EnableStatus;
       /** 是否管理员 */
       superAdmin: boolean;
     }>;
@@ -264,7 +264,7 @@ declare namespace Api {
       /** 显示状态（0显示 1隐藏） */
       hidden: VisibleStatus;
       /** 菜单状态（0正常 1停用） */
-      status: boolean;
+      status: CommonType.EnableStatus;
       /** 权限标识 */
       perms?: string;
       /** 菜单图标 */
@@ -343,7 +343,7 @@ declare namespace Api {
       /** 邮箱 */
       email: string;
       /** 部门状态（0正常 1停用） */
-      status: boolean;
+      status: CommonType.EnableStatus;
       /** 子部门 */
       children: Dept[];
     }>;
@@ -370,7 +370,7 @@ declare namespace Api {
       /** 显示顺序 */
       postSort: number;
       /** 状态（0正常 1停用） */
-      status: boolean;
+      status: CommonType.EnableStatus;
       /** 备注 */
       remark: string;
     }>;
