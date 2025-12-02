@@ -247,10 +247,12 @@ function handleTabChange(tab: string) {
     <template #header>{{ $t('page.system.menu.title') }}</template>
     <template #header-extra>
       <ButtonIcon
+        v-if="hasAuth('system:menu:add')"
         size="small"
-        icon="material-symbols-add-rounded"
+        icon="material-symbols:add-rounded"
         class="h-28px text-icon color-primary"
         :tooltip-content="$t('page.system.menu.addMenu')"
+        @click.stop="handleAddMenu(0)"
       />
       <ButtonIcon
         size="small"
