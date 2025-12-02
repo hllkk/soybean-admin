@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { ref } from 'vue';
 import { fetchGetRoleList } from '@/service/api/system/role';
 import { useAppStore } from '@/store/modules/app';
@@ -62,16 +62,102 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       minWidth: 120
     },
     {
+      key: 'status',
+      title: '角色状态',
+      align: 'center',
+      minWidth: 120,
+      render: row => {
+        return <DictTag value={row.status} dictCode="sys_normal_disable" />;
+      }
+    },
+    {
       key: 'createTime',
       title: '创建时间',
       align: 'center',
       minWidth: 120
+    },
+    {
+      key: 'operate',
+      title: '操作',
+      align: 'center',
+      width: 230,
+      render: row => {
+        if (row.roleName === 'SuperAdmin') return null;
+
+        const editBtn = () => {
+          return (
+            <ButtonIcon
+              text
+              type="primary"
+              icon="material-symbols:drive-file-rename-outline-outline"
+              tooltipContent={$t('common.edit')}
+              onClick={() => edit(row.roleId!)}
+            />
+          );
+        };
+
+        const authUserBtn = () => {
+          return (
+            <ButtonIcon
+              text
+              type="primary"
+              icon="material-symbols:assignment-ind-outline"
+              tooltipContent="分配用户"
+              onClick={() => handleAuthUser(row)}
+            />
+          );
+        };
+
+        const deleteBtn = () => {
+          return (
+            <ButtonIcon
+              text
+              type="error"
+              icon="material-symbols:delete-outline"
+              tooltipContent={$t('common.delete')}
+              popconfirmContent={$t('common.confirmDelete')}
+              onPositiveClick={() => handleDelete(row.roleId!)}
+            />
+          );
+        };
+
+        const buttons = [];
+        if (hasAuth('system:role:edit')) {
+          buttons.push(editBtn());
+          buttons.push(authUserBtn());
+        }
+        if (hasAuth('system:role:remove')) buttons.push(deleteBtn());
+
+        return (
+          <div class="flex-center gap-8px">
+            {buttons.map((btn, index) => (
+              <>
+                {index !== 0 && <NDivider vertical />}
+                {btn}
+              </>
+            ))}
+          </div>
+        );
+      }
     }
   ]
 });
 
 // 操作的辅助方法
-const { checkedRowKeys, handleAdd, onBatchDeleted } = useTableOperate(data, 'id', getData);
+const { checkedRowKeys, handleAdd, handleEdit, onBatchDeleted, onDeleted } = useTableOperate(data, 'roleId', getData);
+
+function edit(roleId: CommonType.IdType) {
+  handleEdit(roleId);
+}
+
+function handleAuthUser(row: Api.System.Role) {
+  window.$message?.success(`分配用户成功，角色ID: ${row.roleId}`);
+}
+
+function handleDelete(userId: CommonType.IdType) {
+  onDeleted();
+  window.$message?.success(`删除角色成功，角色ID: ${userId}`);
+}
 
 function handleResetSearchParams() {
   searchParams.value = {
