@@ -26,8 +26,9 @@ const searchParams = ref<Api.System.RoleSearchParams>({
 const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagination } = useNaivePaginatedTable({
   api: fetchGetRoleList,
   transform: response => defaultTransform(response),
-  onPaginationParamsChange(params) {
-    console.log(params);
+  onPaginationParamsChange({ page, pageSize }) {
+    searchParams.value.current = page;
+    searchParams.value.size = pageSize;
   },
   columns: () => [
     {
@@ -39,7 +40,8 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       key: 'index',
       title: $t('common.index'),
       align: 'center',
-      width: 64
+      width: 48,
+      render: (_, index) => index + 1
     },
     {
       key: 'roleName',
