@@ -42,21 +42,26 @@ const tabItems = computed(() => {
 });
 
 const getMeunTree = async () => {
-  // if (treeDataMap.value[activeTab.value].length > 0) return;
   startLoading();
   const { data, error } = await fetchGetMenuList();
   if (error) return;
+  if (!data || data.length === 0) {
+    endLoading();
+    return;
+  }
   treeDataMap.value[activeTab.value] = [
     {
       menuId: 0,
       menuName: $t('page.system.menu.rootName'),
-      icon: 'material-symbols-home-outline-rounded',
+      icon: 'famicons-home-outline',
       children: handleTree(data, { idField: 'menuId', filterFn: item => item.module === activeTab.value })
     }
   ] as Api.System.Menu[];
 
   endLoading();
 };
+
+getMeunTree();
 
 function handleAddMenu(pid: CommonType.IdType) {
   window.$message?.info(`${pid}`);
@@ -86,11 +91,27 @@ async function getBtnMenuList() {
 
 function renderLabel({ option }: { option: TreeOption }) {
   // 如果i18nKey存在则取i18nKey的值，否则取menuName的值
-  let label = '';
-  if (option.i18nKey) {
-    label = $t(option.i18nKey as App.I18n.I18nKey);
-  } else {
-    label = String(option.menuName);
+  let label = String(option.menuName);
+  if (label?.startsWith('route.') || label?.startsWith('menu.')) {
+    label = $t(label as App.I18n.I18nKey);
+  }
+  // 禁用的菜单显示红色
+  if (option.status === '1') {
+    return (
+      <div class="flex items-center gap-4px text-error-200">
+        {label}
+        <SvgIcon icon="ri-prohibited-line" class="text-16px" />
+      </div>
+    );
+  }
+  // 隐藏的菜单显示灰色
+  if (option.visible === '1') {
+    return (
+      <div class="flex items-center gap-4px text-gray-400">
+        {label}
+        <SvgIcon icon="codex-hidden" class="text-21px" />
+      </div>
+    );
   }
   return <div>{label}</div>;
 }
@@ -236,6 +257,13 @@ const btnColumns: DataTableColumns<Api.System.MenuButton> = [
   }
 ];
 
+function handleClickTree(option: Array<TreeOption | null>) {
+  if (option && option[0] && option[0].menuId !== 0) {
+    currentMenu.value = option[0] as Api.System.Menu;
+    getBtnMenuList();
+  }
+}
+
 function handleTabChange(tab: string) {
   activeTab.value = tab;
   getMeunTree();
@@ -280,10 +308,7 @@ function handleTabChange(tab: string) {
         @update:value="handleTabChange"
       >
         <NTabPane v-for="item in tabItems" :key="item.name" :name="item.name" :tab="item.label">
-          <NSpin
-            :show="loading"
-            class="h-[calc(85vh-224px-var(--calc-footer-height,0px))] flex items-center justify-center overflow-hidden"
-          >
+          <NSpin :show="loading" class="h-[calc(85vh-224px-var(--calc-footer-height,0px))]">
             <NTree
               ref="menuTreeRef"
               v-model:checked-keys="checkedKeys"
@@ -299,10 +324,11 @@ function handleTabChange(tab: string) {
               key-field="menuId"
               label-field="menuName"
               virtual-scroll
-              checkable
+              selectable
               :render-label="renderLabel"
               :render-prefix="renderPrefix"
               :render-suffix="renderSuffix"
+              @update:selected-keys="(_: Array<string & number>, option: Array<TreeOption | null>) => handleClickTree(option)"
             >
               <template #empty>
                 <NEmpty :description="$t('page.system.menu.empty')" class="h-full min-h-200px justify-center" />
