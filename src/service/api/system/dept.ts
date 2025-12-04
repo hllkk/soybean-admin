@@ -16,3 +16,10 @@ export function fetchGetDeptList(params?: Api.System.DeptSearchParams) {
     params
   });
 }
+
+export function fetchBatchDeleteDept(deptIds: CommonType.IdType[]) {
+  return request<boolean>({
+    url: `/dept/${deptIds.join(',')}`,
+    method: 'delete'
+  });
+}

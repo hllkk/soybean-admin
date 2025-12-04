@@ -682,6 +682,7 @@ declare namespace App {
             status: string;
             createTime: string;
             expandAll: string;
+            collapseAll: string;
             form: {
               deptName: FormMsg;
               status: FormMsg;

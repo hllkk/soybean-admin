@@ -1,6 +1,6 @@
 <script lang="tsx" setup>
 import { computed, ref } from 'vue';
-import { NEllipsis } from 'naive-ui';
+import { NAvatar, NDivider, NEllipsis } from 'naive-ui';
 import { useLoading } from '@sa/hooks';
 import { fetchGetDeptTree } from '@/service/api/system/dept';
 import { fetchBatchDeleteUser, fetchGetUserList } from '@/service/api/system/user';
@@ -87,7 +87,7 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       align: 'center',
       width: 80,
       ellipsis: true,
-      render(row) {
+      render: row => {
         return <DictTag value={row.gender} dictCode="sys_user_sex" />;
       }
     },
@@ -120,7 +120,7 @@ const { loading, data, getData, getDataByPage, columnChecks, columns, mobilePagi
       title: $t('page.system.user.status'),
       align: 'center',
       width: 80,
-      render(row) {
+      render: row => {
         return <DictTag value={row.status} dictCode="sys_normal_disable" />;
       }
     },
@@ -239,15 +239,7 @@ function handleExport() {
 }
 
 function handleResetSearchParams() {
-  searchParams.value = {
-    current: 1,
-    size: 10,
-    userName: null,
-    nickName: null,
-    userPhone: null,
-    status: null,
-    params: { beginTime: null, endTime: null }
-  };
+  selectedKeys.value = [];
   getDataByPage();
 }
 
@@ -260,7 +252,7 @@ function handleClickTree(keys: CommonType.IdType[]) {
 </script>
 
 <template>
-  <TableSiderLayout :sider-title="$t('page.system.dept.title')">
+  <TableSiderLayout>
     <template #header-extra>
       <NButton size="small" text class="h-18px" @click.stop="() => handleResetTreeData()">
         <template #icon>

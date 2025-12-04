@@ -468,6 +468,7 @@ const local: App.I18n.Schema = {
         createTime: '创建时间',
         status: '状态',
         expandAll: '全部展开',
+        collapseAll: '全部折叠',
         form: {
           deptName: {
             required: '请输入部门名称',

@@ -471,6 +471,7 @@ const local: App.I18n.Schema = {
         createTime: 'Create Time',
         status: 'Status',
         expandAll: 'Expand All',
+        collapseAll: 'Collapse All',
         form: {
           deptName: {
             required: 'Please enter Department Name',

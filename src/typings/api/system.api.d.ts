@@ -104,7 +104,7 @@ declare namespace Api {
 
     /** role search params */
     type RoleSearchParams = CommonType.RecordNullable<
-      Pick<Api.System.Role, 'roleName' | 'roleKey' | 'status'> & Api.Common.CommonSearchParams
+      Pick<Role, 'roleName' | 'roleKey' | 'status'> & Api.Common.CommonSearchParams
     >;
 
     /** role list */
@@ -263,7 +263,7 @@ declare namespace Api {
       menuType: MenuType;
       /** 显示状态（0显示 1隐藏） */
       hidden: VisibleStatus;
-      /** 菜单状态（0正常 1停用） */
+      /** 菜单状态（1正常 0停用） */
       status: CommonType.EnableStatus;
       /** 权限标识 */
       perms?: string;
@@ -342,7 +342,7 @@ declare namespace Api {
       phone: string;
       /** 邮箱 */
       email: string;
-      /** 部门状态（0正常 1停用） */
+      /** 部门状态（1正常 0停用） */
       status: CommonType.EnableStatus;
       /** 子部门 */
       children: Dept[];
@@ -350,7 +350,7 @@ declare namespace Api {
 
     /** dept search params */
     type DeptSearchParams = CommonType.RecordNullable<
-      Pick<Api.System.Dept, 'deptName' | 'status'> & Api.Common.CommonSearchParams
+      Pick<Dept, 'deptName' | 'status'> & Api.Common.CommonSearchParams
     >;
 
     /** post */
@@ -374,5 +374,9 @@ declare namespace Api {
       /** 备注 */
       remark: string;
     }>;
+
+    type PostSearchParams = CommonType.RecordNullable<
+      Pick<Post, 'postName' | 'postCode' | 'status'> & Api.Common.CommonSearchParams
+    >;
   }
 }
