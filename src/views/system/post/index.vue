@@ -1,34 +1,47 @@
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { computed, ref } from 'vue';
 import { useLoading } from '@sa/hooks';
-import { fetchGetDeptTree } from '@/service/api/system/dept';
-import { defaultTransform, useNaivePaginatedTable } from '@/hooks/common/table';
+import { fetchBatchDeletePost, fetchGetPostDeptSelect, fetchGetPostList } from '@/service/api/system/post';
+import { useAppStore } from '@/store/modules/app';
+import { defaultTransform, useNaivePaginatedTable, useTableOperate } from '@/hooks/common/table';
+import { useDict } from '@/hooks/business/dict';
+import { useDownload } from '@/hooks/business/download';
 import { useAuth } from '@/hooks/business/auth';
 import { $t } from '@/locales';
 import PostSearch from './modules/post-search.vue';
 
-const { hasAuth } = useAuth();
-const { loading: treeLoading, startLoading: startTreeLoading, endLoading: endTreeLoading } = useLoading();
+defineOptions({
+  name: 'PostList'
+});
 
-const deptData = ref<Api.Common.CommonTreeRecord>([]);
+useDict('sys_normal_disable');
+const appStore = useAppStore();
+const { download } = useDownload();
+const { hasAuth } = useAuth();
+
+const { loading: treeLoading, startLoading: startTreeLoading, endLoading: endTreeLoading } = useLoading();
 const deptPattern = ref<string>();
-const selectedKeys = ref<CommonType.IdType[]>([]);
-const expandedKeys = ref<CommonType.IdType[]>([]);
+const deptData = ref<Api.Common.CommonTreeRecord>([]);
+const expandedKeys = ref<CommonType.IdType[]>([100]);
+const selectedKeys = ref<string[]>([]);
 
 const searchParams = ref<Api.System.PostSearchParams>({
-  postName: '',
-  status: undefined,
   current: 1,
-  size: 10
+  size: 10,
+  postCode: null,
+  postName: null,
+  status: null,
+  belongDeptId: null,
+  params: {}
 });
 
 const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination, scrollX } =
   useNaivePaginatedTable({
-    api: fetchGetPostList,
+    api: () => fetchGetPostList(searchParams.value),
     transform: response => defaultTransform(response),
-    onPaginationParamsChange({ page, pageSize }) {
-      searchParams.value.current = page;
-      searchParams.value.size = pageSize;
+    onPaginationParamsChange: params => {
+      searchParams.value.current = params.page;
+      searchParams.value.size = params.pageSize;
     },
     columns: () => [
       {
@@ -39,8 +52,8 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
       {
         key: 'index',
         title: $t('common.index'),
-        width: 48,
         align: 'center',
+        width: 64,
         render: (_, index) => index + 1
       },
       {
@@ -60,44 +73,145 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         title: '岗位名称',
         align: 'center',
         minWidth: 120
+      },
+      {
+        key: 'postSort',
+        title: '显示顺序',
+        align: 'center',
+        minWidth: 120
+      },
+      {
+        key: 'status',
+        title: '状态',
+        align: 'center',
+        minWidth: 120,
+        render(row) {
+          return <DictTag size="small" value={row.status} dictCode="sys_normal_disable" />;
+        }
+      },
+      {
+        key: 'createTime',
+        title: '创建时间',
+        align: 'center',
+        minWidth: 120,
+        ellipsis: {
+          tooltip: true
+        }
+      },
+      {
+        key: 'operate',
+        title: $t('common.operate'),
+        align: 'center',
+        width: 130,
+        render: row => {
+          const divider = () => {
+            if (!hasAuth('system:post:edit') || !hasAuth('system:post:remove')) {
+              return null;
+            }
+            return <NDivider vertical />;
+          };
+
+          const editBtn = () => {
+            if (!hasAuth('system:post:edit')) {
+              return null;
+            }
+            return (
+              <ButtonIcon
+                type="primary"
+                text
+                icon="material-symbols:drive-file-rename-outline-outline"
+                tooltipContent={$t('common.edit')}
+                onClick={() => edit(row.postId!)}
+              />
+            );
+          };
+
+          const deleteBtn = () => {
+            if (!hasAuth('system:post:remove')) {
+              return null;
+            }
+            return (
+              <ButtonIcon
+                text
+                type="error"
+                icon="material-symbols:delete-outline"
+                tooltipContent={$t('common.delete')}
+                popconfirmContent={$t('common.confirmDelete')}
+                onPositiveClick={() => handleDelete(row.postId!)}
+              />
+            );
+          };
+
+          return (
+            <div class="flex-center gap-8px">
+              {editBtn()}
+              {divider()}
+              {deleteBtn()}
+            </div>
+          );
+        }
       }
     ]
   });
 
-async function getTreeData() {
+const { drawerVisible, operateType, editingData, handleAdd, handleEdit, checkedRowKeys, onBatchDeleted, onDeleted } =
+  useTableOperate(data, 'postId', getData);
+
+async function handleBatchDelete() {
+  // request
+  const { error } = await fetchBatchDeletePost(checkedRowKeys.value);
+  if (error) return;
+  onBatchDeleted();
+}
+
+async function handleDelete(postId: CommonType.IdType) {
+  // request
+  const { error } = await fetchBatchDeletePost([postId]);
+  if (error) return;
+  onDeleted();
+}
+
+async function edit(postId: CommonType.IdType) {
+  handleEdit(postId);
+}
+
+async function handleExport() {
+  download('/post/export', searchParams, `岗位信息_${new Date().getTime()}.xlsx`);
+}
+
+const selectable = computed(() => {
+  return !loading.value;
+});
+
+async function getDeptOptions() {
+  // 加载
   startTreeLoading();
-  const { data: tree, error } = await fetchGetDeptTree();
+  const { data: tree, error } = await fetchGetPostDeptSelect();
   if (!error) {
     deptData.value = tree;
   }
   endTreeLoading();
 }
-
-function handleResetTreeData() {
-  deptPattern.value = undefined;
-  getTreeData();
-}
-
-const selectable = computed(() => {
-  return !treeLoading.value;
-});
-function handleClickTree(keys: CommonType.IdType[]) {
-  window.$message?.success(`选中的部门ID: ${keys.join(', ')}`);
-}
+getDeptOptions();
 
 function handleResetSearch() {
-  searchParams.value = {
-    postName: '',
-    status: undefined,
-    current: 1,
-    size: 10
-  };
+  selectedKeys.value = [];
   getDataByPage();
+}
+
+function handleClickTree(keys: string[]) {
+  searchParams.value.belongDeptId = keys.length ? keys[0] : null;
+  checkedRowKeys.value = [];
+  getDataByPage();
+}
+function handleResetTreeData() {
+  deptPattern.value = undefined;
+  getDeptOptions();
 }
 </script>
 
 <template>
-  <TableSiderLayout>
+  <TableSiderLayout sider-title="部门列表">
     <template #header-extra>
       <NButton size="small" text class="h-18px" @click.stop="() => handleResetTreeData()">
         <template #icon>
@@ -116,15 +230,16 @@ function handleResetSearch() {
           :data="deptData as []"
           :show-irrelevant-nodes="false"
           :pattern="deptPattern"
-          virtual-scroll
+          block-line
+          class="infinite-scroll h-full min-h-200px py-3"
           key-field="id"
           label-field="label"
-          class="h-full min-h-200px py-3"
+          virtual-scroll
           :selectable="selectable"
           @update:selected-keys="handleClickTree"
         >
           <template #empty>
-            <NEmpty :description="$t('page.system.dept.empty')" class="h-full min-h-200px justify-center" />
+            <NEmpty description="暂无部门信息" class="h-full min-h-200px justify-center" />
           </template>
         </NTree>
       </NSpin>
@@ -146,6 +261,26 @@ function handleResetSearch() {
             @refresh="getData"
           />
         </template>
+        <NDataTable
+          v-model:checked-row-keys="checkedRowKeys"
+          :columns="columns"
+          :data="data"
+          size="small"
+          :flex-height="!appStore.isMobile"
+          :scroll-x="scrollX"
+          :loading="loading"
+          remote
+          :row-key="row => row.postId"
+          :pagination="mobilePagination"
+          class="sm:h-full"
+        />
+        <PostOperateDrawer
+          v-model:visible="drawerVisible"
+          :operate-type="operateType"
+          :row-data="editingData"
+          :dept-data="deptData"
+          @submitted="getData"
+        />
       </NCard>
     </div>
   </TableSiderLayout>

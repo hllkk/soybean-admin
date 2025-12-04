@@ -376,7 +376,11 @@ declare namespace Api {
     }>;
 
     type PostSearchParams = CommonType.RecordNullable<
-      Pick<Post, 'postName' | 'postCode' | 'status'> & Api.Common.CommonSearchParams
+      Pick<Post, 'postName' | 'postCode' | 'status'> & {
+        belongDeptId?: CommonType.IdType;
+      } & Api.Common.CommonSearchParams
     >;
+
+    type PostList = Api.Common.PaginatingQueryRecord<Post>;
   }
 }
