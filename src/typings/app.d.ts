@@ -688,6 +688,53 @@ declare namespace App {
               status: FormMsg;
             };
           };
+          dict: {
+            title: string;
+            dictTypeTitle: string;
+            dictName: string;
+            dictType: string;
+            status: string;
+            remark: string;
+            createTime: string;
+            refreshCacheSuccess: string;
+            refreshCache: string;
+            confirmDeleteDictType: string;
+            data: {
+              title: string;
+              label: string;
+              value: string;
+              dictSort: string;
+              isDefault: string;
+              listClass: string;
+              cssClass: string;
+              status: string;
+              remark: string;
+              createTime: string;
+            };
+            form: {
+              dictId: FormMsg;
+              dictCode: FormMsg;
+              dictName: FormMsg;
+              dictType: FormMsg;
+              status: FormMsg;
+              remark: FormMsg;
+              dictLabel: FormMsg;
+              dictValue: FormMsg;
+              dictSort: FormMsg;
+              isDefault: FormMsg;
+              listClass: FormMsg;
+              cssClass: FormMsg;
+            };
+            addDict: string;
+            editDict: string;
+            addDictData: string;
+            editDictData: string;
+            addDictType: string;
+            editDictType: string;
+            exportDictType: string;
+            refreshDictType: string;
+            dictTypeIsEmpty: string;
+          };
         };
         about: {
           title: string;

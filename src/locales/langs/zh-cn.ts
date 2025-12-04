@@ -479,6 +479,89 @@ const local: App.I18n.Schema = {
             invalid: '状态不能为空'
           }
         }
+      },
+      dict: {
+        title: '字典列表',
+        dictTypeTitle: '字典类型列表',
+        dictName: '字典名称',
+        dictType: '字典类型',
+        status: '状态',
+        remark: '备注',
+        createTime: '创建时间',
+        refreshCacheSuccess: '刷新缓存成功',
+        refreshCache: '刷新缓存',
+        confirmDeleteDictType: '确定删除字典类型',
+        data: {
+          title: '字典数据列表',
+          label: '字典标签',
+          value: '字典键值',
+          dictSort: '字典排序',
+          isDefault: '是否默认',
+          listClass: '标签样式',
+          cssClass: 'CSS样式',
+          status: '状态',
+          remark: '备注',
+          createTime: '创建时间'
+        },
+        form: {
+          dictId: {
+            required: '请输入字典主键',
+            invalid: '字典主键不能为空'
+          },
+          dictCode: {
+            required: '请输入字典编码',
+            invalid: '字典编码不能为空'
+          },
+          dictName: {
+            required: '请输入字典名称',
+            invalid: '字典名称不能为空'
+          },
+          dictType: {
+            required: '请输入字典类型',
+            invalid: '字典类型不能为空'
+          },
+          status: {
+            required: '请选择状态',
+            invalid: '状态不能为空'
+          },
+          remark: {
+            required: '请输入备注',
+            invalid: '备注不能为空'
+          },
+          dictLabel: {
+            required: '请输入字典标签',
+            invalid: '字典标签不能为空'
+          },
+          dictValue: {
+            required: '请输入字典键值',
+            invalid: '字典键值不能为空'
+          },
+          dictSort: {
+            required: '请输入字典排序',
+            invalid: '字典排序不能为空'
+          },
+          isDefault: {
+            required: '请选择是否默认',
+            invalid: '是否默认不能为空'
+          },
+          listClass: {
+            required: '请选择回显样式',
+            invalid: '回显样式不能为空'
+          },
+          cssClass: {
+            required: '请输入样式属性（其他样式扩展）',
+            invalid: 'CSS样式不能为空'
+          }
+        },
+        addDict: '新增字典',
+        editDict: '编辑字典',
+        addDictData: '新增字典数据',
+        editDictData: '编辑字典数据',
+        addDictType: '新增字典类型',
+        editDictType: '编辑字典类型',
+        exportDictType: '导出字典类型',
+        refreshDictType: '刷新列表',
+        dictTypeIsEmpty: '暂无字典类型'
       }
     },
     about: {

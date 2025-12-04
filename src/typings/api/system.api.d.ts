@@ -298,6 +298,18 @@ declare namespace Api {
 
     type MenuButtonList = MenuButton[];
 
+    /** 字典类型 */
+    type DictType = Common.CommonRecord<{
+      /** 字典主键 */
+      dictId: CommonType.IdType;
+      /** 字典名称 */
+      dictName: string;
+      /** 字典类型 */
+      dictType: string;
+      /** 备注 */
+      remark: string;
+    }>;
+
     /** 字典数据 */
     type DictData = Common.CommonRecord<{
       /** 样式属性（其他样式扩展） */
@@ -319,6 +331,14 @@ declare namespace Api {
       /** 备注 */
       remark: string;
     }>;
+
+    /** dict data search params */
+    type DictDataSearchParams = CommonType.RecordNullable<
+      Pick<DictData, 'dictLabel' | 'dictType'> & Api.Common.CommonSearchParams
+    >;
+
+    /** dict data list */
+    type DictDataList = Api.Common.PaginatingQueryRecord<DictData>;
 
     /** dept */
     type Dept = Api.Common.CommonRecord<{

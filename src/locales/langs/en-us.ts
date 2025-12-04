@@ -482,6 +482,89 @@ const local: App.I18n.Schema = {
             invalid: 'Status cannot be empty'
           }
         }
+      },
+      dict: {
+        title: 'Dictionary List',
+        dictTypeTitle: 'Dictionary Type List',
+        dictName: 'Dictionary Name',
+        dictType: 'Dictionary Type',
+        status: 'Status',
+        remark: 'Remark',
+        createTime: 'Create Time',
+        refreshCacheSuccess: 'Refresh cache successfully',
+        refreshCache: 'Refresh Cache',
+        confirmDeleteDictType: 'Are you sure you want to delete dic type',
+        data: {
+          title: 'Dictionary Data List',
+          label: 'Dictionary Label',
+          value: 'Dictionary Value',
+          dictSort: 'Sort',
+          isDefault: 'Default',
+          listClass: 'Display Style',
+          cssClass: 'CSS Class',
+          status: 'Status',
+          remark: 'Remark',
+          createTime: 'Create Time'
+        },
+        form: {
+          dictId: {
+            required: 'Please enter Dictionary Id',
+            invalid: 'Dictionary Id cannot be empty'
+          },
+          dictCode: {
+            required: 'Please enter Dictionary Code',
+            invalid: 'Dictionary Code cannot be empty'
+          },
+          dictName: {
+            required: 'Please enter Dictionary Name',
+            invalid: 'Dictionary Name cannot be empty'
+          },
+          dictType: {
+            required: 'Please enter Dictionary Type',
+            invalid: 'Dictionary Type cannot be empty'
+          },
+          status: {
+            required: 'Please select Status',
+            invalid: 'Status cannot be empty'
+          },
+          remark: {
+            required: 'Please enter Remark',
+            invalid: 'Remark cannot be empty'
+          },
+          dictLabel: {
+            required: 'Please enter Dictionary Label',
+            invalid: 'Dictionary Label cannot be empty'
+          },
+          dictValue: {
+            required: 'Please enter Dictionary Value',
+            invalid: 'Dictionary Value cannot be empty'
+          },
+          dictSort: {
+            required: 'Please enter Sort',
+            invalid: 'Sort cannot be empty'
+          },
+          isDefault: {
+            required: 'Please select Default',
+            invalid: 'Default cannot be empty'
+          },
+          listClass: {
+            required: 'Please select Display Style',
+            invalid: 'Display Style cannot be empty'
+          },
+          cssClass: {
+            required: 'Please enter CSS Class',
+            invalid: 'CSS Class cannot be empty'
+          }
+        },
+        addDict: 'Add Dictionary',
+        editDict: 'Edit Dictionary',
+        addDictData: 'Add Dictionary Data',
+        editDictData: 'Edit Dictionary Data',
+        addDictType: 'Add Dictionary Type',
+        editDictType: 'Edit Dictionary Type',
+        exportDictType: 'Export Dictionary Type',
+        refreshDictType: 'Refresh Dictionary Type',
+        dictTypeIsEmpty: 'Dictionary type is empty'
       }
     },
     about: {
