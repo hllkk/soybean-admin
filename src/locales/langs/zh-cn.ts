@@ -30,6 +30,8 @@ const local: App.I18n.Schema = {
     warning: '警告',
     error: '错误',
     index: '序号',
+    enable: '启用',
+    disable: '禁用',
     keywordSearch: '请输入关键词搜索',
     switchRole: '切换角色',
     switchRoleDesc: '切换角色以访问不同模块',

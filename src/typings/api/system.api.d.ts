@@ -402,5 +402,154 @@ declare namespace Api {
     >;
 
     type PostList = Api.Common.PaginatingQueryRecord<Post>;
+
+    /** 通知公告类型 */
+    type NoticeType = '1' | '2';
+
+    /** notice */
+    type Notice = Common.CommonRecord<{
+      /** 公告ID */
+      noticeId: CommonType.IdType;
+      /** 租户编号 */
+      tenantId: CommonType.IdType;
+      /** 公告标题 */
+      noticeTitle: string;
+      /** 公告类型 */
+      noticeType: System.NoticeType;
+      /** 公告内容 */
+      noticeContent: string;
+      /** 公告状态 */
+      status: CommonType.EnableStatus;
+      /** 创建者 */
+      createByName: string;
+      /** 备注 */
+      remark: string;
+    }>;
+
+    /** notice search params */
+    type NoticeSearchParams = CommonType.RecordNullable<
+      Pick<Api.System.Notice, 'noticeTitle' | 'noticeType'> & Api.Common.CommonSearchParams
+    >;
+
+    /** notice list */
+    type NoticeList = Api.Common.PaginatingQueryRecord<Notice>;
+
+    type SettingsClickStatus = 'general' | 'authentication' | 'security' | 'ldap' | 'channels';
+
+    /** 通用设置 */
+    type GeneralSettings = {
+      systemName: string;
+      diskName: string;
+      userDefaultPassword?: string;
+      userDefaultRole?: CommonType.IdType | null;
+      watermark?: boolean;
+      watermarkContent?: number;
+      watermarkSize?: number;
+      enableWechat?: boolean;
+      enableGitee?: boolean;
+      enableVerifyCode?: boolean;
+      verifyCodeType?: string;
+      verifyInaccuracy?: number;
+    };
+
+    /** 企业微信设置 */
+    interface WecomSettings {
+      /** 企业微信认证登录是否启用 */
+      enableWecom?: boolean;
+      /** 可信域名校验文件名 */
+      validateDomainFileName?: string;
+      /** 可信域名校验文件内容 */
+      validateDomainFileContent?: string;
+    }
+
+    /** 微信设置 */
+    interface WechatSettings {
+      /** 微信认证登录是否启用 */
+      enableWechat?: boolean;
+    }
+
+    interface GiteeSettings {
+      /** 码云认证登录是否启用 */
+      enableGitee?: boolean;
+    }
+
+    type AuthenticationSettings = {
+      wecom?: WecomSettings;
+      wechat?: WechatSettings;
+      gitee?: GiteeSettings;
+    };
+
+    /** 安全设置 */
+    type SecuritySettings = {
+      totp?: boolean;
+      ip_check?: boolean;
+      ip_check_mode?: number;
+      ip_black_list?: string[];
+      ip_white_list?: string[];
+    };
+
+    /** LDAP设置 */
+    interface LdapConfingInfo {
+      enable?: boolean;
+      hosts?: Array<string>;
+      user?: string;
+      password?: string;
+      base_ou?: string;
+      paged_size?: number;
+      attributes?: {
+        username?: string;
+        nickname?: string;
+        email?: string;
+        phone?: string;
+      };
+    }
+
+    /** ldap同步配置 */
+    interface LdapSyncInfo {
+      /** 启用同步 */
+      enable?: boolean;
+      /** 同步间隔（分钟 */
+      interval?: number;
+      /** 用户是否默认启用 */
+      default_status?: boolean;
+      /** 冲突时策略 1以平台为主 2以ldap为主 */
+      sync_rule?: number;
+    }
+
+    type LdapSettings = {
+      config: LdapConfingInfo;
+      sync: LdapSyncInfo;
+    };
+
+    /** 邮件设置 */
+    type MailSettings = {
+      MAIL_FROM: string | null;
+      MAIL_PORT: number | null;
+      MAIL_SERVER: string | null;
+      MAIL_SSL_TLS: boolean;
+      MAIL_PASSWORD: string | null;
+      MAIL_STARTTLS: boolean;
+      MAIL_USERNAME: string | null;
+      MAIL_FROM_NAME: string | null;
+      VALIDATE_CERTS: boolean;
+      USE_CREDENTIALS: boolean;
+    };
+
+    /** 通道设置 */
+    type ChannelsSettings = {
+      email: MailSettings;
+    };
+
+    /** 系统设置 */
+    type SystemSettings = {
+      id?: CommonType.IdType;
+      createTime?: string;
+      updateTime?: string;
+      general?: GeneralSettings;
+      authentication?: AuthenticationSettings;
+      ldap?: LdapSettings;
+      security?: SecuritySettings;
+      channels?: ChannelsSettings;
+    };
   }
 }

@@ -20,6 +20,7 @@ import { handleCopy } from '@/utils/copy';
 import ButtonIcon from '@/components/custom/button-icon.vue';
 import { $t } from '@/locales';
 import DictTag from '@/components/custom/dict-tag.vue';
+import DictDataSearch from './modules/dict-data-search.vue';
 
 defineOptions({
   name: 'DictList'
@@ -312,7 +313,7 @@ async function handleDeleteType(dictType: Api.System.DictType) {
 }
 
 async function handleExportType() {
-  download('/system/dict/type/export', searchParams, `${$t('page.system.dict.dictType')}_${new Date().getTime()}.xlsx`);
+  download('/dict/type/export', searchParams, `${$t('page.system.dict.dictType')}_${new Date().getTime()}.xlsx`);
 }
 
 const selectable = computed(() => {

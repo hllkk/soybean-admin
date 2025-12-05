@@ -353,6 +353,8 @@ declare namespace App {
         save: string;
         check: string;
         expandColumn: string;
+        enable: string;
+        disable: string;
         columnSetting: string;
         config: string;
         confirm: string;

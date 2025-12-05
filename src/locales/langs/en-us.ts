@@ -27,6 +27,8 @@ const local: App.I18n.Schema = {
     confirmDelete: 'Are you sure you want to delete?',
     edit: 'Edit',
     save: 'Save',
+    enable: 'Enable',
+    disable: 'Disable',
     warning: 'Warning',
     error: 'Error',
     index: 'Index',
