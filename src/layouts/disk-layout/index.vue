@@ -1,19 +1,20 @@
 <script lang="ts" setup>
 import { computed, defineAsyncComponent } from 'vue';
-import { AdminLayout, LAYOUT_SCROLL_EL_ID } from '@sa/materials';
 import type { LayoutMode } from '@sa/materials';
+import { AdminLayout, LAYOUT_SCROLL_EL_ID } from '@sa/materials';
+// import type { LayoutMode } from '@sa/materials';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
 import GlobalContent from '../modules/global-content/index.vue';
 import { provideMixMenuContext } from '../modules/global-menu/context';
-import GlobalSider from '../modules/global-sider/index.vue';
+import DiskSider from '../modules/disk-sider/index.vue';
 import DiskHeader from '../modules/disk-header/index.vue';
 
 defineOptions({
   name: 'DiskLayout'
 });
 
-const GlobalMenu = defineAsyncComponent(() => import('../modules/global-menu/index.vue'));
+const VerticalMixMenu = defineAsyncComponent(() => import('../modules/global-menu/modules/vertical-mix-menu.vue'));
 
 const appStore = useAppStore();
 const themeStore = useThemeStore();
@@ -22,11 +23,11 @@ const { isActiveFirstLevelMenuHasChildren } = provideMixMenuContext();
 const layoutMode = computed(() => {
   const vertical: LayoutMode = 'vertical';
   const horizontal: LayoutMode = 'horizontal';
-  return themeStore.layout.mode.includes(vertical) ? vertical : horizontal;
+  return themeStore.layout.diskMode.includes(vertical) ? vertical : horizontal;
 });
 
 const headerProps = computed(() => {
-  const { mode } = themeStore.layout;
+  const { diskMode } = themeStore.layout;
 
   const headerPropsConfig: Record<UnionKey.ThemeLayoutMode, App.Global.HeaderProps> = {
     vertical: {
@@ -61,17 +62,17 @@ const headerProps = computed(() => {
     }
   };
 
-  return headerPropsConfig[mode];
+  return headerPropsConfig[diskMode];
 });
 
-const siderVisible = computed(() => themeStore.layout.mode !== 'horizontal');
+const siderVisible = computed(() => themeStore.layout.diskMode !== 'horizontal');
 
 const siderWidth = computed(() => {
-  const { collapsedWidth, width } = themeStore.sider;
-  return appStore.siderCollapse ? collapsedWidth : width;
+  const { diskCollapsedWidth, diskWidth } = themeStore.sider;
+  return appStore.siderCollapse ? diskCollapsedWidth : diskWidth;
 });
 
-const siderCollapsedWidth = computed(() => themeStore.sider.collapsedWidth);
+const siderCollapsedWidth = computed(() => themeStore.sider.diskCollapsedWidth);
 </script>
 
 <template>
@@ -79,13 +80,11 @@ const siderCollapsedWidth = computed(() => themeStore.sider.collapsedWidth);
     v-model:sider-collapse="appStore.siderCollapse"
     :mode="layoutMode"
     :scroll-el-id="LAYOUT_SCROLL_EL_ID"
-    :scroll-mode="themeStore.layout.scrollMode"
+    :scroll-mode="themeStore.layout.diskScrollMode"
     :is-mobile="appStore.isMobile"
     :full-content="appStore.fullContent"
     :fixed-top="themeStore.fixedHeaderAndTab"
-    :header-height="themeStore.header.height"
-    :tab-visible="themeStore.tab.visible"
-    :tab-height="themeStore.tab.height"
+    :header-height="themeStore.header.diskHeight"
     :content-class="appStore.contentXScrollable ? 'overflow-x-hidden' : ''"
     :sider-visible="siderVisible"
     :sider-width="siderWidth"
@@ -99,9 +98,9 @@ const siderCollapsedWidth = computed(() => themeStore.sider.collapsedWidth);
       <DiskHeader v-bind="headerProps" />
     </template>
     <template #sider>
-      <GlobalSider />
+      <DiskSider />
     </template>
-    <GlobalMenu />
+    <VerticalMixMenu />
     <GlobalContent />
   </AdminLayout>
 </template>

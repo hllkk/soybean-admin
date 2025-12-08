@@ -40,6 +40,12 @@ declare namespace UnionKey {
     | 'top-hybrid-sidebar-first'
     | 'top-hybrid-header-first';
 
+  /** Disk mode
+   *
+   * The Disk mode only works in vertical-mix layout mode
+   * - vertical-mix: the vertical mixed menus in left
+   */
+  type ThemeDiskMode = 'vertical' | 'vertical-mix' | 'horizontal';
   /**
    * The scroll mode when content overflow
    *

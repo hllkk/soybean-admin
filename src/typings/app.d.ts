@@ -28,6 +28,8 @@ declare namespace App {
         mode: UnionKey.ThemeLayoutMode;
         /** Scroll mode */
         scrollMode: UnionKey.ThemeScrollMode;
+        diskMode: UnionKey.ThemeDiskMode;
+        diskScrollMode: UnionKey.ThemeScrollMode;
       };
       /** Page */
       page: {
@@ -40,6 +42,8 @@ declare namespace App {
       header: {
         /** Header height */
         height: number;
+        /** disk header height */
+        diskHeight: number;
         /** Header breadcrumb */
         breadcrumb: {
           /** Whether to show the breadcrumb */
@@ -84,6 +88,10 @@ declare namespace App {
         width: number;
         /** Collapsed sider width */
         collapsedWidth: number;
+        /** disk sider width */
+        diskWidth: number;
+        /** disk collapsed sider width */
+        diskCollapsedWidth: number;
         /** Sider width when the layout is 'vertical-mix', 'top-hybrid-sidebar-first', or 'top-hybrid-header-first' */
         mixWidth: number;
         /**

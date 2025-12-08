@@ -13,6 +13,7 @@ import { $t } from '@/locales';
 import { useMenu, useMixMenuContext } from '../context';
 import FirstLevelMenu from '../components/first-level-menu.vue';
 import GlobalLogo from '../../global-logo/index.vue';
+import DiskLogo from '../../disk-logo/index.vue';
 
 defineOptions({
   name: 'VerticalMixMenu'
@@ -56,6 +57,8 @@ function handleResetActiveMenu() {
   }
 }
 
+const isDiskModule = computed(() => routeStore.currentModule === 'disk');
+
 const expandedKeys = ref<string[]>([]);
 
 function updateExpandedKeys() {
@@ -88,7 +91,8 @@ watch(
         @select="handleSelectMenu"
         @toggle-sider-collapse="appStore.toggleSiderCollapse"
       >
-        <GlobalLogo :show-title="false" :style="{ height: themeStore.header.height + 'px' }" />
+        <DiskLogo v-if="isDiskModule" :show-title="false" :style="{ height: themeStore.header.height + 'px' }" />
+        <GlobalLogo v-else :show-title="false" :style="{ height: themeStore.header.height + 'px' }" />
       </FirstLevelMenu>
       <div
         class="relative h-full transition-width-300"

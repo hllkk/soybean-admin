@@ -15,7 +15,9 @@ export const themeSettings: App.Theme.ThemeSetting = {
   isInfoFollowPrimary: true,
   layout: {
     mode: 'vertical',
-    scrollMode: 'content'
+    scrollMode: 'content',
+    diskMode: 'vertical-mix',
+    diskScrollMode: 'content'
   },
   page: {
     animate: true,
@@ -23,6 +25,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
   },
   header: {
     height: 56,
+    diskHeight: 56,
     breadcrumb: {
       visible: true,
       showIcon: true
@@ -46,6 +49,8 @@ export const themeSettings: App.Theme.ThemeSetting = {
     inverted: false,
     width: 220,
     collapsedWidth: 64,
+    diskWidth: 90,
+    diskCollapsedWidth: 64,
     mixWidth: 90,
     mixCollapsedWidth: 64,
     mixChildMenuWidth: 200
