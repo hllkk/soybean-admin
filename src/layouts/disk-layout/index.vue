@@ -37,7 +37,7 @@ const headerProps = computed(() => {
     'vertical-mix': {
       showLogo: false,
       showMenu: false,
-      showMenuToggler: false
+      showMenuToggler: appStore.isMobile
     },
     horizontal: {
       showLogo: true,
