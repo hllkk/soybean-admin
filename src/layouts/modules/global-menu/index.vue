@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import type { Component } from 'vue';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
+import { useRouteStore } from '@/store/modules/route';
 import VerticalMenu from './modules/vertical-menu.vue';
 import VerticalMixMenu from './modules/vertical-mix-menu.vue';
 import VerticalHybridHeaderFirst from './modules/vertical-hybrid-header-first.vue';
@@ -16,6 +17,7 @@ defineOptions({
 
 const appStore = useAppStore();
 const themeStore = useThemeStore();
+const routeStore = useRouteStore();
 
 const activeMenu = computed(() => {
   const menuMap: Record<UnionKey.ThemeLayoutMode, Component> = {
@@ -26,6 +28,10 @@ const activeMenu = computed(() => {
     'top-hybrid-sidebar-first': TopHybridSidebarFirst,
     'top-hybrid-header-first': TopHybridHeaderFirst
   };
+
+  if (routeStore.currentModule === 'disk') {
+    return menuMap[themeStore.layout.diskMode];
+  }
 
   return menuMap[themeStore.layout.mode];
 });

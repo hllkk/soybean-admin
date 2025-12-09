@@ -28,7 +28,7 @@ declare namespace App {
         mode: UnionKey.ThemeLayoutMode;
         /** Scroll mode */
         scrollMode: UnionKey.ThemeScrollMode;
-        diskMode: UnionKey.ThemeDiskMode;
+        diskMode: UnionKey.ThemeDiskLayoutMode;
         diskScrollMode: UnionKey.ThemeScrollMode;
       };
       /** Page */

@@ -2,7 +2,6 @@
 import { computed, defineAsyncComponent } from 'vue';
 import type { LayoutMode } from '@sa/materials';
 import { AdminLayout, LAYOUT_SCROLL_EL_ID } from '@sa/materials';
-// import type { LayoutMode } from '@sa/materials';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
 import GlobalContent from '../modules/global-content/index.vue';
@@ -14,11 +13,11 @@ defineOptions({
   name: 'DiskLayout'
 });
 
-const VerticalMixMenu = defineAsyncComponent(() => import('../modules/global-menu/modules/vertical-mix-menu.vue'));
+const GlobalMenu = defineAsyncComponent(() => import('../modules/global-menu/index.vue'));
 
 const appStore = useAppStore();
 const themeStore = useThemeStore();
-const { isActiveFirstLevelMenuHasChildren } = provideMixMenuContext();
+provideMixMenuContext();
 
 const layoutMode = computed(() => {
   const vertical: LayoutMode = 'vertical';
@@ -29,7 +28,7 @@ const layoutMode = computed(() => {
 const headerProps = computed(() => {
   const { diskMode } = themeStore.layout;
 
-  const headerPropsConfig: Record<UnionKey.ThemeLayoutMode, App.Global.HeaderProps> = {
+  const headerPropsConfig: Record<UnionKey.ThemeDiskLayoutMode, App.Global.HeaderProps> = {
     vertical: {
       showLogo: false,
       showMenu: false,
@@ -40,25 +39,10 @@ const headerProps = computed(() => {
       showMenu: false,
       showMenuToggler: false
     },
-    'vertical-hybrid-header-first': {
-      showLogo: !isActiveFirstLevelMenuHasChildren.value,
-      showMenu: true,
-      showMenuToggler: false
-    },
     horizontal: {
       showLogo: true,
       showMenu: true,
       showMenuToggler: false
-    },
-    'top-hybrid-sidebar-first': {
-      showLogo: true,
-      showMenu: true,
-      showMenuToggler: false
-    },
-    'top-hybrid-header-first': {
-      showLogo: true,
-      showMenu: true,
-      showMenuToggler: isActiveFirstLevelMenuHasChildren.value
     }
   };
 
@@ -100,7 +84,7 @@ const siderCollapsedWidth = computed(() => themeStore.sider.diskCollapsedWidth);
     <template #sider>
       <DiskSider />
     </template>
-    <VerticalMixMenu />
+    <GlobalMenu />
     <GlobalContent />
   </AdminLayout>
 </template>

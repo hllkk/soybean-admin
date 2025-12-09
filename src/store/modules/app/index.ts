@@ -110,6 +110,7 @@ export const useAppStore = defineStore(SetupStoreId.App, () => {
           // backup theme setting before is mobile
           localStg.set('backupThemeSettingBeforeIsMobile', {
             layout: themeStore.layout.mode,
+            diskLayout: themeStore.layout.diskMode,
             siderCollapse: siderCollapse.value
           });
 
@@ -122,6 +123,7 @@ export const useAppStore = defineStore(SetupStoreId.App, () => {
           if (backup) {
             nextTick(() => {
               themeStore.setThemeLayout(backup.layout);
+              themeStore.setDiskLayout(backup.diskLayout);
               setSiderCollapse(backup.siderCollapse);
 
               localStg.remove('backupThemeSettingBeforeIsMobile');

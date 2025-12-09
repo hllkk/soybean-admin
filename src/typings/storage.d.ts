@@ -35,6 +35,7 @@ declare namespace StorageType {
     /** The backup theme setting before is mobile */
     backupThemeSettingBeforeIsMobile: {
       layout: UnionKey.ThemeLayoutMode;
+      diskLayout: UnionKey.ThemeDiskLayoutMode;
       siderCollapse: boolean;
     };
     /** The last login user id */

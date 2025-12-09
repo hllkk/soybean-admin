@@ -162,6 +162,11 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     settings.value.layout.mode = mode;
   }
 
+  /** Set disk layout */
+  function setDiskLayout(mode: UnionKey.ThemeDiskLayoutMode) {
+    settings.value.layout.diskMode = mode;
+  }
+
   /** Setup theme vars to global */
   function setupThemeVarsToGlobal() {
     const { themeTokens, darkThemeTokens } = createThemeToken(
@@ -283,6 +288,7 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     toggleThemeScheme,
     updateThemeColors,
     setThemeLayout,
+    setDiskLayout,
     setWatermarkEnableUserName,
     setWatermarkEnableTime
   };
