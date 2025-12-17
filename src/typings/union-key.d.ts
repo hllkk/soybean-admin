@@ -23,6 +23,9 @@ declare namespace UnionKey {
   /** User gender */
   type UserGender = '0' | '1' | '2';
 
+  /** File list mode */
+  type FileListMode = 'grid' | 'list';
+
   /**
    * The layout mode
    *

@@ -13,3 +13,13 @@ html {
   overflow-x: hidden;
   color: rgb(var(--base-text-color));
 }
+
+/* 暗黑模式下的按钮样式 */
+html.dark {
+  .n-button {
+    color: #fff !important;
+  }
+  .n-progress-graph-line-indicator {
+    color: #fff !important;
+  }
+}

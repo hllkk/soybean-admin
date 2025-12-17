@@ -5,5 +5,6 @@ export enum SetupStoreId {
   Route = 'route-store',
   Tab = 'tab-store',
   Dict = 'dict-store',
-  Setting = 'setting-store'
+  Setting = 'setting-store',
+  Disk = 'disk-store'
 }
