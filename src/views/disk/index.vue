@@ -148,9 +148,14 @@ const createOptions = [
       </div>
     </template>
     <div class="h-full flex-col-stretch gap-12px">
-      <NCard :bordered="false" size="small" class="h-full flex flex-col overflow-y-auto card-wrapper">
+      <NCard
+        :bordered="false"
+        size="small"
+        class="h-full card-wrapper"
+        content-style="display: flex; flex-direction: column; height: 100%; padding: 0; overflow: hidden;"
+      >
         <!-- 固定的顶部操作栏 -->
-        <div class="sticky top-0 z-50 bg-white dark:bg-[#18181c]">
+        <div class="z-50 shrink-0 bg-white px-12px pt-12px dark:bg-[#18181c]">
           <NGrid :x-gap="gap" responsive="screen" item-responsive>
             <NGridItem span="24 s:24 m:24 l:24 xl:24">
               <NFlex justify="space-between" class="mt-10px">
@@ -228,7 +233,9 @@ const createOptions = [
           <div class="mt-12px font-size-10px font-bold">全部文件</div>
         </div>
         <!-- 可滚动的内容区域 -->
-        <FileDiskplayGrid :is-batch-mode="isBatchMode" :data="fileList" />
+        <div class="custom-scrollbar flex-1 overflow-y-auto p-12px">
+          <FileDiskplayGrid :is-batch-mode="isBatchMode" :data="fileList" />
+        </div>
       </NCard>
     </div>
   </DiskSider>
@@ -240,40 +247,5 @@ const createOptions = [
   max-width: 200px; /* 限制最大宽度 */
   margin: 0 auto; /* 水平居中 */
   display: block; /* 确保是块级元素 */
-}
-
-/* 自定义滚动条样式 */
-:deep(.custom-scrollbar) {
-  &::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-  }
-
-  /* 深色模式滚动条 */
-  .dark &::-webkit-scrollbar-track {
-    background: #333;
-  }
-
-  .dark &::-webkit-scrollbar-thumb {
-    background: #666;
-  }
-
-  .dark &::-webkit-scrollbar-thumb:hover {
-    background: #888;
-  }
 }
 </style>
