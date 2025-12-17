@@ -33,6 +33,9 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
   /** Home tab */
   const homeTab = ref<App.Global.Tab>();
 
+  /** Is tab store initialized */
+  const isTabStoreInit = ref(false);
+
   /** Init home tab */
   function initHomeTab() {
     homeTab.value = getDefaultHomeTab(router, routeStore.routeHome);
@@ -48,16 +51,23 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
   const allTabs = computed(() => {
     const moduleTabsList = currentModuleTabs.value;
     if (!homeTab.value) {
-      return [];
+      return getAllTabs(moduleTabsList);
     }
 
-    // 确保首页标签始终被添加到当前模块的标签页列表中
-    // 创建一个新的标签页对象，包含当前模块信息
-    const currentHomeTab = {
-      ...homeTab.value,
-      // 将首页标签的模块设置为当前模块
-      module: routeStore.currentModule
-    };
+    // Get home route module
+    const routes = router.getRoutes();
+    const homeRoute = routes.find(route => route.name === homeTab.value?.routeKey);
+    const homeModule = (homeRoute?.meta?.module as UnionKey.MenuModule) || 'admin';
+
+    // Only add home tab if it belongs to current module
+    let currentHomeTab: App.Global.Tab | undefined;
+    if (homeModule === routeStore.currentModule) {
+      currentHomeTab = {
+        ...homeTab.value,
+        // 将首页标签的模块设置为当前模块
+        module: routeStore.currentModule
+      };
+    }
 
     return getAllTabs(moduleTabsList, currentHomeTab);
   });
@@ -80,6 +90,15 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    * @param currentRoute Current route
    */
   function initTabStore(currentRoute: App.Global.TabRoute) {
+    if (isTabStoreInit.value) {
+      // 确保首页标签被激活（如果当前路由是首页）
+      if (homeTab.value && currentRoute.path === homeTab.value.routePath) {
+        setActiveTabId(homeTab.value.id);
+      } else {
+        addTab(currentRoute);
+      }
+      return;
+    }
     // 初始化首页标签
     initHomeTab();
 
@@ -109,6 +128,8 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
     } else {
       addTab(currentRoute);
     }
+
+    isTabStoreInit.value = true;
   }
 
   /**

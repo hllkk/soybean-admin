@@ -286,6 +286,8 @@ declare namespace App {
        * when reset the tab label, the tab label will be replaced by this value
        */
       oldLabel?: string;
+      /** The tab module */
+      module?: UnionKey.MenuModule;
       /** The tab route key */
       routeKey: LastLevelRouteKey;
       /** The tab route path */
