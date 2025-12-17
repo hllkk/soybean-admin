@@ -168,7 +168,7 @@ const createOptions = [
                       上传
                     </NButton>
                   </NDropdown>
-                  <NDropdown trigger="click" :options="createOptions">
+                  <NDropdown trigger="hover" :options="createOptions">
                     <NButton type="primary" round>
                       <template #icon>
                         <icon-material-symbols-add-circle-outline />
@@ -247,5 +247,8 @@ const createOptions = [
   max-width: 200px; /* 限制最大宽度 */
   margin: 0 auto; /* 水平居中 */
   display: block; /* 确保是块级元素 */
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
 }
 </style>
