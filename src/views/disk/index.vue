@@ -6,6 +6,7 @@ import { useDiskStore } from '@/store/modules/disk';
 import { useSvgIcon } from '@/hooks/common/icon';
 import DiskSider from './modules/disk-sider.vue';
 import FileDiskplayGrid from './modules/disk-show-grid.vue';
+import FileDisplayList from './modules/disk-show-list.vue';
 
 const appStore = useAppStore();
 const diskStore = useDiskStore();
@@ -233,8 +234,9 @@ const createOptions = [
           <div class="mt-12px font-size-10px font-bold">全部文件</div>
         </div>
         <!-- 可滚动的内容区域 -->
-        <div class="custom-scrollbar flex-1 overflow-y-auto p-12px">
-          <FileDiskplayGrid :is-batch-mode="isBatchMode" :data="fileList" />
+        <div class="custom-scrollbar h-full flex-1 overflow-y-auto p-12px">
+          <FileDiskplayGrid v-if="currentMode === 'grid'" :is-batch-mode="isBatchMode" :data="fileList" />
+          <FileDisplayList v-else :is-batch-mode="isBatchMode" :data="fileList" />
         </div>
       </NCard>
     </div>
