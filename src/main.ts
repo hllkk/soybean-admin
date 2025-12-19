@@ -6,7 +6,8 @@ import {
   setupDayjs,
   setupIconifyOffline,
   setupLoading,
-  setupNProgress
+  setupNProgress,
+  setupUploader
 } from './plugins';
 import { setupStore } from './store';
 import { setupRouter } from './router';
@@ -31,6 +32,8 @@ async function setupApp() {
   setupI18n(app);
 
   setupCaptcha(app);
+
+  setupUploader(app);
 
   setupAppVersionNotification();
 
