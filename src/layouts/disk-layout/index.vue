@@ -85,6 +85,7 @@ const siderCollapsedWidth = computed(() => themeStore.sider.diskCollapsedWidth);
       <DiskSider />
     </template>
     <GlobalMenu />
+    <GlobalUploader />
     <GlobalContent />
   </AdminLayout>
 </template>

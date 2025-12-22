@@ -1,22 +1,168 @@
 <script lang="ts" setup>
-import VueSimpleUploader from 'vue-simple-uploader';
-  // 从插件中提取组件
+import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+import VueSimpleUploader, { UploaderInst } from 'vue-simple-uploader';
+import { useDiskStore } from '@/store/modules/disk';
 const { Uploader, UploaderBtn, UploaderDrop, UploaderList, UploaderUnsupport } = VueSimpleUploader;
 defineOptions({
   name: 'GlobalUploader'
 });
+
+const diskStore = useDiskStore();
+
+const uploaderRef = ref<UploaderInst | null>(null)
+const dragover = ref(false) // 是否是拖拽进入
+const isDragStart = ref(false) // 是否是拖拽开始
+const enableDragUpload = ref(true)
+const fileListScrollTop = ref(0)
+const dragoverLoop = ref<number | null>(null)
+
+const uploaderOptions = {
+  target: '/api/upload',
+  headers: {
+    'Authorization': 'Bearer '
+  },
+};
+
+const statusText = {
+  success: '上传成功',
+  error: '上传失败',
+  uploading: '上传中',
+  paused: '暂停上传',
+  waiting: '等待上传',
+}
+
+// 拖拽开始时
+function handleDragstart(e: DragEvent) {
+  console.log('dragstart')
+  const target = e.target as HTMLElement;
+  // 检查是否有可排序的元素
+  if (target.closest('.sortable-chosen')) {
+    diskStore.setUploadDragEnabled(false)
+    return;
+  }
+
+  // 检查是否是可拖拽的文件元素
+  const isDraggableFile = target.dataset.draggableFile === 'true';
+
+  if (enableDragUpload.value && diskStore.isDragUploadEnabled) {
+    if (isDraggableFile) {
+      isDragStart.value = true;
+    }
+    return isDraggableFile && fileListScrollTop.value === 0
+  }
+  return true;
+}
+
+// 拖拽进入页面时
+function handleDragenter(e: DragEvent) {
+  if (!diskStore.isDragUploadEnabled) {
+    return;
+  }
+  e.stopPropagation();
+  e.preventDefault();
+  dragover.value = true;
+}
+
+// 拖拽悬停在页面上时
+function handleDragover(e: DragEvent) {
+  if (!diskStore.isDragUploadEnabled) {
+    return;
+  }
+  e.stopPropagation()
+  e.preventDefault()
+
+  if (dragoverLoop.value) {
+    clearInterval(dragoverLoop.value)
+  }
+  if (!isDragStart.value) {
+    dragover.value = true
+  }
+
+  dragoverLoop.value = window.setInterval(() => {
+    dragover.value = false
+  }, 100)
+}
+
+// 拖拽有关的代码
+function handleDrop(e: DragEvent) {
+  if (!diskStore.isDragUploadEnabled) {
+    return;
+  }
+  e.stopPropagation();
+  e.preventDefault();
+  dragover.value = false
+}
+
+
+// 初始化上传组件
+function initUploader() {
+  nextTick(() => {
+    if (uploaderRef.value) {
+      // 使用更安全的方式设置全局uploader引用
+      if (typeof window !== 'undefined') {
+        window.uploader = uploaderRef.value.uploader;
+      }
+    }
+  })
+}
+
+
+
+
+
+onMounted(() => {
+    // 检查当前路径是否支持拖拽
+    diskStore.setUploadDragEnabled(true)
+
+    let dropbox = document.body   // 3. 添加拖拽事件监听器
+    dropbox.addEventListener('dragstart', handleDragstart)  // 拖拽开始
+    dropbox.addEventListener('dragenter', handleDragenter, false) // 拖拽进入页面
+    dropbox.addEventListener('dragover', handleDragover, false) // 拖拽悬停在页面上
+    dropbox.addEventListener('drop', handleDrop, false) // 拖拽释放到页面上
+
+    // 初始化上传组件
+    initUploader()
+
+    console.log(uploaderRef.value)
+})
+
+onUnmounted(() => {
+    // 清理事件监听器，防止内存泄漏
+    let dropbox = document.body
+    dropbox.removeEventListener('dragstart', handleDragstart)  // 拖拽开始
+    dropbox.removeEventListener('dragenter', handleDragenter)
+    dropbox.removeEventListener('dragover', handleDragover)
+    dropbox.removeEventListener('drop', handleDrop)
+})
 </script>
 
 <template>
-  <div class="pos-fixed z-1002 right-15px bottom-15px">
-    <Uploader>
+  <div class="fixed z-1002 right-15px bottom-15px">
+    <Uploader ref="uploaderRef" :auto-start="false" :options="uploaderOptions" :file-status-text="statusText">
       <UploaderUnsupport>您的浏览器不支持上传组件</UploaderUnsupport>
       <!-- 上传区域-->
-      <UploaderDrop>
-        <span>上传文件到当前目录下</span>
+      <UploaderDrop v-if="dragover && enableDragUpload" class="top-0 left-0 size-full text-center">
+        <span class="relative top-48% text-[34px] font-bold text-[#00000099]">上传文件到当前目录下</span>
       </UploaderDrop>
       <UploaderBtn id="btn-file">选择文件</UploaderBtn>
       <UploaderBtn id="btn-folder" :directory="true">选择文件夹</UploaderBtn>
     </Uploader>
   </div>
 </template>
+
+<style scoped>
+#btn-file {
+  position: absolute;
+  clip: rect(0, 0, 0, 0);
+}
+
+#btn-folder{
+  position: absolute;
+  clip: rect(0, 0, 0, 0);
+}
+.uploader-drop {
+    position: fixed;
+    background-color: #ffffff99;
+    border: 3px dashed #00000099;
+  }
+</style>

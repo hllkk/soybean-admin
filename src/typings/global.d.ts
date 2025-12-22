@@ -12,6 +12,9 @@ declare global {
     $message?: import('naive-ui').MessageProviderInst;
     /** Notification instance */
     $notification?: import('naive-ui').NotificationProviderInst;
+    /** Uploader instance */
+    uploader?: import('vue-simple-uploader').UploaderInst['uploader'];
+
     /** Content loading */
     $loading?: {
       loading: import('vue').Ref<boolean>;

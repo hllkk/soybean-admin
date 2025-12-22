@@ -155,7 +155,6 @@ const createOptions = [
         class="h-full card-wrapper"
         content-style="display: flex; flex-direction: column; height: 100%; padding: 0; overflow: hidden;"
       >
-      <GlobalUploader />
         <!-- 固定的顶部操作栏 -->
         <div class="z-50 shrink-0 bg-white px-12px pt-12px dark:bg-[#18181c] rounded-t-10px">
           <NGrid :x-gap="gap" responsive="screen" item-responsive>

@@ -4,6 +4,11 @@ import { SetupStoreId } from '@/enum';
 
 export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const fileShowMode = ref<UnionKey.FileListMode>('grid');
+  const isDragUploadEnabled = ref(true);
+
+  function setUploadDragEnabled(value: boolean) {
+    isDragUploadEnabled.value = value;
+  }
 
   const fileList = ref<Api.Disk.FileItem[]>([
     {
@@ -360,6 +365,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
 
   return {
     fileShowMode,
-    fileList
+    fileList,
+    isDragUploadEnabled,
+    setUploadDragEnabled
   };
 });

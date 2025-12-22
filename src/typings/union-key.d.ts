@@ -26,6 +26,12 @@ declare namespace UnionKey {
   /** File list mode */
   type FileListMode = 'grid' | 'list';
 
+  /** Upload method */
+  type UploadMethod = 'multipart' | 'octet';
+
+  /** Test method */
+  type UploadHttpMethod = 'GET' | 'POST';
+
   /**
    * The layout mode
    *
