@@ -393,38 +393,85 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
       }
       let counter = 1;
       while (existingNames.has(`${baseName}(${counter})`)) {
-        counter++;
+        counter += 1;
       }
       return `${baseName}(${counter})`;
-    } else {
-      const fullName = extension ? `${baseName}.${extension}` : baseName;
-      if (!existingNames.has(fullName)) {
-        return fullName;
-      }
-      let counter = 1;
-      while (existingNames.has(`${baseName}(${counter})${extension ? `.${extension}` : ''}`)) {
-        counter++;
-      }
-      return `${baseName}(${counter})${extension ? `.${extension}` : ''}`;
     }
+    const fullName = extension ? `${baseName}.${extension}` : baseName;
+    if (!existingNames.has(fullName)) {
+      return fullName;
+    }
+    let counter = 1;
+    while (existingNames.has(`${baseName}(${counter})${extension ? `.${extension}` : ''}`)) {
+      counter += 1;
+    }
+    return `${baseName}(${counter})${extension ? `.${extension}` : ''}`;
   }
 
-  function confirmCreateItem(name: string): Api.Disk.FileItem | null {
+  function parseFileName(inputName: string): { name: string; extension: string } {
+    if (!inputName || inputName.trim() === '') {
+      return { name: '新建文件', extension: 'txt' };
+    }
+
+    const trimmedName = inputName.trim();
+    const lastDotIndex = trimmedName.lastIndexOf('.');
+
+    if (lastDotIndex === -1) {
+      return { name: trimmedName, extension: '' };
+    }
+
+    if (lastDotIndex === 0) {
+      return { name: trimmedName, extension: '' };
+    }
+
+    const name = trimmedName.substring(0, lastDotIndex);
+    const extension = trimmedName.substring(lastDotIndex + 1);
+
+    if (extension === '') {
+      return { name: trimmedName, extension: '' };
+    }
+
+    return { name, extension };
+  }
+
+  function confirmCreateItem(inputName: string): Api.Disk.FileItem | null {
     if (!creatingItem.value) return null;
-    const finalName = generateUniqueName(name, creatingItem.value.isDir, creatingItem.value.extendName);
+
+    if (creatingItem.value.isDir) {
+      const finalName = generateUniqueName(inputName.trim(), true);
+      const newItem: Api.Disk.FileItem = {
+        id: Date.now().toString(),
+        name: finalName,
+        isDir: true,
+        size: 0,
+        extendName: '',
+        updateTime: new Date().toISOString()
+      };
+      addFile(newItem);
+      setSelectedFileId(newItem.id);
+      setCreatingItem(null);
+      return newItem;
+    }
+
+    const { name: baseName, extension } = parseFileName(inputName);
+    let finalExtension = extension;
+
+    if (!finalExtension && creatingItem.value.extendName) {
+      finalExtension = creatingItem.value.extendName;
+    }
+
+    const finalName = generateUniqueName(baseName, false, finalExtension);
     const newItem: Api.Disk.FileItem = {
       id: Date.now().toString(),
       name: finalName,
-      isDir: creatingItem.value.isDir,
+      isDir: false,
       size: 0,
-      extendName: creatingItem.value.isDir ? '' : (creatingItem.value.extendName || ''),
+      extendName: finalExtension || '',
       updateTime: new Date().toISOString()
     };
-
     addFile(newItem);
     setSelectedFileId(newItem.id);
     setCreatingItem(null);
-
     return newItem;
   }
 

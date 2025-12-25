@@ -53,7 +53,7 @@ const FileIcon: FileExtendNameIconMap = {
 
 const hasImageError = ref<boolean>(false);
 const isLoadingImage = ref(false);
-const imageBlob = ref<string>('');
+// const imageBlob = ref<string>('');
 
 // 是否是图片类型文件且成功加载
 const isImage = computed(() => {
@@ -77,9 +77,9 @@ const getFileImg = computed(() => {
 });
 
 // 修改后的获取缩略图函数
-const getThumbnail = computed(() => {
-  return imageBlob.value;
-});
+// const getThumbnail = computed(() => {
+//   return imageBlob.value;
+// });
 </script>
 
 <template>

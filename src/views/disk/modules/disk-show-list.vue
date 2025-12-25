@@ -26,7 +26,8 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   data: () => [],
   selectedFileIds: () => [],
-  isBatchMode: false
+  isBatchMode: false,
+  creatingItem: null
 });
 
 const emit = defineEmits<Emits>();
@@ -49,7 +50,6 @@ const handleRowMouseLeave = () => {
   hoveredRowId.value = null;
 };
 
-
 function handleConfirm() {
   emit('confirmCreate', creatingName.value);
 }
@@ -66,7 +66,30 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-// 构建显示数据（包括正在创建的项目）
+function getDisplayName(item: Api.Disk.FileItem): string {
+  if (item.isDir) {
+    return item.name;
+  }
+  if (!item.extendName) {
+    return item.name;
+  }
+  const extWithDot = `.${item.extendName}`;
+  if (item.name.endsWith(extWithDot)) {
+    return item.name.slice(0, -extWithDot.length);
+  }
+  return item.name;
+}
+
+function getFullFileName(item: Api.Disk.FileItem): string {
+  if (item.isDir) {
+    return item.name;
+  }
+  if (!item.extendName) {
+    return item.name;
+  }
+  return `${item.name}.${item.extendName}`;
+}
+
 const displayData = computed(() => {
   if (!props.creatingItem) {
     return props.data;
@@ -75,8 +98,8 @@ const displayData = computed(() => {
     id: props.creatingItem.id,
     name: '',
     isDir: props.creatingItem.isDir,
-    size:  0,
-    extendName: props.creatingItem.isDir ? '' : (props.creatingItem.extendName || ''),
+    size: 0,
+    extendName: props.creatingItem.isDir ? '' : props.creatingItem.extendName || '',
     updateTime: new Date().toISOString()
   };
   return [creatingRow, ...props.data];
@@ -94,7 +117,7 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
         if (isCreating) {
           return (
             <div class="h-full w-50% flex items-center gap-2">
-              <div class="h-30px w-30px flex-shrink-0 flex items-center justify-center">
+              <div class="h-30px w-30px flex flex-shrink-0 items-center justify-center">
                 <FileImage data={row} />
               </div>
               <NInput
@@ -122,7 +145,7 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
               <div class="mr-3 h-30px w-30px flex-shrink-0">
                 <FileImage data={row} />
               </div>
-              <span class="select-none truncate text-13px">{row.name}</span>
+              <span class="select-none truncate text-13px">{getDisplayName(row)}</span>
             </div>
 
             {/* 右侧：按钮组 */}
@@ -267,17 +290,25 @@ const rowProps = (row: Api.Disk.FileItem) => {
   };
 };
 
-watch(() => props.creatingItem, (newItem) => {
-  if (newItem) {
-    creatingName.value = `${newItem.name}${newItem.extendName}`;
-    setTimeout(() => {
-      inputRef.value?.focus();
-      inputRef.value?.select();
-    }, 100);
-  } else {
-    creatingName.value = '';
-  }
-}, { immediate: true });
+watch(
+  () => props.creatingItem,
+  newItem => {
+    if (newItem) {
+      if (newItem.isDir) {
+        creatingName.value = newItem.name;
+      } else {
+        creatingName.value = getFullFileName(newItem);
+      }
+      setTimeout(() => {
+        inputRef.value?.focus();
+        inputRef.value?.select();
+      }, 100);
+    } else {
+      creatingName.value = '';
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>

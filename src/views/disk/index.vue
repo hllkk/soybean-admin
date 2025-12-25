@@ -44,11 +44,11 @@ function handleSearch() {
 /** 新建文件 */
 function handleCreateFile() {
   diskStore.setCreatingItem({
-    id: 'creating-' + Date.now(),
+    id: `creating-${Date.now()}`,
     name: '新建文件',
     isDir: false,
     size: 0,
-    extendName: '.txt',
+    extendName: 'txt',
     updateTime: new Date().toISOString()
   });
 }
@@ -56,7 +56,7 @@ function handleCreateFile() {
 /** 新建文件夹 */
 function handleCreateFolder() {
   diskStore.setCreatingItem({
-    id: 'creating-' + Date.now(),
+    id: `creating-${Date.now()}`,
     name: '新建文件夹',
     isDir: true,
     size: 0,
@@ -199,7 +199,7 @@ const createOptions = [
         content-style="display: flex; flex-direction: column; height: 100%; padding: 0; overflow: hidden;"
       >
         <!-- 固定的顶部操作栏 -->
-        <div class="z-50 shrink-0 bg-white px-12px pt-12px dark:bg-[#18181c] rounded-t-10px">
+        <div class="z-50 shrink-0 rounded-t-10px bg-white px-12px pt-12px dark:bg-[#18181c]">
           <NGrid :x-gap="gap" responsive="screen" item-responsive>
             <NGridItem span="24 s:24 m:24 l:24 xl:24">
               <NFlex justify="space-between" class="mt-10px">

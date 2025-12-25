@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
 import FileImage from './disk-image.vue';
-import { CreatingItem } from '@/store/modules/disk';
 
 defineOptions({
   name: 'FileDiskplayGrid'
@@ -31,6 +30,30 @@ const isLoading = ref<boolean>(false);
 const inputRef = ref<HTMLInputElement | null>(null);
 const creatingName = ref('');
 
+function getDisplayName(item: Api.Disk.FileItem): string {
+  if (item.isDir) {
+    return item.name;
+  }
+  if (!item.extendName) {
+    return item.name;
+  }
+  const extWithDot = `.${item.extendName}`;
+  if (item.name.endsWith(extWithDot)) {
+    return item.name.slice(0, -extWithDot.length);
+  }
+  return item.name;
+}
+
+function getFullFileName(item: Api.Disk.FileItem): string {
+  if (item.isDir) {
+    return item.name;
+  }
+  if (!item.extendName) {
+    return item.name;
+  }
+  return `${item.name}.${item.extendName}`;
+}
+
 function handleConfirm() {
   emit('confirmCreate', creatingName.value);
 }
@@ -47,17 +70,21 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-watch(() => props.creatingItem, (newItem) => {
-  if (newItem) {
-    creatingName.value = `${newItem.name}${newItem.extendName}`;
-    setTimeout(() => {
-      inputRef.value?.focus();
-      inputRef.value?.select();
-    }, 100);
-  } else {
-    creatingName.value = '';
-  }
-}, { immediate: true });
+watch(
+  () => props.creatingItem,
+  newItem => {
+    if (newItem) {
+      creatingName.value = getFullFileName(newItem);
+      setTimeout(() => {
+        inputRef.value?.focus();
+        inputRef.value?.select();
+      }, 100);
+    } else {
+      creatingName.value = '';
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -70,7 +97,7 @@ watch(() => props.creatingItem, (newItem) => {
           <div class="ml-1 mt-1">
             <NCheckbox size="small" disabled></NCheckbox>
           </div>
-          <div class="mr-1 mt-1 gap-1 w-40px flex-x-center rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]">
+          <div class="mr-1 mt-1 w-40px flex-x-center gap-1 rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]">
             <NButton size="tiny" text @click="handleConfirm">
               <template #icon>
                 <icon-mdi-check class="text-primary" />
@@ -84,7 +111,7 @@ watch(() => props.creatingItem, (newItem) => {
           </div>
         </div>
         <!-- 图标 -->
-        <div class=" mt-8px h-65px flex-x-center">
+        <div class="mt-8px h-65px flex-x-center">
           <FileImage :data="creatingItem" />
         </div>
         <!-- 输入框 -->
@@ -107,17 +134,17 @@ watch(() => props.creatingItem, (newItem) => {
             <div class="ml-1 mt-1">
               <NCheckbox size="small"></NCheckbox>
             </div>
-            <div class="mr-1 mt-1 gap-1 w-40px flex-x-center rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]">
-                <NButton size="tiny" text>
-                  <template #icon>
-                    <icon-solar-share-outline class="text-primary" />
-                  </template>
-                </NButton>
-                <NButton size="tiny" text>
-                  <template #icon>
-                    <icon-material-symbols-download-rounded class="text-primary" />
-                  </template>
-                </NButton>
+            <div class="mr-1 mt-1 w-40px flex-x-center gap-1 rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]">
+              <NButton size="tiny" text>
+                <template #icon>
+                  <icon-solar-share-outline class="text-primary" />
+                </template>
+              </NButton>
+              <NButton size="tiny" text>
+                <template #icon>
+                  <icon-material-symbols-download-rounded class="text-primary" />
+                </template>
+              </NButton>
             </div>
           </div>
         </div>
@@ -127,7 +154,7 @@ watch(() => props.creatingItem, (newItem) => {
         </div>
         <div class="mt-12px flex-x-center select-none text-ellipsis text-center text-12px">
           <NSkeleton v-if="isLoading" :width="60" :sharp="false" text />
-          <p v-else>{{ item.name }}</p>
+          <p v-else>{{ getDisplayName(item) }}</p>
         </div>
       </div>
     </NGridItem>
