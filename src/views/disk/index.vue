@@ -19,6 +19,7 @@ const currentMode = ref<string>('grid');
 const gap = computed(() => (appStore.isMobile ? 0 : 16));
 
 const fileList = computed(() => diskStore.fileList);
+const creatingItem = computed(() => diskStore.creatingItem);
 
 /** 切换显示容量 */
 function handleChange(value: boolean) {
@@ -38,6 +39,50 @@ function handleSearch() {
   }
   window.$message?.destroyAll();
   window.$message?.success(`搜索关键词：${searchKeyword.value}`);
+}
+
+/** 新建文件 */
+function handleCreateFile() {
+  diskStore.setCreatingItem({
+    id: 'creating-' + Date.now(),
+    name: '新建文件',
+    isDir: false,
+    size: 0,
+    extendName: '.txt',
+    updateTime: new Date().toISOString()
+  });
+}
+
+/** 新建文件夹 */
+function handleCreateFolder() {
+  diskStore.setCreatingItem({
+    id: 'creating-' + Date.now(),
+    name: '新建文件夹',
+    isDir: true,
+    size: 0,
+    extendName: '',
+    updateTime: new Date().toISOString()
+  });
+}
+
+/** 确认创建 */
+function handleConfirmCreate(inputName: string) {
+  if (!inputName.trim()) {
+    window.$message?.destroyAll();
+    window.$message?.error('名称不能为空');
+    return;
+  }
+
+  const newItem = diskStore.confirmCreateItem(inputName.trim());
+  if (newItem) {
+    window.$message?.destroyAll();
+    window.$message?.success(`已创建${newItem.isDir ? '文件夹' : '文件'}：${newItem.name}`);
+  }
+}
+
+/** 取消创建 */
+function handleCancelCreate() {
+  diskStore.cancelCreateItem();
 }
 
 const menuOptions: MenuOption[] = [
@@ -110,8 +155,7 @@ const createOptions = [
     icon: SvgIconVNode({ localIcon: 'disk-create_file', fontSize: 20 }),
     props: {
       onClick: () => {
-        window.$message?.destroyAll();
-        window.$message?.error('功能开发中');
+        handleCreateFile();
       }
     }
   },
@@ -121,8 +165,7 @@ const createOptions = [
     icon: SvgIconVNode({ localIcon: 'disk-create_folder', fontSize: 20 }),
     props: {
       onClick: () => {
-        window.$message?.destroyAll();
-        window.$message?.error('功能开发中');
+        handleCreateFolder();
       }
     }
   }
@@ -235,8 +278,22 @@ const createOptions = [
         </div>
         <!-- 可滚动的内容区域 -->
         <div class="custom-scrollbar h-full flex-1 overflow-y-auto p-12px">
-          <FileDiskplayGrid v-if="currentMode === 'grid'" :is-batch-mode="isBatchMode" :data="fileList" />
-          <FileDisplayList v-else :is-batch-mode="isBatchMode" :data="fileList" />
+          <FileDiskplayGrid
+            v-if="currentMode === 'grid'"
+            :is-batch-mode="isBatchMode"
+            :data="fileList"
+            :creating-item="creatingItem"
+            @confirm-create="handleConfirmCreate"
+            @cancel-create="handleCancelCreate"
+          />
+          <FileDisplayList
+            v-else
+            :is-batch-mode="isBatchMode"
+            :data="fileList"
+            :creating-item="creatingItem"
+            @confirm-create="handleConfirmCreate"
+            @cancel-create="handleCancelCreate"
+          />
         </div>
       </NCard>
     </div>

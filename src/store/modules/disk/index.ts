@@ -2,13 +2,18 @@ import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import { SetupStoreId } from '@/enum';
 
+export interface CreatingItem {
+  id: string;
+  name: string;
+  isDir: boolean;
+  extension?: string;
+}
+
 export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const fileShowMode = ref<UnionKey.FileListMode>('grid');
   const isDragUploadEnabled = ref(true);
-
-  function setUploadDragEnabled(value: boolean) {
-    isDragUploadEnabled.value = value;
-  }
+  const selectedFileId = ref<string>('');
+  const creatingItem = ref<Api.Disk.FileItem | null>(null);
 
   const fileList = ref<Api.Disk.FileItem[]>([
     {
@@ -363,10 +368,78 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     }
   ]);
 
+  function setUploadDragEnabled(value: boolean) {
+    isDragUploadEnabled.value = value;
+  }
+
+  function setCreatingItem(item: Api.Disk.FileItem | null) {
+    creatingItem.value = item;
+  }
+
+  function addFile(file: Api.Disk.FileItem) {
+    fileList.value.unshift(file);
+  }
+
+  function setSelectedFileId(fileId: string) {
+    selectedFileId.value = fileId;
+  }
+
+  function generateUniqueName(baseName: string, isDir: boolean, extension?: string): string {
+    const existingNames = new Set(fileList.value.map(item => item.name));
+
+    if (isDir) {
+      if (!existingNames.has(baseName)) {
+        return baseName;
+      }
+      let counter = 1;
+      while (existingNames.has(`${baseName}(${counter})`)) {
+        counter++;
+      }
+      return `${baseName}(${counter})`;
+    } else {
+      const fullName = extension ? `${baseName}.${extension}` : baseName;
+      if (!existingNames.has(fullName)) {
+        return fullName;
+      }
+      let counter = 1;
+      while (existingNames.has(`${baseName}(${counter})${extension ? `.${extension}` : ''}`)) {
+        counter++;
+      }
+      return `${baseName}(${counter})${extension ? `.${extension}` : ''}`;
+    }
+  }
+
+  function confirmCreateItem(name: string): Api.Disk.FileItem | null {
+    if (!creatingItem.value) return null;
+    const finalName = generateUniqueName(name, creatingItem.value.isDir, creatingItem.value.extendName);
+    const newItem: Api.Disk.FileItem = {
+      id: Date.now().toString(),
+      name: finalName,
+      isDir: creatingItem.value.isDir,
+      size: 0,
+      extendName: creatingItem.value.isDir ? '' : (creatingItem.value.extendName || ''),
+      updateTime: new Date().toISOString()
+    };
+
+    addFile(newItem);
+    setSelectedFileId(newItem.id);
+    setCreatingItem(null);
+
+    return newItem;
+  }
+
+  function cancelCreateItem() {
+    setCreatingItem(null);
+  }
+
   return {
     fileShowMode,
     fileList,
     isDragUploadEnabled,
-    setUploadDragEnabled
+    setUploadDragEnabled,
+    creatingItem,
+    setCreatingItem,
+    confirmCreateItem,
+    cancelCreateItem
   };
 });

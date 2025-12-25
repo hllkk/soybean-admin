@@ -73,13 +73,13 @@ declare module 'vue-simple-uploader' {
   }
 
   export interface UploaderEmits {
-    (e: 'file-added', file: SimpleUploader.Uploader.File): void;
-    (e: 'files-added', files: SimpleUploader.Uploader.File[]): void;
-    (e: 'file-removed', file: SimpleUploader.Uploader.File): void;
-    (e: 'files-submitted', files: SimpleUploader.Uploader.File[], fileList: SimpleUploader.Uploader.File[]): void;
-    (e: 'dragenter', event: DragEvent): void;
-    (e: 'dragleave', event: DragEvent): void;
-    (e: 'drop', event: DragEvent): void;
+    // (e: 'file-added', file: SimpleUploader.Uploader.File): void;
+    // (e: 'files-added', files: SimpleUploader.Uploader.File[]): void;
+    // (e: 'file-removed', file: SimpleUploader.Uploader.File): void;
+    // (e: 'files-submitted', files: SimpleUploader.Uploader.File[], fileList: SimpleUploader.Uploader.File[]): void;
+    // (e: 'dragenter', event: DragEvent): void;
+    // (e: 'dragleave', event: DragEvent): void;
+    // (e: 'drop', event: DragEvent): void;
   }
 
   interface UploaderBtnProps {
@@ -107,7 +107,7 @@ declare module 'vue-simple-uploader' {
   // 定义组件类型
   export const Uploader: DefineComponent<UploaderProps, UploaderEmits, UploaderInst>;
   export const UploaderBtn: DefineComponent<UploaderBtnProps>;
-  export const UploaderDrop: DefineComponent<{}, {(e: 'drop', event: DragEvent): void;}>;
+  export const UploaderDrop: DefineComponent;
   export const UploaderList: DefineComponent;
   export const UploaderUnsupport: DefineComponent;
   export const UploaderFile: DefineComponent<{file: SimpleUploader.Uploader.File;}, {}>;
@@ -131,23 +131,24 @@ declare namespace SimpleUploader {
     type FileStatusText = "success" | "error" | "uploading" | "paused" | "waiting";
 
     interface File {
-      name: string;
-      size: number;
-      id: number;
-      paused: boolean;
-      error: boolean;
-      allError: boolean;
       aborted: boolean;
-      completed: boolean;
+      allError: boolean;
       averageSpeed: number;
+      completed: boolean;
       currentSpeed: number;
+      error: boolean;
+      fileType: string;
+      id: number;
       isFolder: boolean;
       isRoot: boolean;
+      name: string;
+      paused: boolean;
+      relativePath: string;
+      size: number;
+      uniqueIdentifier: string;
       _lastProgressCallback: number;
       _prevUploadedSize: number;
       _prevProgress: number;
-      fileStatusText: Record<string, string>;
-      _eventData: EventData;
     }
 
     interface Core {
@@ -161,7 +162,7 @@ declare namespace SimpleUploader {
       fileStatusText: Record<FileStatusText, string>;
       isFolder: boolean;
       isRoot: boolean;
-      opts: UploaderOptions;
+      opts: import('vue-simple-uploader').UploaderOptions;
       paused: boolean;
       support: boolean;
       supportDirectory: boolean;
@@ -179,45 +180,14 @@ declare namespace SimpleUploader {
     }
 
     interface EventData {
-      catchAll: Array<(event: any) => void | null>;
-      fileAdded: Array<(file: File) => void | null>;
-      filesAdded: Array<(files: File[]) => void | null>;
-      fileRemoved: Array<(file: File) => void | null>;
-      filesSubmitted: Array<(files: File[], fileList: File[]) => void | null>;
-      dragenter: Array<(event: DragEvent) => void | null>;
-      dragleave: Array<(event: DragEvent) => void | null>;
-      drop: Array<(event: DragEvent) => void | null>;
-    }
-
-    // 扩展全局UploaderOptions接口
-    interface UploaderOptions {
-      target: string;
-      headers?: Record<string, string>;
-      initialPaused?: boolean;
-      chunkSize?: number;
-      forceChunkSize?: boolean;
-      simultaneousUploads?: number;
-      singleFile?: boolean;
-      fileParameterName?: string;
-      progressCallbacksInterval?: number;
-      speedSmoothingFactor?: number;
-      query?: Record<string, any>;
-      withCredentials?: boolean;
-      preprocess?: ((file: File) => void) | null;
-      method?: 'multipart' | 'octet';
-      testMethod?: 'GET' | 'POST';
-      uploadMethod?: 'POST' | 'PUT';
-      prioritizeFirstAndLastChunk?: boolean;
-      allowDuplicateUploads?: boolean;
-      testChunks?: boolean;
-      generateUniqueIdentifier?: ((file: File) => string) | null;
-      maxChunkRetries?: number;
-      chunkRetryInterval?: number | null;
-      permanentErrors?: number[];
-      successStatuses?: number[];
-      onDropStopPropagation?: boolean;
-      initFileFn?: ((file: File) => void) | null;
-      checkChunkUploadedByResponse?: ((chunk: any, response: any) => boolean) | null;
+      // catchAll: Array<(event: any) => void | null>;
+      // fileAdded: Array<(file: File) => void | null>;
+      // filesAdded: Array<(files: File[]) => void | null>;
+      // fileRemoved: Array<(file: File) => void | null>;
+      // filesSubmitted: Array<(files: File[], fileList: File[]) => void | null>;
+      // dragenter: Array<(event: DragEvent) => void | null>;
+      // dragleave: Array<(event: DragEvent) => void | null>;
+      // drop: Array<(event: DragEvent) => void | null>;
     }
   }
 }

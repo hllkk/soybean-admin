@@ -1,5 +1,5 @@
 <script lang="tsx" setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useWindowSize } from '@vueuse/core';
 import type { DataTableColumns } from 'naive-ui';
 import { useAppStore } from '@/store/modules/app';
@@ -15,6 +15,12 @@ interface Props {
   data?: Api.Disk.FileItem[];
   selectedFileIds?: string[];
   isBatchMode?: boolean;
+  creatingItem?: Api.Disk.FileItem | null;
+}
+
+interface Emits {
+  (e: 'confirmCreate', name: string): void;
+  (e: 'cancelCreate'): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -23,12 +29,16 @@ const props = withDefaults(defineProps<Props>(), {
   isBatchMode: false
 });
 
+const emit = defineEmits<Emits>();
+
 const themeStore = useThemeStore();
 const appStore = useAppStore();
 const { height } = useWindowSize();
 
 // 跟踪每行的悬停状态
 const hoveredRowId = ref<CommonType.IdType | null>(null);
+const creatingName = ref('');
+const inputRef = ref<HTMLInputElement | null>(null);
 
 // 处理行悬停事件
 const handleRowMouseEnter = (row: Api.Disk.FileItem) => {
@@ -39,6 +49,39 @@ const handleRowMouseLeave = () => {
   hoveredRowId.value = null;
 };
 
+
+function handleConfirm() {
+  emit('confirmCreate', creatingName.value);
+}
+
+function handleCancel() {
+  emit('cancelCreate');
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter') {
+    handleConfirm();
+  } else if (e.key === 'Escape') {
+    handleCancel();
+  }
+}
+
+// 构建显示数据（包括正在创建的项目）
+const displayData = computed(() => {
+  if (!props.creatingItem) {
+    return props.data;
+  }
+  const creatingRow: Api.Disk.FileItem = {
+    id: props.creatingItem.id,
+    name: '',
+    isDir: props.creatingItem.isDir,
+    size:  0,
+    extendName: props.creatingItem.isDir ? '' : (props.creatingItem.extendName || ''),
+    updateTime: new Date().toISOString()
+  };
+  return [creatingRow, ...props.data];
+});
+
 const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
   const cols: DataTableColumns<Api.Disk.FileItem> = [
     {
@@ -46,7 +89,32 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
       key: 'name',
       width: 300,
       render: row => {
+        const isCreating = props.creatingItem && row.id === props.creatingItem.id;
         const isHovered = hoveredRowId.value === row.id;
+        if (isCreating) {
+          return (
+            <div class="h-full w-50% flex items-center gap-2">
+              <div class="h-30px w-30px flex-shrink-0 flex items-center justify-center">
+                <FileImage data={row} />
+              </div>
+              <NInput
+                ref={inputRef}
+                value={creatingName.value}
+                onUpdateValue={(v: string) => (creatingName.value = v)}
+                size="tiny"
+                placeholder={props.creatingItem?.isDir ? '文件夹名称' : '文件名称'}
+                class="flex-1"
+                onKeydown={handleKeydown}
+              />
+              <NButton size="tiny" type="primary" onClick={handleConfirm}>
+                <icon-mdi-check />
+              </NButton>
+              <NButton size="tiny" type="primary" onClick={handleCancel}>
+                <icon-mdi-close />
+              </NButton>
+            </div>
+          );
+        }
         return (
           <div class="group h-full w-full flex items-center justify-between">
             {/* 左侧：图标和文件名 */}
@@ -83,7 +151,11 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
       width: 60,
       align: 'center',
       render: row => {
+        const isCreating = props.creatingItem && row.id === props.creatingItem.id;
         const isHovered = hoveredRowId.value === row.id;
+        if (isCreating) {
+          return null;
+        }
         if (row.isDir) {
           return <div class="select-none">-</div>;
         }
@@ -100,8 +172,9 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
       width: 100,
       align: 'center',
       render: row => {
+        const isCreating = props.creatingItem && row.id === props.creatingItem.id;
         const isHovered = hoveredRowId.value === row.id;
-        if (!row.extendName) return null;
+        if (isCreating || !row.extendName) return null;
         return (
           <div class={`transition-all duration-300 ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
             <NTag
@@ -124,7 +197,11 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
       width: 80,
       align: 'center',
       render: row => {
+        const isCreating = props.creatingItem && row.id === props.creatingItem.id;
         const isHovered = hoveredRowId.value === row.id;
+        if (isCreating) {
+          return null;
+        }
         return (
           <div class={`transition-all duration-300 ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
             <div class="select-none text-12px">
@@ -140,7 +217,11 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
       width: 180,
       align: 'center',
       render: row => {
+        const isCreating = props.creatingItem && row.id === props.creatingItem.id;
         const isHovered = hoveredRowId.value === row.id;
+        if (isCreating) {
+          return null;
+        }
         return (
           <div class={`transition-all duration-300 ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
             <div class="select-none text-12px">{formatDate(row.updateTime as string)}</div>
@@ -185,17 +266,29 @@ const rowProps = (row: Api.Disk.FileItem) => {
     class: hoveredRowId.value === row.id ? 'hovered-row' : ''
   };
 };
+
+watch(() => props.creatingItem, (newItem) => {
+  if (newItem) {
+    creatingName.value = `${newItem.name}${newItem.extendName}`;
+    setTimeout(() => {
+      inputRef.value?.focus();
+      inputRef.value?.select();
+    }, 100);
+  } else {
+    creatingName.value = '';
+  }
+}, { immediate: true });
 </script>
 
 <template>
   <div class="h-full overflow-hidden">
     <NDataTable
-      v-show="props.data.length > 0"
+      v-show="displayData.length > 0"
       size="small"
       :single-line="true"
       :bordered="false"
       :columns="columns"
-      :data="props.data"
+      :data="displayData"
       :row-key="row => row.id"
       :scroll-x="800"
       :max-height="tableMaxHeight"

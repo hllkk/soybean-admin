@@ -33,7 +33,6 @@ const statusText = {
 
 // 拖拽开始时
 function handleDragstart(e: DragEvent) {
-  console.log('dragstart')
   const target = e.target as HTMLElement;
   // 检查是否有可排序的元素
   if (target.closest('.sortable-chosen')) {
@@ -83,7 +82,7 @@ function handleDragover(e: DragEvent) {
   }, 100)
 }
 
-// 拖拽有关的代码
+// 拖拽释放到页面上时
 function handleDrop(e: DragEvent) {
   if (!diskStore.isDragUploadEnabled) {
     return;
@@ -106,10 +105,6 @@ function initUploader() {
   })
 }
 
-
-
-
-
 onMounted(() => {
     // 检查当前路径是否支持拖拽
     diskStore.setUploadDragEnabled(true)
@@ -122,8 +117,6 @@ onMounted(() => {
 
     // 初始化上传组件
     initUploader()
-
-    console.log(uploaderRef.value)
 })
 
 onUnmounted(() => {
@@ -141,7 +134,7 @@ onUnmounted(() => {
     <Uploader ref="uploaderRef" :auto-start="false" :options="uploaderOptions" :file-status-text="statusText">
       <UploaderUnsupport>您的浏览器不支持上传组件</UploaderUnsupport>
       <!-- 上传区域-->
-      <UploaderDrop v-if="dragover && enableDragUpload" class="top-0 left-0 size-full text-center">
+      <UploaderDrop v-if="dragover && enableDragUpload" class="top-0 left-0 size-full text-center" @drop="handleDrop">
         <span class="relative top-48% text-[34px] font-bold text-[#00000099]">上传文件到当前目录下</span>
       </UploaderDrop>
       <UploaderBtn id="btn-file">选择文件</UploaderBtn>

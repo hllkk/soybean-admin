@@ -16,7 +16,7 @@ declare namespace Api {
       /** 是否是文件夹 */
       isDir: boolean;
       /** 文件或文件夹路径 */
-      filePath: string;
+      filePath?:string;
     }
   }
 }
