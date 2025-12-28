@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { MenuOption } from 'naive-ui';
 import { useAppStore } from '@/store/modules/app';
 import { useDiskStore } from '@/store/modules/disk';
@@ -20,6 +20,7 @@ const gap = computed(() => (appStore.isMobile ? 0 : 16));
 
 const fileList = computed(() => diskStore.fileList);
 const creatingItem = computed(() => diskStore.creatingItem);
+const selectedCount = computed(() => diskStore.selectedFileIds.length);
 
 /** 切换显示容量 */
 function handleChange(value: boolean) {
@@ -85,6 +86,27 @@ function handleCancelCreate() {
   diskStore.cancelCreateItem();
 }
 
+/** 切换批量操作模式 */
+function handleToggleBatchMode() {
+  isBatchMode.value = !isBatchMode.value;
+}
+
+/** 处理文件上传 */
+function handleFileUpload() {
+  const fileBtn = document.getElementById('global-uploader-btn-file');
+  if (fileBtn) {
+    fileBtn.click();
+  }
+}
+
+/** 处理文件夹上传 */
+function handleFolderUpload() {
+  const folderBtn = document.getElementById('global-uploader-btn-folder');
+  if (folderBtn) {
+    folderBtn.click();
+  }
+}
+
 const menuOptions: MenuOption[] = [
   {
     label: '文件类型',
@@ -132,7 +154,7 @@ const uploadOptions = [
     icon: SvgIconVNode({ localIcon: 'disk-upload_file', fontSize: 25 }),
     props: {
       onClick: () => {
-        // handleFileUpload();
+        handleFileUpload();
       }
     }
   },
@@ -142,7 +164,7 @@ const uploadOptions = [
     icon: SvgIconVNode({ localIcon: 'disk-upload_folder', fontSize: 20 }),
     props: {
       onClick: () => {
-        // handleFolderUpload();
+        handleFolderUpload();
       }
     }
   }
@@ -170,6 +192,16 @@ const createOptions = [
     }
   }
 ];
+
+watch(selectedCount, count => {
+  let prevSelectedCount = 0;
+  if (count > 1) {
+    isBatchMode.value = true;
+  } else if (prevSelectedCount > 1 && count <= 1) {
+    isBatchMode.value = false;
+  }
+  prevSelectedCount = count;
+});
 </script>
 
 <template>
@@ -202,8 +234,8 @@ const createOptions = [
         <div class="z-50 shrink-0 rounded-t-10px bg-white px-12px pt-12px dark:bg-[#18181c]">
           <NGrid :x-gap="gap" responsive="screen" item-responsive>
             <NGridItem span="24 s:24 m:24 l:24 xl:24">
-              <NFlex justify="space-between" class="mt-10px">
-                <div class="flex gap-8px">
+              <NFlex justify="space-between" class="mt-10px min-h-40px">
+                <div v-show="selectedCount === 0" class="flex flex-center gap-8px">
                   <NDropdown trigger="hover" :options="uploadOptions">
                     <NButton type="primary" round>
                       <template #icon>
@@ -230,8 +262,48 @@ const createOptions = [
                     </NButton>
                   </NInputGroup>
                 </div>
+                <div v-show="selectedCount > 0" class="flex gap-8px">
+                  <NButtonGroup class="operation-button-group">
+                    <NButton round class="operation-button">
+                      <template #icon>
+                        <icon-ic-outline-share />
+                      </template>
+                      分享
+                    </NButton>
+                    <NButton v-if="selectedCount > 1" round class="operation-button">
+                      <template #icon>
+                        <icon-fluent-share-multiple-16-regular />
+                      </template>
+                      批量分享
+                    </NButton>
+                    <NButton class="operation-button">
+                      <template #icon>
+                        <icon-ic-outline-file-download />
+                      </template>
+                      下载
+                    </NButton>
+                    <NButton class="operation-button">
+                      <template #icon>
+                        <icon-material-symbols-delete-outline />
+                      </template>
+                      删除
+                    </NButton>
+                    <NButton v-if="selectedCount === 1" class="operation-button">
+                      <template #icon>
+                        <icon-fluent-rename-16-regular />
+                      </template>
+                      重命名
+                    </NButton>
+                    <NButton round class="operation-button">更多</NButton>
+                  </NButtonGroup>
+                </div>
                 <div class="flex gap-8px">
-                  <NButton type="primary">
+                  <NButton v-show="isBatchMode" type="error" :disabled="selectedCount === 0">
+                    <template #icon>
+                      <icon-material-symbols-delete-outline />
+                    </template>
+                  </NButton>
+                  <NButton type="primary" @click="handleToggleBatchMode">
                     <template #icon>
                       <icon-fluent-multiselect-20-filled />
                     </template>
@@ -274,7 +346,12 @@ const createOptions = [
               </NFlex>
             </NGridItem>
           </NGrid>
-          <div class="mt-12px font-size-10px font-bold">全部文件</div>
+          <div class="mt-12px flex justify-between font-size-10px font-bold">
+            <span>全部文件</span>
+            <span v-if="selectedCount > 0" class="text-primary">
+              已选中 {{ selectedCount }} 个{{ selectedCount === 1 ? '文件/文件夹' : '文件/文件夹' }}
+            </span>
+          </div>
         </div>
         <!-- 可滚动的内容区域 -->
         <div class="custom-scrollbar h-full flex-1 overflow-y-auto p-12px">
@@ -309,5 +386,37 @@ const createOptions = [
 }
 .custom-scrollbar {
   scrollbar-width: thin;
+}
+
+.operation-button-group {
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  padding: 3px;
+  transition: background-color 0.3s ease;
+}
+
+.dark .operation-button-group {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.operation-button {
+  background-color: transparent;
+  border: none;
+  color: #374151;
+  transition: all 0.3s ease;
+}
+
+.dark .operation-button {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.operation-button:hover {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.dark .operation-button:hover {
+  background-color: rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
 }
 </style>

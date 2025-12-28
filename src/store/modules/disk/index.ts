@@ -1,19 +1,14 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import { SetupStoreId } from '@/enum';
-
-export interface CreatingItem {
-  id: string;
-  name: string;
-  isDir: boolean;
-  extension?: string;
-}
+import { generateUniqueName, parseFileName } from './shared';
 
 export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const fileShowMode = ref<UnionKey.FileListMode>('grid');
   const isDragUploadEnabled = ref(true);
-  const selectedFileId = ref<string>('');
+  const selectedFileId = ref<CommonType.IdType>('');
   const creatingItem = ref<Api.Disk.FileItem | null>(null);
+  const selectedFileIds = ref<CommonType.IdType[]>([]);
 
   const fileList = ref<Api.Disk.FileItem[]>([
     {
@@ -384,61 +379,11 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     selectedFileId.value = fileId;
   }
 
-  function generateUniqueName(baseName: string, isDir: boolean, extension?: string): string {
-    const existingNames = new Set(fileList.value.map(item => item.name));
-
-    if (isDir) {
-      if (!existingNames.has(baseName)) {
-        return baseName;
-      }
-      let counter = 1;
-      while (existingNames.has(`${baseName}(${counter})`)) {
-        counter += 1;
-      }
-      return `${baseName}(${counter})`;
-    }
-    const fullName = extension ? `${baseName}.${extension}` : baseName;
-    if (!existingNames.has(fullName)) {
-      return fullName;
-    }
-    let counter = 1;
-    while (existingNames.has(`${baseName}(${counter})${extension ? `.${extension}` : ''}`)) {
-      counter += 1;
-    }
-    return `${baseName}(${counter})${extension ? `.${extension}` : ''}`;
-  }
-
-  function parseFileName(inputName: string): { name: string; extension: string } {
-    if (!inputName || inputName.trim() === '') {
-      return { name: '新建文件', extension: 'txt' };
-    }
-
-    const trimmedName = inputName.trim();
-    const lastDotIndex = trimmedName.lastIndexOf('.');
-
-    if (lastDotIndex === -1) {
-      return { name: trimmedName, extension: '' };
-    }
-
-    if (lastDotIndex === 0) {
-      return { name: trimmedName, extension: '' };
-    }
-
-    const name = trimmedName.substring(0, lastDotIndex);
-    const extension = trimmedName.substring(lastDotIndex + 1);
-
-    if (extension === '') {
-      return { name: trimmedName, extension: '' };
-    }
-
-    return { name, extension };
-  }
-
   function confirmCreateItem(inputName: string): Api.Disk.FileItem | null {
     if (!creatingItem.value) return null;
 
     if (creatingItem.value.isDir) {
-      const finalName = generateUniqueName(inputName.trim(), true);
+      const finalName = generateUniqueName(fileList.value, inputName.trim(), true);
       const newItem: Api.Disk.FileItem = {
         id: Date.now().toString(),
         name: finalName,
@@ -460,7 +405,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
       finalExtension = creatingItem.value.extendName;
     }
 
-    const finalName = generateUniqueName(baseName, false, finalExtension);
+    const finalName = generateUniqueName(fileList.value, baseName, false, finalExtension);
     const newItem: Api.Disk.FileItem = {
       id: Date.now().toString(),
       name: finalName,
@@ -479,6 +424,19 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     setCreatingItem(null);
   }
 
+  function toggleFileSelection(fileId: CommonType.IdType) {
+    const index = selectedFileIds.value.indexOf(fileId);
+    if (index > -1) {
+      selectedFileIds.value.splice(index, 1);
+    } else {
+      selectedFileIds.value.push(fileId);
+    }
+  }
+
+  function setSelectedFileIds(ids: CommonType.IdType[]) {
+    selectedFileIds.value = ids;
+  }
+
   return {
     fileShowMode,
     fileList,
@@ -487,6 +445,9 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     creatingItem,
     setCreatingItem,
     confirmCreateItem,
-    cancelCreateItem
+    cancelCreateItem,
+    selectedFileIds,
+    toggleFileSelection,
+    setSelectedFileIds
   };
 });

@@ -4,6 +4,7 @@ import { useWindowSize } from '@vueuse/core';
 import type { DataTableColumns } from 'naive-ui';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
+import { useDiskStore } from '@/store/modules/disk';
 import { formatDate, formatFileSize } from '@/utils/file';
 import FileImage from './disk-image.vue';
 
@@ -13,7 +14,6 @@ defineOptions({
 
 interface Props {
   data?: Api.Disk.FileItem[];
-  selectedFileIds?: string[];
   isBatchMode?: boolean;
   creatingItem?: Api.Disk.FileItem | null;
 }
@@ -25,7 +25,6 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   data: () => [],
-  selectedFileIds: () => [],
   isBatchMode: false,
   creatingItem: null
 });
@@ -34,12 +33,15 @@ const emit = defineEmits<Emits>();
 
 const themeStore = useThemeStore();
 const appStore = useAppStore();
+const diskStore = useDiskStore();
 const { height } = useWindowSize();
 
 // 跟踪每行的悬停状态
 const hoveredRowId = ref<CommonType.IdType | null>(null);
 const creatingName = ref('');
 const inputRef = ref<HTMLInputElement | null>(null);
+
+const selectedFileIds = computed(() => diskStore.selectedFileIds);
 
 // 处理行悬停事件
 const handleRowMouseEnter = (row: Api.Disk.FileItem) => {
@@ -104,6 +106,10 @@ const displayData = computed(() => {
   };
   return [creatingRow, ...props.data];
 });
+
+function handleCheck(keys: CommonType.IdType[]) {
+  diskStore.setSelectedFileIds(keys);
+}
 
 const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
   const cols: DataTableColumns<Api.Disk.FileItem> = [
@@ -324,6 +330,8 @@ watch(
       :scroll-x="800"
       :max-height="tableMaxHeight"
       :row-props="rowProps"
+      :checked-row-keys="selectedFileIds"
+      @update:checked-row-keys="handleCheck"
     />
   </div>
 </template>

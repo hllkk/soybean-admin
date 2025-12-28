@@ -33,6 +33,11 @@ const statusText = {
   waiting: '等待上传'
 };
 
+// 限制上传文件的类型
+const attrs = {
+  accept: '*'
+};
+
 // 拖拽开始时
 function handleDragstart(e: DragEvent) {
   const target = e.target as HTMLElement;
@@ -140,8 +145,8 @@ onUnmounted(() => {
       <UploaderDrop v-if="dragover && enableDragUpload" class="left-0 top-0 size-full text-center" @drop="handleDrop">
         <span class="relative top-48% text-[34px] text-[#00000099] font-bold">上传文件到当前目录下</span>
       </UploaderDrop>
-      <UploaderBtn id="btn-file">选择文件</UploaderBtn>
-      <UploaderBtn id="btn-folder" :directory="true">选择文件夹</UploaderBtn>
+      <UploaderBtn id="global-uploader-btn-file" :attrs="attrs">选择文件</UploaderBtn>
+      <UploaderBtn id="global-uploader-btn-folder" :directory="true">选择文件夹</UploaderBtn>
     </Uploader>
   </div>
 </template>

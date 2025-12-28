@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useDiskStore } from '@/store/modules/disk';
 import FileImage from './disk-image.vue';
 
 defineOptions({
@@ -8,7 +9,6 @@ defineOptions({
 
 interface Props {
   data?: Api.Disk.FileItem[];
-  selectedFileIds?: string[];
   isBatchMode?: boolean;
   creatingItem?: Api.Disk.FileItem | null;
 }
@@ -20,15 +20,18 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   data: () => [],
-  selectedFileIds: () => [],
-  isBatchMode: false
+  isBatchMode: false,
+  creatingItem: null
 });
 
 const emit = defineEmits<Emits>();
 
+const diskStore = useDiskStore();
+
 const isLoading = ref<boolean>(false);
 const inputRef = ref<HTMLInputElement | null>(null);
 const creatingName = ref('');
+const selectedFileIds = computed(() => diskStore.selectedFileIds);
 
 function getDisplayName(item: Api.Disk.FileItem): string {
   if (item.isDir) {
@@ -70,6 +73,14 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
+function isSelected(fileId: CommonType.IdType): boolean {
+  return selectedFileIds.value.includes(fileId);
+}
+
+function handleToggleSelection(fileId: CommonType.IdType) {
+  diskStore.toggleFileSelection(fileId);
+}
+
 watch(
   () => props.creatingItem,
   newItem => {
@@ -94,10 +105,9 @@ watch(
       <div class="pos-relative mt-12px h-150px w-auto bg-primary-50 dark:bg-[rgba(255,255,255,0.05)]">
         <!-- 顶部操作按钮 -->
         <div class="flex justify-between">
-          <div class="ml-1 mt-1">
-            <NCheckbox size="small" disabled></NCheckbox>
-          </div>
-          <div class="mr-1 mt-1 w-40px flex-x-center gap-1 rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]">
+          <!--新建文件或者文件时的占位DIV-->
+          <div class="ml-1 mt-1"></div>
+          <div class="mr-1 mt-2 w-40px flex-x-center gap-1 rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]">
             <NButton size="tiny" text @click="handleConfirm">
               <template #icon>
                 <icon-mdi-check class="text-primary" />
@@ -127,14 +137,23 @@ watch(
       </div>
     </NGridItem>
     <NGridItem v-for="item in props.data" :key="item.id">
-      <div class="pos-relative mt-12px h-150px w-auto hover:bg-primary-100 dark:hover:bg-[rgba(255,255,255,0.1)]">
+      <div
+        class="pos-relative mt-12px h-150px w-auto hover:bg-primary-100 dark:hover:bg-[rgba(255,255,255,0.1)]"
+        :class="isBatchMode || isSelected(item.id) ? 'bg-primary-100 dark:bg-[rgba(255,255,255,0.1)]' : ''"
+      >
         <!-- 顶部操作内容，悬停展示-->
-        <div class="hover-info">
-          <div class="flex justify-between">
-            <div class="ml-1 mt-1">
-              <NCheckbox size="small"></NCheckbox>
-            </div>
-            <div class="mr-1 mt-1 w-40px flex-x-center gap-1 rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]">
+        <div class="flex justify-between">
+          <div class="ml-1 mt-1" :class="isBatchMode || isSelected(item.id) ? 'checkbox-always-show' : 'hover-info'">
+            <NCheckbox
+              size="small"
+              :checked="isSelected(item.id)"
+              @update:checked="() => handleToggleSelection(item.id)"
+            ></NCheckbox>
+          </div>
+          <div class="hover-info">
+            <div
+              class="mr-1 mt-2 h-auto w-40px flex-x-center gap-1 rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]"
+            >
               <NButton size="tiny" text>
                 <template #icon>
                   <icon-solar-share-outline class="text-primary" />
@@ -168,6 +187,10 @@ watch(
 }
 
 .pos-relative:hover .hover-info {
+  opacity: 1;
+}
+
+.checkbox-always-show {
   opacity: 1;
 }
 </style>
