@@ -152,12 +152,12 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-#btn-file {
+#global-uploader-btn-file {
   position: absolute;
   clip: rect(0, 0, 0, 0);
 }
 
-#btn-folder {
+#global-uploader-btn-folder {
   position: absolute;
   clip: rect(0, 0, 0, 0);
 }

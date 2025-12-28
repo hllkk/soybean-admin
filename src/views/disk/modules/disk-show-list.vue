@@ -21,6 +21,7 @@ interface Props {
 interface Emits {
   (e: 'confirmCreate', name: string): void;
   (e: 'cancelCreate'): void;
+  (e: 'contextMenu', event: MouseEvent, file: Api.Disk.FileItem): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -290,6 +291,9 @@ const rowProps = (row: Api.Disk.FileItem) => {
   return {
     onmouseenter: () => {
       handleRowMouseEnter(row);
+    },
+    oncontextmenu: (e: MouseEvent) => {
+      emit('contextMenu', e, row);
     },
     onmouseleave: () => handleRowMouseLeave(),
     class: hoveredRowId.value === row.id ? 'hovered-row' : ''

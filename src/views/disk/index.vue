@@ -7,6 +7,7 @@ import { useSvgIcon } from '@/hooks/common/icon';
 import DiskSider from './modules/disk-sider.vue';
 import FileDiskplayGrid from './modules/disk-show-grid.vue';
 import FileDisplayList from './modules/disk-show-list.vue';
+import FileContextMenu from './modules/file-context-menu.vue';
 
 const appStore = useAppStore();
 const diskStore = useDiskStore();
@@ -26,6 +27,11 @@ const selectedCount = computed(() => diskStore.selectedFileIds.length);
 function handleChange(value: boolean) {
   showCapacity.value = value;
 }
+
+/** 选择的文件 */
+const selectedFiles = computed(() => {
+  return fileList.value.filter(file => diskStore.selectedFileIds.includes(file.id));
+});
 
 /** 切换显示模式 */
 function toggleMode() {
@@ -104,6 +110,113 @@ function handleFolderUpload() {
   const folderBtn = document.getElementById('global-uploader-btn-folder');
   if (folderBtn) {
     folderBtn.click();
+  }
+}
+
+/** 右键菜单状态 */
+const contextMenuState = ref({
+  show: false,
+  x: 0,
+  y: 0,
+  contextType: 'empty' as 'file' | 'folder' | 'empty' | 'multiple',
+  targetFile: null as Api.Disk.FileItem | null
+});
+
+/** 处理右键菜单打开 */
+function handleContextMenu(event: MouseEvent, file?: Api.Disk.FileItem) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const { selectedFileIds } = diskStore;
+
+  if (file) {
+    if (selectedFileIds.length > 1) {
+      contextMenuState.value = {
+        show: true,
+        x: event.clientX,
+        y: event.clientY,
+        contextType: 'multiple',
+        targetFile: null
+      };
+    } else {
+      if (!isBatchMode.value) {
+        diskStore.setSelectedFileIds([file.id]);
+      }
+      contextMenuState.value = {
+        show: true,
+        x: event.clientX,
+        y: event.clientY,
+        contextType: file.isDir ? 'folder' : 'file',
+        targetFile: file
+      };
+    }
+  } else {
+    contextMenuState.value = {
+      show: true,
+      x: event.clientX,
+      y: event.clientY,
+      contextType: 'empty',
+      targetFile: null
+    };
+  }
+}
+
+/** 处理右键菜单关闭 */
+function handleContextMenuClose() {
+  contextMenuState.value.show = false;
+}
+
+/** 处理右键菜单操作 */
+// eslint-disable-next-line complexity
+function handleContextMenuAction(action: string) {
+  switch (action) {
+    case 'open':
+      window.$message?.success('打开文件');
+      break;
+    case 'download':
+      window.$message?.success('下载文件');
+      break;
+    case 'share':
+      window.$message?.success('分享文件');
+      break;
+    case 'delete':
+      window.$message?.success('删除文件');
+      break;
+    case 'rename':
+      window.$message?.success('重命名文件');
+      break;
+    case 'copy':
+      window.$message?.success('复制文件');
+      break;
+    case 'move':
+      window.$message?.success('移动文件');
+      break;
+    case 'properties':
+      window.$message?.success('查看属性');
+      break;
+    case 'upload-file':
+      handleFileUpload();
+      break;
+    case 'upload-folder':
+      handleFolderUpload();
+      break;
+    case 'create-file':
+      handleCreateFile();
+      break;
+    case 'create-folder':
+      handleCreateFolder();
+      break;
+    case 'paste':
+      window.$message?.success('粘贴文件');
+      break;
+    case 'refresh':
+      window.$message?.success('刷新文件列表');
+      break;
+    case 'cut':
+      window.$message?.success('剪切文件');
+      break;
+    default:
+      window.$message?.info(`操作: ${action}`);
   }
 }
 
@@ -354,7 +467,7 @@ watch(selectedCount, count => {
           </div>
         </div>
         <!-- 可滚动的内容区域 -->
-        <div class="custom-scrollbar h-full flex-1 overflow-y-auto p-12px">
+        <div class="custom-scrollbar h-full flex-1 overflow-y-auto p-12px" @contextmenu.prevent="handleContextMenu">
           <FileDiskplayGrid
             v-if="currentMode === 'grid'"
             :is-batch-mode="isBatchMode"
@@ -362,6 +475,7 @@ watch(selectedCount, count => {
             :creating-item="creatingItem"
             @confirm-create="handleConfirmCreate"
             @cancel-create="handleCancelCreate"
+            @context-menu="handleContextMenu"
           />
           <FileDisplayList
             v-else
@@ -370,8 +484,20 @@ watch(selectedCount, count => {
             :creating-item="creatingItem"
             @confirm-create="handleConfirmCreate"
             @cancel-create="handleCancelCreate"
+            @context-menu="handleContextMenu"
           />
         </div>
+        <!-- 右键菜单组件 -->
+        <FileContextMenu
+          :show="contextMenuState.show"
+          :x="contextMenuState.x"
+          :y="contextMenuState.y"
+          :context-type="contextMenuState.contextType"
+          :target-file="contextMenuState.targetFile"
+          :selected-files="selectedFiles"
+          @close="handleContextMenuClose"
+          @action="handleContextMenuAction"
+        />
       </NCard>
     </div>
   </DiskSider>

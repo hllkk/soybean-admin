@@ -16,6 +16,7 @@ interface Props {
 interface Emits {
   (e: 'confirmCreate', name: string): void;
   (e: 'cancelCreate'): void;
+  (e: 'contextMenu', event: MouseEvent, file: Api.Disk.FileItem): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -140,6 +141,7 @@ watch(
       <div
         class="pos-relative mt-12px h-150px w-auto hover:bg-primary-100 dark:hover:bg-[rgba(255,255,255,0.1)]"
         :class="isBatchMode || isSelected(item.id) ? 'bg-primary-100 dark:bg-[rgba(255,255,255,0.1)]' : ''"
+        @contextmenu="(e: MouseEvent) => emit('contextMenu', e, item)"
       >
         <!-- 顶部操作内容，悬停展示-->
         <div class="flex justify-between">
