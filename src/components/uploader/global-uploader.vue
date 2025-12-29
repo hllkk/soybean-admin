@@ -3,8 +3,8 @@ import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 import type { UploaderInst } from 'vue-simple-uploader';
 import VueSimpleUploader from 'vue-simple-uploader';
 import { useDiskStore } from '@/store/modules/disk';
-// const { Uploader, UploaderBtn, UploaderDrop, UploaderList, UploaderUnsupport } = VueSimpleUploader;
 const { Uploader, UploaderBtn, UploaderDrop, UploaderUnsupport } = VueSimpleUploader;
+
 defineOptions({
   name: 'GlobalUploader'
 });
@@ -17,6 +17,8 @@ const isDragStart = ref(false); // 是否是拖拽开始
 const enableDragUpload = ref(true);
 const fileListScrollTop = ref(0);
 const dragoverLoop = ref<number | null>(null);
+const panelShow = ref(true);
+const uploadParams = ref<SimpleUploader.Uploader.FileAddParams>({});
 
 const uploaderOptions = {
   target: '/api/upload',
@@ -37,6 +39,42 @@ const statusText = {
 const attrs = {
   accept: '*'
 };
+
+function uploaderCancel() {
+  // 关闭上传组件
+  // 是否关闭文件传输列表 以及 初始化已上传的分片数量
+  uploaderRef.value?.uploader.cancel();
+}
+
+// 上传文件时触发
+async function onFilesAdded(files: SimpleUploader.Uploader.File[]) {
+  if (!files.length) {
+    window.$message?.warning('没有选择要上传的文件');
+    return;
+  }
+  try {
+    uploadParams.value = await diskStore.getUploadParams();
+    const filenames = files.map(file => file.name);
+    const paths = uploaderRef.value?.uploader.filePaths || {};
+
+    if (paths && typeof paths === 'object') {
+      // 如果 filePaths 是对象，遍历其属性值
+      Object.values(paths).forEach((path: any) => {
+        if (typeof path === 'string') {
+          const folder = path.split('/')[0];
+          filenames.push(folder);
+        }
+      });
+    }
+    const query = {
+      filenames,
+      ...uploadParams.value
+    };
+  } catch (error) {
+    window.$message?.error(`Failed to add files: ${error}`);
+    uploaderCancel();
+  }
+}
 
 // 拖拽开始时
 function handleDragstart(e: DragEvent) {
@@ -139,14 +177,22 @@ onUnmounted(() => {
 
 <template>
   <div class="fixed bottom-15px right-15px z-1002">
-    <Uploader ref="uploaderRef" :auto-start="false" :options="uploaderOptions" :file-status-text="statusText">
+    <Uploader
+      ref="uploaderRef"
+      :auto-start="false"
+      :options="uploaderOptions"
+      :file-status-text="statusText"
+      @files-added="onFilesAdded"
+    >
       <UploaderUnsupport>您的浏览器不支持上传组件</UploaderUnsupport>
       <!-- 上传区域-->
-      <UploaderDrop v-if="dragover && enableDragUpload" class="left-0 top-0 size-full text-center" @drop="handleDrop">
+      <UploaderDrop v-if="dragover && enableDragUpload" class="left-0 top-0 size-full text-center">
         <span class="relative top-48% text-[34px] text-[#00000099] font-bold">上传文件到当前目录下</span>
       </UploaderDrop>
       <UploaderBtn id="global-uploader-btn-file" :attrs="attrs">选择文件</UploaderBtn>
       <UploaderBtn id="global-uploader-btn-folder" :directory="true">选择文件夹</UploaderBtn>
+      <!--自定义文件列表-->
+      <GlobalUploaderList v-show="panelShow"></GlobalUploaderList>
     </Uploader>
   </div>
 </template>

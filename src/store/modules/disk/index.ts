@@ -1,6 +1,8 @@
 import { ref } from 'vue';
+import { useRoute } from 'vue-router';
 import { defineStore } from 'pinia';
 import { SetupStoreId } from '@/enum';
+import { useAuthStore } from '../auth';
 import { generateUniqueName, parseFileName } from './shared';
 
 export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
@@ -9,6 +11,9 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const selectedFileId = ref<CommonType.IdType>('');
   const creatingItem = ref<Api.Disk.FileItem | null>(null);
   const selectedFileIds = ref<CommonType.IdType[]>([]);
+
+  const route = useRoute();
+  const authStore = useAuthStore();
 
   const fileList = ref<Api.Disk.FileItem[]>([
     {
@@ -437,6 +442,27 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     selectedFileIds.value = ids;
   }
 
+  function getQueryPath() {
+    const basePath = typeof route.query.basePath === 'string' ? route.query.basePath : '/';
+    const path = typeof route.query.path === 'string' ? route.query.path : '';
+
+    let finalPath = basePath;
+    if (finalPath && finalPath.endsWith('/')) {
+      finalPath = finalPath.slice(0, -1);
+    }
+
+    return encodeURIComponent(finalPath + path);
+  }
+
+  async function getUploadParams() {
+    return {
+      folder: route.query.searchOpenFolder || route.query.folder,
+      currentDirectory: getQueryPath(),
+      username: authStore.userInfo.userName,
+      userId: authStore.userInfo.userId
+    };
+  }
+
   return {
     fileShowMode,
     fileList,
@@ -448,6 +474,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     cancelCreateItem,
     selectedFileIds,
     toggleFileSelection,
-    setSelectedFileIds
+    setSelectedFileIds,
+    getUploadParams
   };
 });

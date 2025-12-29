@@ -1,5 +1,5 @@
 declare module 'vue-simple-uploader' {
-  import { DefineComponent, App } from 'vue';
+  import type { App, DefineComponent } from 'vue';
 
   export interface UploaderOptions {
     // 目标上传 URL，可以是字符串也可以是函数，如果是函数的话，则会传入 Uploader.File 实例、当前块 Uploader.Chunk 以及是否是测试模式，默认值为 '/'
@@ -74,7 +74,7 @@ declare module 'vue-simple-uploader' {
 
   export interface UploaderEmits {
     // (e: 'file-added', file: SimpleUploader.Uploader.File): void;
-    // (e: 'files-added', files: SimpleUploader.Uploader.File[]): void;
+    (e: 'files-added', files: SimpleUploader.Uploader.File[]): void;
     // (e: 'file-removed', file: SimpleUploader.Uploader.File): void;
     // (e: 'files-submitted', files: SimpleUploader.Uploader.File[], fileList: SimpleUploader.Uploader.File[]): void;
     // (e: 'dragenter', event: DragEvent): void;
@@ -104,13 +104,17 @@ declare module 'vue-simple-uploader' {
     cancel: () => void;
   }
 
+  export interface UploaderListProps {
+    fileList: SimpleUploader.Uploader.File[];
+  }
+
   // 定义组件类型
-  export const Uploader: DefineComponent<UploaderProps, UploaderEmits, UploaderInst>;
+  export const Uploader: DefineComponent<UploaderProps, UploaderInst, UploaderEmits>;
   export const UploaderBtn: DefineComponent<UploaderBtnProps>;
   export const UploaderDrop: DefineComponent;
   export const UploaderList: DefineComponent;
   export const UploaderUnsupport: DefineComponent;
-  export const UploaderFile: DefineComponent<{file: SimpleUploader.Uploader.File;}, {}>;
+  export const UploaderFile: DefineComponent<{ file: SimpleUploader.Uploader.File }>;
 
   // 插件类型
   interface VueSimpleUploaderPlugin {
@@ -128,7 +132,7 @@ declare module 'vue-simple-uploader' {
 
 declare namespace SimpleUploader {
   namespace Uploader {
-    type FileStatusText = "success" | "error" | "uploading" | "paused" | "waiting";
+    type FileStatusText = 'success' | 'error' | 'uploading' | 'paused' | 'waiting';
 
     interface File {
       aborted: boolean;
@@ -146,9 +150,23 @@ declare namespace SimpleUploader {
       relativePath: string;
       size: number;
       uniqueIdentifier: string;
-      _lastProgressCallback: number;
-      _prevUploadedSize: number;
-      _prevProgress: number;
+      chunks: Chunk[];
+    }
+
+    interface Chunk {
+      chunkSize: number;
+      endByte: number;
+      loaded: number;
+      offset: number;
+      pendingRetry: boolean;
+      preprocessState: number;
+      readyState: number;
+      retries: number;
+      startByte: number;
+      tested: boolean;
+      total: number;
+      xhr: XMLHttpRequest | null;
+      bytes: ArrayBuffer | null;
     }
 
     interface Core {
@@ -166,11 +184,11 @@ declare namespace SimpleUploader {
       paused: boolean;
       support: boolean;
       supportDirectory: boolean;
-      _lastProgressCallback: number;
-      _prevUploadedSize: number;
-      _prevProgress: number;
+      chunks: Chunk[];
+      file: File;
+      filePaths: Record<string, string>;
 
-      _eventData: EventData;
+      // _eventData: EventData;
       // 方法
       addFile(file: File): void;
       addFiles(files: FileList): void;
@@ -179,15 +197,25 @@ declare namespace SimpleUploader {
       cancel(): void;
     }
 
-    interface EventData {
-      // catchAll: Array<(event: any) => void | null>;
-      // fileAdded: Array<(file: File) => void | null>;
-      // filesAdded: Array<(files: File[]) => void | null>;
-      // fileRemoved: Array<(file: File) => void | null>;
-      // filesSubmitted: Array<(files: File[], fileList: File[]) => void | null>;
-      // dragenter: Array<(event: DragEvent) => void | null>;
-      // dragleave: Array<(event: DragEvent) => void | null>;
-      // drop: Array<(event: DragEvent) => void | null>;
+    interface FileAddParams {
+      currentDirectory?: string;
+      username?: string;
+      userId?: CommonType.IdType;
+      folder?: import('vue-router').LocationQueryValue | import('vue-router').LocationQueryValue[];
+      lastModified?: number;
+      publicApi?: boolean;
+      fileId?: string;
     }
+
+    // interface EventData {
+    // catchAll: Array<(event: any) => void | null>;
+    // fileAdded: Array<(file: File) => void | null>;
+    // filesAdded: Array<(files: File[]) => void | null>;
+    // fileRemoved: Array<(file: File) => void | null>;
+    // filesSubmitted: Array<(files: File[], fileList: File[]) => void | null>;
+    // dragenter: Array<(event: DragEvent) => void | null>;
+    // dragleave: Array<(event: DragEvent) => void | null>;
+    // drop: Array<(event: DragEvent) => void | null>;
+    // }
   }
 }
