@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import type { MenuOption } from 'naive-ui';
 import { useAppStore } from '@/store/modules/app';
 import { useDiskStore } from '@/store/modules/disk';
@@ -314,6 +314,10 @@ watch(selectedCount, count => {
     isBatchMode.value = false;
   }
   prevSelectedCount = count;
+});
+
+onMounted(() => {
+  diskStore.getFileList();
 });
 </script>
 

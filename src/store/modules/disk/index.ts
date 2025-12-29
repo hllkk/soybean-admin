@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { defineStore } from 'pinia';
+import { fetchGetFileList } from '@/service/api/disk/list';
 import { SetupStoreId } from '@/enum';
 import { useAuthStore } from '../auth';
 import { generateUniqueName, parseFileName } from './shared';
@@ -463,6 +464,23 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     };
   }
 
+  async function getFileListParams() {
+    return {
+      username: authStore.userInfo.userName,
+      currentDirectory: getQueryPath(),
+      folder: route.query.searchOpenFolder || route.query.folder
+    };
+  }
+
+  async function getFileList() {
+    const params = await getFileListParams();
+    const { data, error } = await fetchGetFileList(params);
+    if (error) {
+      return;
+    }
+    fileList.value = data || [];
+  }
+
   return {
     fileShowMode,
     fileList,
@@ -475,6 +493,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     selectedFileIds,
     toggleFileSelection,
     setSelectedFileIds,
-    getUploadParams
+    getUploadParams,
+    getFileList
   };
 });

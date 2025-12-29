@@ -16,7 +16,13 @@ declare namespace Api {
       /** 是否是文件夹 */
       isDir: boolean;
       /** 文件或文件夹路径 */
-      filePath?:string;
+      filePath?: string;
+    }
+
+    interface GetFileListRequest {
+      username: string;
+      currentDirectory: string;
+      folder?: import('vue-router').LocationQueryValue | import('vue-router').LocationQueryValue[];
     }
   }
 }
