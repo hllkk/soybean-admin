@@ -20,7 +20,7 @@ declare namespace Api {
     }
 
     interface GetFileListRequest {
-      username: string;
+      userId: string;
       currentDirectory: string;
       folder?: import('vue-router').LocationQueryValue | import('vue-router').LocationQueryValue[];
     }

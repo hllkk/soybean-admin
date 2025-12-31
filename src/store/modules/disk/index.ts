@@ -466,7 +466,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
 
   async function getFileListParams() {
     return {
-      username: authStore.userInfo.userName,
+      userId: authStore.userInfo.userId,
       currentDirectory: getQueryPath(),
       folder: route.query.searchOpenFolder || route.query.folder
     };
