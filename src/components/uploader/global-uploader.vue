@@ -69,6 +69,7 @@ async function onFilesAdded(files: SimpleUploader.Uploader.File[]) {
       filenames,
       ...uploadParams.value
     };
+    console.log(query);
   } catch (error) {
     window.$message?.error(`Failed to add files: ${error}`);
     uploaderCancel();

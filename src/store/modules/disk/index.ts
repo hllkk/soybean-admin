@@ -13,6 +13,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const selectedFileId = ref<CommonType.IdType>('');
   const creatingItem = ref<Api.Disk.FileItem | null>(null);
   const selectedFileIds = ref<CommonType.IdType[]>([]);
+  const queryType = ref<SimpleUploader.Uploader.FileListQueryType>('all');
 
   const route = useRoute();
   const authStore = useAuthStore();
@@ -81,6 +82,10 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     setCreatingItem(null);
   }
 
+  function setQueryType(type: SimpleUploader.Uploader.FileListQueryType) {
+    queryType.value = type;
+  }
+
   function toggleFileSelection(fileId: CommonType.IdType) {
     const index = selectedFileIds.value.indexOf(fileId);
     if (index > -1) {
@@ -110,7 +115,6 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     return {
       folder: route.query.searchOpenFolder || route.query.folder,
       currentDirectory: getQueryPath(),
-      username: authStore.userInfo.userName,
       userId: authStore.userInfo.userId
     };
   }
@@ -119,7 +123,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     return {
       userId: authStore.userInfo.userId,
       currentDirectory: getQueryPath(),
-      folder: route.query.searchOpenFolder || route.query.folder
+      folder: route.query.searchOpenFolder || route.query.folder,
+      queryType: queryType.value
     };
   }
 
@@ -146,6 +151,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     setSelectedFileIds,
     getUploadParams,
     getFileList,
+    queryType,
+    setQueryType,
     panelVisible,
     openPanel,
     closePanel

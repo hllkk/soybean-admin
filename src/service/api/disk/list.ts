@@ -7,3 +7,11 @@ export function fetchGetFileList(params: Api.Disk.GetFileListRequest) {
     params
   });
 }
+
+export function fetchCheckExist(params: Api.Disk.CheckExistRequest) {
+  return request<Api.Disk.CheckExistResponse>({
+    url: 'file/check-exist',
+    method: 'get',
+    params
+  });
+}

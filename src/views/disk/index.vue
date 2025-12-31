@@ -8,6 +8,7 @@ import DiskSider from './modules/disk-sider.vue';
 import FileDiskplayGrid from './modules/disk-show-grid.vue';
 import FileDisplayList from './modules/disk-show-list.vue';
 import FileContextMenu from './modules/file-context-menu.vue';
+import FileEmpty from './modules/file-empty.vue';
 
 const appStore = useAppStore();
 const diskStore = useDiskStore();
@@ -229,6 +230,11 @@ function handleContextMenuAction(action: string) {
   }
 }
 
+function handleUpdateMenuValue(key: SimpleUploader.Uploader.FileListQueryType) {
+  diskStore.setQueryType(key);
+  diskStore.getFileList();
+}
+
 const menuOptions: MenuOption[] = [
   {
     label: '文件类型',
@@ -342,7 +348,13 @@ onMounted(() => {
     </template>
     <template #sider>
       <div class="h-full flex flex-col select-none">
-        <NMenu :options="menuOptions" :default-expanded-keys="['file-type']" accordion class="select-none" />
+        <NMenu
+          :options="menuOptions"
+          :default-expanded-keys="['file-type']"
+          accordion
+          class="select-none"
+          @update:value="handleUpdateMenuValue"
+        />
         <div v-if="showCapacity" class="mt-auto flex flex-col items-center py-4">
           <NProgress class="custom-progress" indicator-placement="inside" :percentage="20" :height="14" />
           <div class="mt-1 text-sm font-size-10px">9845G/16T</div>
@@ -482,7 +494,7 @@ onMounted(() => {
         <!-- 可滚动的内容区域 -->
         <div class="custom-scrollbar h-full flex-1 overflow-y-auto p-12px" @contextmenu.prevent="handleContextMenu">
           <FileDiskplayGrid
-            v-if="currentMode === 'grid'"
+            v-if="currentMode === 'grid' && fileList.length > 0"
             :is-batch-mode="isBatchMode"
             :data="fileList"
             :creating-item="creatingItem"
@@ -491,7 +503,7 @@ onMounted(() => {
             @context-menu="handleContextMenu"
           />
           <FileDisplayList
-            v-else
+            v-else-if="currentMode === 'list' && fileList.length > 0"
             :is-batch-mode="isBatchMode"
             :data="fileList"
             :creating-item="creatingItem"
@@ -499,6 +511,7 @@ onMounted(() => {
             @cancel-create="handleCancelCreate"
             @context-menu="handleContextMenu"
           />
+          <FileEmpty v-else />
         </div>
         <!-- 右键菜单组件 -->
         <FileContextMenu

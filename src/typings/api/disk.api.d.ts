@@ -24,5 +24,13 @@ declare namespace Api {
       currentDirectory: string;
       folder?: import('vue-router').LocationQueryValue | import('vue-router').LocationQueryValue[];
     }
+
+    interface CheckExistRequest {
+      userId: string;
+    }
+
+    interface CheckExistResponse {
+      exist: boolean;
+    }
   }
 }

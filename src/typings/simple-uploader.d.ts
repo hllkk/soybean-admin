@@ -133,6 +133,7 @@ declare module 'vue-simple-uploader' {
 declare namespace SimpleUploader {
   namespace Uploader {
     type FileStatusText = 'success' | 'error' | 'uploading' | 'paused' | 'waiting';
+    type FileListQueryType = 'all' | 'image' | 'document' | 'video' | 'audio' | 'other';
 
     interface File {
       aborted: boolean;
@@ -205,6 +206,10 @@ declare namespace SimpleUploader {
       lastModified?: number;
       publicApi?: boolean;
       fileId?: string;
+    }
+
+    interface FileListParams extends FileAddParams {
+      queryType?: FileListQueryType;
     }
 
     // interface EventData {
