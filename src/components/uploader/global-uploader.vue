@@ -17,7 +17,6 @@ const isDragStart = ref(false); // 是否是拖拽开始
 const enableDragUpload = ref(true);
 const fileListScrollTop = ref(0);
 const dragoverLoop = ref<number | null>(null);
-const panelShow = ref(true);
 const uploadParams = ref<SimpleUploader.Uploader.FileAddParams>({});
 
 const uploaderOptions = {
@@ -192,7 +191,7 @@ onUnmounted(() => {
       <UploaderBtn id="global-uploader-btn-file" :attrs="attrs">选择文件</UploaderBtn>
       <UploaderBtn id="global-uploader-btn-folder" :directory="true">选择文件夹</UploaderBtn>
       <!--自定义文件列表-->
-      <GlobalUploaderList v-show="panelShow"></GlobalUploaderList>
+      <GlobalUploaderList v-show="diskStore.panelVisible"></GlobalUploaderList>
     </Uploader>
   </div>
 </template>

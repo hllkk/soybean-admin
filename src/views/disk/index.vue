@@ -28,6 +28,15 @@ function handleChange(value: boolean) {
   showCapacity.value = value;
 }
 
+/** 切换上传组件显示 */
+function handleTogglePanel() {
+  if (diskStore.panelVisible) {
+    diskStore.closePanel();
+  } else {
+    diskStore.openPanel();
+  }
+}
+
 /** 选择的文件 */
 const selectedFiles = computed(() => {
   return fileList.value.filter(file => diskStore.selectedFileIds.includes(file.id));
@@ -429,7 +438,7 @@ onMounted(() => {
                   <NButtonGroup>
                     <NTooltip placement="bottom" trigger="hover">
                       <template #trigger>
-                        <NButton>
+                        <NButton @click="handleTogglePanel">
                           <template #icon>
                             <icon-cuida-swap-vertical-arrows-outline />
                           </template>
