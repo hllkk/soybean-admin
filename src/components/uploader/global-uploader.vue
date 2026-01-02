@@ -1,8 +1,11 @@
 <script lang="ts" setup>
 import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import type { UploaderInst } from 'vue-simple-uploader';
 import VueSimpleUploader from 'vue-simple-uploader';
+import { fetchCheckExist, fetchCreateFolder } from '@/service/api/disk/list';
 import { useDiskStore } from '@/store/modules/disk';
+import { encodeIfNeeded, isPath } from '@/utils/file';
 const { Uploader, UploaderBtn, UploaderDrop, UploaderUnsupport } = VueSimpleUploader;
 
 defineOptions({
@@ -10,17 +13,19 @@ defineOptions({
 });
 
 const diskStore = useDiskStore();
+const route = useRoute();
 
 const uploaderRef = ref<UploaderInst | null>(null);
 const dragover = ref(false); // 是否是拖拽进入
 const isDragStart = ref(false); // 是否是拖拽开始
 const enableDragUpload = ref(true);
 const fileListScrollTop = ref(0);
+const fileListLength = ref(0);
 const dragoverLoop = ref<number | null>(null);
 const uploadParams = ref<SimpleUploader.Uploader.FileAddParams>({});
 
 const uploaderOptions = {
-  target: '/api/upload',
+  target: '/file/upload',
   headers: {
     Authorization: 'Bearer '
   }
@@ -43,33 +48,96 @@ function uploaderCancel() {
   // 关闭上传组件
   // 是否关闭文件传输列表 以及 初始化已上传的分片数量
   uploaderRef.value?.uploader.cancel();
+  diskStore.closePanel();
+}
+
+// 上传文件前的操作
+async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
+  // 获取文件列表长度
+  fileListLength.value = uploaderRef.value?.uploader.fileList.length || 0;
+  const filePaths = uploaderRef.value?.uploader.filePaths || {};
+  const paths = Object.keys(filePaths);
+  const pathsLength = paths.length;
+
+  if (pathsLength > 0) {
+    paths.forEach(path => {
+      const folder = filePaths[path];
+      const createFolderParams: Api.Disk.CreateFolderRequest = {
+        isFolder: true,
+        folderPath: encodeIfNeeded(folder.parent?.path || ''),
+        fileName: encodeIfNeeded(folder.name),
+        folder: route.query.folder,
+        currentDirectory: encodeIfNeeded(uploadParams.value.currentDirectory || ''),
+        userId: uploadParams.value.userId
+      };
+      // 后端上传文件夹接口
+      fetchCreateFolder(createFolderParams);
+      // 显示上传列表组件
+      diskStore.openPanel();
+      // 上传文件夹之后开始上传文件
+      files.forEach(file => {
+        if (window.uploader?.opts) {
+          Object.assign(window.uploader.opts, {
+            query: {
+              isFolder: false,
+              lastModified: file.file.lastModified || 0,
+              ...uploadParams.value
+            }
+          });
+        }
+      });
+      nextTick(() => {
+        window.uploader?.resume();
+      });
+    });
+  }
 }
 
 // 上传文件时触发
-async function onFilesAdded(files: SimpleUploader.Uploader.File[]) {
+async function onFilesAdded(files: SimpleUploader.Uploader.UploaderFile[]) {
   if (!files.length) {
-    window.$message?.warning('没有选择要上传的文件');
+    window.$message?.warning('没有选择要上传的文件或者上传的文件夹为空文件夹');
     return;
   }
   try {
     uploadParams.value = await diskStore.getUploadParams();
     const filenames = files.map(file => file.name);
-    const paths = uploaderRef.value?.uploader.filePaths || {};
-
-    if (paths && typeof paths === 'object') {
-      // 如果 filePaths 是对象，遍历其属性值
-      Object.values(paths).forEach((path: any) => {
-        if (typeof path === 'string') {
-          const folder = path.split('/')[0];
-          filenames.push(folder);
-        }
-      });
-    }
+    const paths = Object.keys(uploaderRef.value?.uploader.filePaths || {});
+    paths.forEach(path => {
+      if (isPath(path)) {
+        // 取第一级
+        filenames.push(path.split('/')[0]);
+      }
+    });
     const query = {
       filenames,
       ...uploadParams.value
     };
-    console.log(query);
+    const { data, error } = await fetchCheckExist(query);
+    if (error) {
+      window.$message?.error(`Failed to check exist: ${error}`);
+      uploaderCancel();
+      return;
+    }
+    if (data.exist) {
+      window.$dialog?.destroyAll();
+      window.$dialog?.warning({
+        title: '文件已存在',
+        content: '是否覆盖已存在的文件？',
+        positiveText: '覆盖',
+        negativeText: '取消',
+        onPositiveClick() {
+          // 上传文件
+          doUploadBefore(files);
+        },
+        onNegativeClick() {
+          uploaderCancel();
+        }
+      });
+    } else {
+      // 上传文件
+      await doUploadBefore(files);
+    }
   } catch (error) {
     window.$message?.error(`Failed to add files: ${error}`);
     uploaderCancel();

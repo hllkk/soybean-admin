@@ -26,11 +26,26 @@ declare namespace Api {
     }
 
     interface CheckExistRequest {
-      userId: string;
+      userId?: CommonType.IdType;
+      filenames: string[];
+      currentDirectory?: string;
     }
 
     interface CheckExistResponse {
+      pass: boolean;
       exist: boolean;
+      resume: number[];
+      upload: boolean;
+      merge: boolean;
+    }
+
+    interface CreateFolderRequest {
+      userId?: CommonType.IdType;
+      isFolder: boolean;
+      folderPath: string;
+      currentDirectory?: string;
+      fileName: string;
+      folder?: import('vue-router').LocationQueryValue | import('vue-router').LocationQueryValue[];
     }
   }
 }

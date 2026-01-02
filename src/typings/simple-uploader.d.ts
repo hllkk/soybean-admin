@@ -73,10 +73,10 @@ declare module 'vue-simple-uploader' {
   }
 
   export interface UploaderEmits {
-    // (e: 'file-added', file: SimpleUploader.Uploader.File): void;
-    (e: 'files-added', files: SimpleUploader.Uploader.File[]): void;
-    // (e: 'file-removed', file: SimpleUploader.Uploader.File): void;
-    // (e: 'files-submitted', files: SimpleUploader.Uploader.File[], fileList: SimpleUploader.Uploader.File[]): void;
+    // (e: 'file-added', file: SimpleUploader.Uploader.UploaderFile): void;
+    (e: 'files-added', files: SimpleUploader.Uploader.UploaderFile[]): void;
+    // (e: 'file-removed', file: SimpleUploader.Uploader.UploaderFile): void;
+    // (e: 'files-submitted', files: SimpleUploader.Uploader.UploaderFile[], fileList: SimpleUploader.Uploader.UploaderFile[]): void;
     // (e: 'dragenter', event: DragEvent): void;
     // (e: 'dragleave', event: DragEvent): void;
     // (e: 'drop', event: DragEvent): void;
@@ -94,18 +94,18 @@ declare module 'vue-simple-uploader' {
   // 组件实例类型
   export interface UploaderInst {
     allEvents?: Record<string, (event: any) => void>;
-    options: UploaderOptions;
     autoStart: boolean;
+    options: UploaderOptions;
     fileStatusText: Record<string, string>;
     uploader: SimpleUploader.Uploader.Core;
     started: boolean;
-    files: SimpleUploader.Uploader.File[];
-    fileList: SimpleUploader.Uploader.File[];
+    files: SimpleUploader.Uploader.UploaderFile[];
+    fileList: SimpleUploader.Uploader.UploaderFile[];
     cancel: () => void;
   }
 
   export interface UploaderListProps {
-    fileList: SimpleUploader.Uploader.File[];
+    fileList: SimpleUploader.Uploader.UploaderFile[];
   }
 
   // 定义组件类型
@@ -114,7 +114,7 @@ declare module 'vue-simple-uploader' {
   export const UploaderDrop: DefineComponent;
   export const UploaderList: DefineComponent;
   export const UploaderUnsupport: DefineComponent;
-  export const UploaderFile: DefineComponent<{ file: SimpleUploader.Uploader.File }>;
+  export const UploaderFile: DefineComponent<{ file: SimpleUploader.Uploader.UploaderFile }>;
 
   // 插件类型
   interface VueSimpleUploaderPlugin {
@@ -135,23 +135,27 @@ declare namespace SimpleUploader {
     type FileStatusText = 'success' | 'error' | 'uploading' | 'paused' | 'waiting';
     type FileListQueryType = 'all' | 'image' | 'document' | 'video' | 'audio' | 'other';
 
-    interface File {
+    interface Base {
+      id: number;
       aborted: boolean;
       allError: boolean;
       averageSpeed: number;
       completed: boolean;
       currentSpeed: number;
       error: boolean;
-      fileType: string;
-      id: number;
       isFolder: boolean;
       isRoot: boolean;
       name: string;
       paused: boolean;
+    }
+
+    interface UploaderFile extends Base {
+      fileType: string;
       relativePath: string;
       size: number;
       uniqueIdentifier: string;
       chunks: Chunk[];
+      file: File;
     }
 
     interface Chunk {
@@ -170,24 +174,20 @@ declare namespace SimpleUploader {
       bytes: ArrayBuffer | null;
     }
 
-    interface Core {
-      id: number;
-      aborted: boolean;
-      allError: boolean;
-      averageSpeed: number;
-      completed: boolean;
-      currentSpeed: number;
-      error: boolean;
+    interface Folder extends Base {
+      path: string;
+      parent: Folder | null;
+    }
+
+    interface Core extends Base {
       fileStatusText: Record<FileStatusText, string>;
-      isFolder: boolean;
-      isRoot: boolean;
       opts: import('vue-simple-uploader').UploaderOptions;
-      paused: boolean;
       support: boolean;
       supportDirectory: boolean;
       chunks: Chunk[];
       file: File;
-      filePaths: Record<string, string>;
+      filePaths: Record<string, Folder>;
+      fileList: File[];
 
       // _eventData: EventData;
       // 方法

@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import VueSimpleUploader from 'vue-simple-uploader';
+import { useDiskStore } from '@/store/modules/disk';
 
 defineOptions({
   name: 'GlobalUploaderList'
 });
 
 interface Props {
-  fileList?: SimpleUploader.Uploader.File[];
+  fileList?: SimpleUploader.Uploader.UploaderFile[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -17,6 +18,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { UploaderList } = VueSimpleUploader;
 const collapse = ref(false);
+
+const diskStore = useDiskStore();
 </script>
 
 <template>
@@ -34,7 +37,7 @@ const collapse = ref(false);
               <icon-ep-position />
             </template>
           </NButton>
-          <NButton text class="ml-0 p-[16px_5px] text-25px c-primary">
+          <NButton text class="ml-0 p-[16px_5px] text-25px c-primary" @click="diskStore.closePanel()">
             <template #icon>
               <icon-ep:circle-close />
             </template>

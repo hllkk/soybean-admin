@@ -1,3 +1,4 @@
+import qs from 'qs';
 import { request } from '../../request';
 
 export function fetchGetFileList(params: Api.Disk.GetFileListRequest) {
@@ -10,8 +11,19 @@ export function fetchGetFileList(params: Api.Disk.GetFileListRequest) {
 
 export function fetchCheckExist(params: Api.Disk.CheckExistRequest) {
   return request<Api.Disk.CheckExistResponse>({
-    url: 'file/check-exist',
-    method: 'get',
-    params
+    url: 'file/checkExist',
+    method: 'post',
+    data: params
+  });
+}
+
+export function fetchCreateFolder(params: Api.Disk.CreateFolderRequest) {
+  return request({
+    url: 'file/createFolder',
+    method: 'post',
+    data: params,
+    paramsSerializer: p => {
+      return qs.stringify(p, { arrayFormat: 'repeat' });
+    }
   });
 }
