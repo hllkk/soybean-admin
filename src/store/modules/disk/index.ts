@@ -14,6 +14,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const creatingItem = ref<Api.Disk.FileItem | null>(null);
   const selectedFileIds = ref<CommonType.IdType[]>([]);
   const queryType = ref<SimpleUploader.Uploader.FileListQueryType>('all');
+  const fileListLength = ref(0);
 
   const route = useRoute();
   const authStore = useAuthStore();
@@ -140,6 +141,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   return {
     fileShowMode,
     fileList,
+    fileListLength,
     isDragUploadEnabled,
     setUploadDragEnabled,
     creatingItem,

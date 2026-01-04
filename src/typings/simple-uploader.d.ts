@@ -104,7 +104,14 @@ declare module 'vue-simple-uploader' {
     cancel: () => void;
   }
 
-  export interface UploaderListProps {
+  // 文件列表组件实例
+  export interface UploaderFilesInst {
+    file: SimpleUploader.Uploader.UploaderFile;
+    list: boolean;
+  }
+
+  // UploaderList 组件的默认插槽属性类型
+  export interface UploaderListSlotProps {
     fileList: SimpleUploader.Uploader.UploaderFile[];
   }
 
@@ -114,7 +121,7 @@ declare module 'vue-simple-uploader' {
   export const UploaderDrop: DefineComponent;
   export const UploaderList: DefineComponent;
   export const UploaderUnsupport: DefineComponent;
-  export const UploaderFile: DefineComponent<{ file: SimpleUploader.Uploader.UploaderFile }>;
+  export const UploaderFile: DefineComponent<UploaderFilesInst>;
 
   // 插件类型
   interface VueSimpleUploaderPlugin {
@@ -134,6 +141,47 @@ declare namespace SimpleUploader {
   namespace Uploader {
     type FileStatusText = 'success' | 'error' | 'uploading' | 'paused' | 'waiting';
     type FileListQueryType = 'all' | 'image' | 'document' | 'video' | 'audio' | 'other';
+    type FileType =
+      | 'application/x-zip-compressed'
+      | 'application/zip'
+      | 'application/x-rar-compressed'
+      | 'application/x-7z-compressed'
+      | 'application/x-tar'
+      | 'application/gzip'
+      | 'application/vnd.ms-excel'
+      | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      | 'application/vnd.ms-powerpoint'
+      | 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      | 'application/msword'
+      | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      | 'application/vnd.ms-word.document.macroEnabled.12'
+      | 'application/javascript'
+      | 'application/json'
+      | 'application/xml'
+      | 'application/vnd.android.package-archive'
+      | 'application/x-msdownload'
+      | 'application/x-msdos-program'
+      | 'application/x-executable'
+      | 'application/x-sh'
+      | 'application/x-apple-diskimage'
+      | 'application/x-iso9660-image'
+      | 'text/xml'
+      | 'text/csv'
+      | 'text/html'
+      | 'text/css'
+      | 'text/javascript'
+      | 'text/plain'
+      | 'application/pdf'
+      | 'font/woff'
+      | 'image/png'
+      | 'image/jpeg'
+      | 'image/gif'
+      | 'video/mp4'
+      | 'audio/mp3'
+      | 'audio/mpeg'
+      | 'audio/ogg'
+      | 'audio/wav'
+      | 'other';
 
     interface Base {
       id: number;
@@ -150,12 +198,30 @@ declare namespace SimpleUploader {
     }
 
     interface UploaderFile extends Base {
-      fileType: string;
+      fileType: FileType;
+      path?: string;
       relativePath: string;
       size: number;
       uniqueIdentifier: string;
       chunks: Chunk[];
       file: File;
+      files?: UploaderFile[];
+      _lastProgressCallback: number;
+      _prevUploadedSize: number;
+      _prevProgress: number;
+      progress: () => number; // 方法 返回一个 0 到 1 的数字，代表当前上传进度。
+      pause: () => void; // 方法 暂停上传文件。
+      resume: () => void; // 方法 继续上传文件。
+      cancel: () => void; // 方法 取消上传且从文件列表中移除。
+      retry: () => void; // 方法 重新上传文件。
+      isUploading: () => boolean; // 方法 文件是否仍在上传中
+      isComplete: () => boolean; // 方法 文件是否上传完成
+      sizeUploaded: () => number; // 方法 返回已上传的文件大小。
+      timeRemaining: () => number; // 方法 剩余时间，基于平均速度的，如果说平均速度为 0，那么值就是 Number.POSITIVE_INFINITY
+      getRoot: () => UploaderFile; // 方法 得到当前文件所属的根文件，这个根文件就是包含在 uploader.fileList 中的.
+      getExtension: () => string; // 方法 返回文件扩展名。
+      getType: () => FileType; // 方法 返回文件类型。
+      bootstrap: () => void; // 方法 初始化文件上传，包括创建 XHR 请求、设置请求头、添加事件监听器等。
     }
 
     interface Chunk {
@@ -177,6 +243,9 @@ declare namespace SimpleUploader {
     interface Folder extends Base {
       path: string;
       parent: Folder | null;
+      _lastProgressCallback: number;
+      _prevUploadedSize: number;
+      _prevProgress: number;
     }
 
     interface Core extends Base {

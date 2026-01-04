@@ -46,6 +46,7 @@ declare namespace Api {
       currentDirectory?: string;
       fileName: string;
       folder?: import('vue-router').LocationQueryValue | import('vue-router').LocationQueryValue[];
+      relativePath?: string;
     }
   }
 }

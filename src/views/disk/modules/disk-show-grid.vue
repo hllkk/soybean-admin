@@ -100,7 +100,7 @@ watch(
 </script>
 
 <template>
-  <NGrid cols="4 s:5 m:6 l:7 xl:8 xxl:9" :x-gap="30" :y-gap="30" item-responsive responsive="screen">
+  <NGrid cols="4 s:3 m:5 l:6 xl:8 xxl:9" :x-gap="30" :y-gap="30" item-responsive responsive="screen">
     <!-- 正在创建的项目（显示在最前面） -->
     <NGridItem v-if="creatingItem" :key="creatingItem.id">
       <div class="pos-relative mt-12px h-150px w-auto bg-primary-50 dark:bg-[rgba(255,255,255,0.05)]">

@@ -20,7 +20,6 @@ const dragover = ref(false); // 是否是拖拽进入
 const isDragStart = ref(false); // 是否是拖拽开始
 const enableDragUpload = ref(true);
 const fileListScrollTop = ref(0);
-const fileListLength = ref(0);
 const dragoverLoop = ref<number | null>(null);
 const uploadParams = ref<SimpleUploader.Uploader.FileAddParams>({});
 
@@ -54,10 +53,11 @@ function uploaderCancel() {
 // 上传文件前的操作
 async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
   // 获取文件列表长度
-  fileListLength.value = uploaderRef.value?.uploader.fileList.length || 0;
+  diskStore.fileListLength = uploaderRef.value?.uploader.fileList.length || 0;
   const filePaths = uploaderRef.value?.uploader.filePaths || {};
   const paths = Object.keys(filePaths);
   const pathsLength = paths.length;
+  diskStore.openPanel();
 
   if (pathsLength > 0) {
     paths.forEach(path => {
@@ -72,8 +72,6 @@ async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
       };
       // 后端上传文件夹接口
       fetchCreateFolder(createFolderParams);
-      // 显示上传列表组件
-      diskStore.openPanel();
       // 上传文件夹之后开始上传文件
       files.forEach(file => {
         if (window.uploader?.opts) {
@@ -87,7 +85,9 @@ async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
         }
       });
       nextTick(() => {
-        window.uploader?.resume();
+        if (window.uploader) {
+          window.uploader.resume();
+        }
       });
     });
   }
@@ -260,7 +260,7 @@ onUnmounted(() => {
       <UploaderBtn id="global-uploader-btn-file" :attrs="attrs">选择文件</UploaderBtn>
       <UploaderBtn id="global-uploader-btn-folder" :directory="true">选择文件夹</UploaderBtn>
       <!--自定义文件列表-->
-      <GlobalUploaderList v-show="diskStore.panelVisible"></GlobalUploaderList>
+      <GlobalUploaderList></GlobalUploaderList>
     </Uploader>
   </div>
 </template>

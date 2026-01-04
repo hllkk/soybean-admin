@@ -19,11 +19,19 @@ export function fetchCheckExist(params: Api.Disk.CheckExistRequest) {
 
 export function fetchCreateFolder(params: Api.Disk.CreateFolderRequest) {
   return request({
-    url: 'file/createFolder',
+    url: 'file/uploadFolder',
     method: 'post',
     data: params,
     paramsSerializer: p => {
       return qs.stringify(p, { arrayFormat: 'repeat' });
     }
+  });
+}
+
+export function fetchNewFolder(params: any) {
+  return request({
+    url: 'file/newFolder',
+    method: 'post',
+    data: params
   });
 }
