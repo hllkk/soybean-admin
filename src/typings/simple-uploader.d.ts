@@ -17,7 +17,7 @@ declare module 'vue-simple-uploader' {
     // 其他额外的参数，这个可以是一个对象或者是一个函数，如果是函数的话，则会传入 Uploader.File 实例、当前块 Uploader.Chunk 以及是否是测试模式，默认为 {}
     query?: Record<string, any> | ((file: any, chunk: any, isTest: boolean) => Record<string, any>);
     // 额外的一些请求头，可以是对象或者函数，如果是函数的话，则会传入 Uploader.File 实例、当前块 Uploader.Chunk 以及是否是测试模式，默认 {}
-    headers?: Record<string, string> | ((file: any, chunk: any, isTest: boolean) => Record<string, string>);
+    headers?: Record<string, string | null> | ((file: any, chunk: any, isTest: boolean) => Record<string, string>);
     // 标准的 CORS 请求是不会带上 cookie 的，如果想要带的话需要设置 withCredentials 为 true，默认 false
     withCredentials?: boolean;
     // 当上传的时候所使用的是方式，可选 multipart、octet，默认 multipart

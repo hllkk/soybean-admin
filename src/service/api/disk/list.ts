@@ -1,5 +1,11 @@
 import qs from 'qs';
+import { getServiceBaseURL } from '@/utils/service';
 import { request } from '../../request';
+
+const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
+const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
+
+export const simpleUploadURL = `${baseURL}/file/upload`;
 
 export function fetchGetFileList(params: Api.Disk.GetFileListRequest) {
   return request<Api.Disk.FileItem[]>({
@@ -17,7 +23,7 @@ export function fetchCheckExist(params: Api.Disk.CheckExistRequest) {
   });
 }
 
-export function fetchUploadFolder(params: Api.Disk.CreateFolderRequest) {
+export function fetchUploadFolder(params: Api.Disk.CreateFolderParams) {
   return request({
     url: 'folder/upload',
     method: 'post',

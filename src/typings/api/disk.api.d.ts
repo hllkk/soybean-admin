@@ -39,14 +39,15 @@ declare namespace Api {
       merge: boolean;
     }
 
-    interface CreateFolderRequest {
+    interface CreateFolderParams {
       userId?: CommonType.IdType;
       isFolder: boolean;
-      folderPath: string;
+      folderPath?: string;
       currentDirectory?: string;
-      fileName: string;
+      fileName?: string;
       folder?: import('vue-router').LocationQueryValue | import('vue-router').LocationQueryValue[];
       relativePath?: string;
+      override?: boolean;
     }
   }
 }

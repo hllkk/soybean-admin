@@ -3,7 +3,8 @@ import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import type { UploaderInst } from 'vue-simple-uploader';
 import VueSimpleUploader from 'vue-simple-uploader';
-import { fetchCheckExist, fetchUploadFolder } from '@/service/api/disk/list';
+import { fetchCheckExist, fetchUploadFolder, simpleUploadURL } from '@/service/api/disk/list';
+import { getAuthorization } from '@/service/request/shared';
 import { useDiskStore } from '@/store/modules/disk';
 import { encodeIfNeeded, isPath } from '@/utils/file';
 const { Uploader, UploaderBtn, UploaderDrop, UploaderUnsupport } = VueSimpleUploader;
@@ -22,11 +23,14 @@ const enableDragUpload = ref(true);
 const fileListScrollTop = ref(0);
 const dragoverLoop = ref<number | null>(null);
 const uploadParams = ref<SimpleUploader.Uploader.FileAddParams>({});
+const createFolderParams = ref<Api.Disk.CreateFolderParams>({
+  isFolder: true
+});
 
 const uploaderOptions = {
-  target: '/file/upload',
+  target: simpleUploadURL,
   headers: {
-    Authorization: 'Bearer '
+    Authorization: getAuthorization()
   }
 };
 
@@ -62,7 +66,7 @@ async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
   if (pathsLength > 0) {
     paths.forEach(path => {
       const folder = filePaths[path];
-      const createFolderParams: Api.Disk.CreateFolderRequest = {
+      createFolderParams.value = {
         isFolder: true,
         folderPath: encodeIfNeeded(folder.parent?.path || ''),
         fileName: encodeIfNeeded(folder.name),
@@ -71,7 +75,7 @@ async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
         userId: uploadParams.value.userId
       };
       // 后端上传文件夹接口
-      fetchUploadFolder(createFolderParams);
+      fetchUploadFolder(createFolderParams.value);
       // 上传文件夹之后开始上传文件
       files.forEach(file => {
         if (window.uploader?.opts) {
@@ -127,6 +131,7 @@ async function onFilesAdded(files: SimpleUploader.Uploader.UploaderFile[]) {
         positiveText: '覆盖',
         negativeText: '取消',
         onPositiveClick() {
+          createFolderParams.value.override = true;
           // 上传文件
           doUploadBefore(files);
         },
