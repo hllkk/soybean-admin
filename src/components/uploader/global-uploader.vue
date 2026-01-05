@@ -3,7 +3,7 @@ import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import type { UploaderInst } from 'vue-simple-uploader';
 import VueSimpleUploader from 'vue-simple-uploader';
-import { fetchCheckExist, fetchCreateFolder } from '@/service/api/disk/list';
+import { fetchCheckExist, fetchUploadFolder } from '@/service/api/disk/list';
 import { useDiskStore } from '@/store/modules/disk';
 import { encodeIfNeeded, isPath } from '@/utils/file';
 const { Uploader, UploaderBtn, UploaderDrop, UploaderUnsupport } = VueSimpleUploader;
@@ -71,7 +71,7 @@ async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
         userId: uploadParams.value.userId
       };
       // 后端上传文件夹接口
-      fetchCreateFolder(createFolderParams);
+      fetchUploadFolder(createFolderParams);
       // 上传文件夹之后开始上传文件
       files.forEach(file => {
         if (window.uploader?.opts) {

@@ -17,9 +17,9 @@ export function fetchCheckExist(params: Api.Disk.CheckExistRequest) {
   });
 }
 
-export function fetchCreateFolder(params: Api.Disk.CreateFolderRequest) {
+export function fetchUploadFolder(params: Api.Disk.CreateFolderRequest) {
   return request({
-    url: 'file/uploadFolder',
+    url: 'folder/upload',
     method: 'post',
     data: params,
     paramsSerializer: p => {
