@@ -209,6 +209,7 @@ declare namespace SimpleUploader {
       _lastProgressCallback: number;
       _prevUploadedSize: number;
       _prevProgress: number;
+      parent: UploaderFile | null;
       progress: () => number; // 方法 返回一个 0 到 1 的数字，代表当前上传进度。
       pause: () => void; // 方法 暂停上传文件。
       resume: () => void; // 方法 继续上传文件。
@@ -265,6 +266,8 @@ declare namespace SimpleUploader {
       pause(): void;
       resume(): void;
       cancel(): void;
+      isUploading(): boolean;
+      progress(): number; // 方法 返回一个 0 到 1 的数字，代表当前上传进度。
     }
 
     interface FileAddParams {

@@ -1,5 +1,5 @@
 export const formatFileSize = (size: number) => {
-  if (size < 1024) return `${size} B`;
+  if (size < 1024) return `${size.toFixed(2)} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`;
   if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(2)} MB`;
   return `${(size / (1024 * 1024 * 1024)).toFixed(2)} GB`;
@@ -24,4 +24,14 @@ export function encodeIfNeeded(str: string) {
 
 function isEncoded(str: string) {
   return /%[0-9A-Fa-f]{2}/.test(str);
+}
+
+export function formatNetSpeed(size: number, space = false) {
+  if (size === 0) {
+    return space ? '0 B / s' : '0B/s';
+  }
+  if (size < 1024) return size + (space ? ' B / s' : 'B/s');
+  if (size < 1024 * 1024) return (size / 1024).toFixed(2) + (space ? ' KB / s' : 'KB/s');
+  if (size < 1024 * 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + (space ? ' MB / s' : 'MB/s');
+  return (size / (1024 * 1024 * 1024)).toFixed(2) + (space ? ' GB / s' : 'GB/s');
 }

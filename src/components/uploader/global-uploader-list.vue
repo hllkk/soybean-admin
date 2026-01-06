@@ -10,6 +10,62 @@ defineOptions({
   name: 'GlobalUploaderList'
 });
 
+interface Props {
+  netSpeed?: string;
+  process?: number;
+  isUploading?: boolean;
+  fileStatusMap?: Map<number, string>;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  netSpeed: '0B/s',
+  process: 0,
+  isUploading: false,
+  fileStatusMap: () => new Map()
+});
+
+const statusConfig = {
+  success: {
+    text: '成功',
+    color: '#10b981',
+    bgColor: '#d1fae5'
+  },
+  merging: {
+    text: '合并中',
+    color: '#f59e0b',
+    bgColor: '#fef3c7'
+  },
+  error: {
+    text: '失败',
+    color: '#ef4444',
+    bgColor: '#fee2e2'
+  },
+  uploading: {
+    text: '上传中',
+    color: '#3b82f6',
+    bgColor: '#dbeafe'
+  },
+  paused: {
+    text: '已暂停',
+    color: '#f59e0b',
+    bgColor: '#fef3c7'
+  },
+  waiting: {
+    text: '等待中',
+    color: '#6b7280',
+    bgColor: '#f3f4f6'
+  }
+};
+
+function getFileStatus(fileId: number) {
+  return props.fileStatusMap.get(fileId);
+}
+
+function getStatusConfig(status: string | undefined) {
+  if (!status) return null;
+  return statusConfig[status as keyof typeof statusConfig] || null;
+}
+
 type processAreaClassType = {
   right?: string;
   bottom?: string;
@@ -21,9 +77,6 @@ type processAreaClassType = {
 const { UploaderList } = VueSimpleUploader;
 const collapse = ref(false);
 const isShrink = ref(false);
-const isUploading = ref(false);
-const process = ref(-10);
-const netSpeed = ref(0);
 const processAreaClass = ref<processAreaClassType>({
   right: '66px',
   bottom: '66px',
@@ -126,7 +179,7 @@ function shrink() {
 
 <template>
   <UploaderList v-show="diskStore.panelVisible">
-    <template #default="props: UploaderListSlotProps">
+    <template #default="listProps: UploaderListSlotProps">
       <Transition name="panel-fade">
         <div
           v-show="!isShrink && !appStore.isMobile"
@@ -151,7 +204,7 @@ function shrink() {
           </div>
           <!-- 上传列表内容 -->
           <ul class="file-list">
-            <li v-for="file in props.fileList" :key="file.id" class="file-item">
+            <li v-for="file in listProps.fileList" :key="file.id" class="file-item">
               <!-- 左侧图标区 -->
               <div class="file-icon">
                 <SvgIcon v-if="file.isFolder" local-icon="disk-list_folder" class="text-36px" />
@@ -160,18 +213,30 @@ function shrink() {
 
               <!-- 中间信息展示区 -->
               <div class="file-info">
-                <!-- 上段：文件名 -->
-                <div class="file-name select-none">{{ file.name }}</div>
+                <!-- 上段：文件名和状态 -->
+                <div class="file-name-row">
+                  <div class="file-name select-none">{{ file.name }}</div>
+                  <div
+                    v-if="getStatusConfig(getFileStatus(file.id))"
+                    class="file-status"
+                    :style="{
+                      color: getStatusConfig(getFileStatus(file.id))?.color,
+                      backgroundColor: getStatusConfig(getFileStatus(file.id))?.bgColor
+                    }"
+                  >
+                    {{ getStatusConfig(getFileStatus(file.id))?.text }}
+                  </div>
+                </div>
 
                 <!-- 中段：进度条 -->
                 <div class="file-progress">
-                  <div class="progress-bar bg-primary" :style="{ width: file._prevProgress + '%' }" />
+                  <div class="progress-bar bg-primary" :style="{ width: props.process + '%' }" />
                 </div>
 
                 <!-- 下段：文件元信息 -->
                 <div class="file-meta">
                   <span class="file-size select-none">{{ handleFileSize(file) }}</span>
-                  <span class="file-speed select-none">{{ file.currentSpeed }}</span>
+                  <span class="file-speed select-none">{{ props.netSpeed }}</span>
                 </div>
               </div>
 
@@ -190,7 +255,7 @@ function shrink() {
               </div>
             </li>
             <div
-              v-if="!props.fileList.length"
+              v-if="!listProps.fileList.length"
               class="flex flex-col items-center justify-center py-18 text-gray-500 lt-sm:py-8 dark:text-gray-400"
             >
               <icon-ep-upload class="mb-2 text-4xl opacity-50 lt-sm:mb-1 lt-sm:text-3xl" />
@@ -208,21 +273,21 @@ function shrink() {
           @click="expand"
         >
           <div class="process-anime">
-            <div class="cube-a" :style="{ top: -process - 65 + '%' }"></div>
-            <div class="cube-b" :style="{ top: -process - 65 + '%' }"></div>
+            <div class="cube-a" :style="{ top: -props.process - 65 + '%' }"></div>
+            <div class="cube-b" :style="{ top: -props.process - 65 + '%' }"></div>
 
-            <div v-if="props.fileList.length && process < 100" class="process-info">
-              <div class="process">{{ process }}%</div>
-              <div v-if="isUploading" class="net-speed">{{ netSpeed }}</div>
+            <div v-if="listProps.fileList.length && props.process < 100" class="process-info">
+              <div class="process">{{ props.process }}%</div>
+              <div v-if="props.isUploading" class="net-speed">{{ props.netSpeed }}</div>
             </div>
 
-            <div v-if="props.fileList.length && process >= 100" class="done">
+            <div v-if="listProps.fileList.length && props.process >= 100" class="done">
               <svg xmlns="http://www.w3.org/2000/svg" class="done-icon checkmark">
                 <path d="M 13.1 21.2 l 5.1 5.2 l 12.7 -12.8" class="checkmark__check fill-transparent"></path>
               </svg>
             </div>
 
-            <div v-if="!props.fileList.length" class="empty-state select-none">暂无文件</div>
+            <div v-if="!listProps.fileList.length" class="empty-state select-none">暂无文件</div>
           </div>
         </div>
       </Transition>
@@ -280,7 +345,15 @@ function shrink() {
   gap: 6px;
 }
 
+.file-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .file-name {
+  flex: 1;
+  min-width: 0;
   font-size: 14px;
   font-weight: 500;
   color: #1e293b;
@@ -288,6 +361,15 @@ function shrink() {
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.4;
+}
+
+.file-status {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .file-progress {
@@ -354,6 +436,11 @@ function shrink() {
 
 .dark .file-name {
   color: #f1f5f9;
+}
+
+.dark .file-status {
+  color: #fff !important;
+  background-color: #374151 !important;
 }
 
 .dark .file-progress {

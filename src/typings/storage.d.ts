@@ -42,5 +42,7 @@ declare namespace StorageType {
     lastLoginUserId: string;
     /** The login form rember */
     loginRember: Api.Auth.LoginForm;
+    /** disk chunk size */
+    chunkSize: number;
   }
 }

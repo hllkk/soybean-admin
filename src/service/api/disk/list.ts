@@ -34,6 +34,14 @@ export function fetchUploadFolder(params: Api.Disk.CreateFolderParams) {
   });
 }
 
+export function fetchMergeFile(params: Api.Disk.FileMergeRequest) {
+  return request({
+    url: 'file/merge',
+    method: 'post',
+    data: params
+  });
+}
+
 export function fetchNewFolder(params: any) {
   return request({
     url: 'file/newFolder',

@@ -49,5 +49,18 @@ declare namespace Api {
       relativePath?: string;
       override?: boolean;
     }
+
+    interface FileMergeRequest {
+      fileName: string;
+      relativePath?: string;
+      identifier?: string;
+      folder?: import('vue-router').LocationQueryValue | import('vue-router').LocationQueryValue[];
+      currentDirectory?: string;
+      userId?: CommonType.IdType;
+      totalSize?: number;
+      isFolder?: boolean;
+      lastModified?: number;
+      fileId?: string;
+    }
   }
 }
