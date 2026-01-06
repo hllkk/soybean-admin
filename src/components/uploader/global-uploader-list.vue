@@ -4,7 +4,7 @@ import VueSimpleUploader from 'vue-simple-uploader';
 import type { UploaderListSlotProps } from 'vue-simple-uploader';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAppStore } from '@/store/modules/app';
-import { formatFileSize } from '@/utils/file';
+import { formatFileSize, formatNetSpeed } from '@/utils/file';
 
 defineOptions({
   name: 'GlobalUploaderList'
@@ -157,6 +157,23 @@ function handleFileSize(file: UploaderListSlotProps['fileList'][0]) {
   return formatFileSize(file.size);
 }
 
+function getFileProgress(file: UploaderListSlotProps['fileList'][0]): number {
+  if (file.isFolder && file.files) {
+    const totalSize = file.files.reduce((sum, f) => sum + f.size, 0);
+    const uploadedSize = file.files.reduce((sum, f) => sum + f.sizeUploaded(), 0);
+    return totalSize > 0 ? Math.trunc((uploadedSize / totalSize) * 100) : 0;
+  }
+  return Math.trunc(file.progress() * 100);
+}
+
+function getFileSpeed(file: UploaderListSlotProps['fileList'][0]): string {
+  if (file.isFolder && file.files) {
+    const totalSpeed = file.files.reduce((sum, f) => sum + f.currentSpeed, 0);
+    return formatNetSpeed(totalSpeed, false);
+  }
+  return formatNetSpeed(file.currentSpeed, false);
+}
+
 function expand() {
   if (appStore.isMobile) {
     return;
@@ -230,13 +247,13 @@ function shrink() {
 
                 <!-- 中段：进度条 -->
                 <div class="file-progress">
-                  <div class="progress-bar bg-primary" :style="{ width: props.process + '%' }" />
+                  <div class="progress-bar bg-primary" :style="{ width: getFileProgress(file) + '%' }" />
                 </div>
 
                 <!-- 下段：文件元信息 -->
                 <div class="file-meta">
                   <span class="file-size select-none">{{ handleFileSize(file) }}</span>
-                  <span class="file-speed select-none">{{ props.netSpeed }}</span>
+                  <span class="file-speed select-none">{{ getFileSpeed(file) }}</span>
                 </div>
               </div>
 

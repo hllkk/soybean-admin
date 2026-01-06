@@ -219,9 +219,15 @@ function onFileProgress(
   netSpeed.value = formatNetSpeed(file.currentSpeed, false);
   process.value = Math.trunc((window.uploader?.progress() as number) * 100);
   setPageTitle(netSpeed.value);
-  if (rootFile.isFolder && process.value < 100) {
-    setFileStatus(rootFile.id, 'uploading');
+
+  if (process.value < 100) {
+    if (rootFile.isFolder) {
+      setFileStatus(rootFile.id, 'uploading');
+    } else {
+      setFileStatus(file.id, 'uploading');
+    }
   }
+
   if (process.value > 0 && process.value < 100 && window.uploader?.fileList && window.uploader.fileList.length > 0) {
     window.onbeforeunload = () => {
       return '还有文件正在上传, 确定退出吗?';
@@ -251,13 +257,14 @@ function handleClose() {
 }
 
 function onFileSuccess(
-  _: SimpleUploader.Uploader.UploaderFile,
+  rootFile: SimpleUploader.Uploader.UploaderFile,
   file: SimpleUploader.Uploader.UploaderFile,
   response: string
 ) {
   const res = JSON.parse(response);
   if (!res.data) {
     window.$message?.error(res.message || '上传失败');
+    setFileStatus(file.id, 'error');
     handleClose();
     return;
   }
@@ -268,6 +275,15 @@ function onFileSuccess(
     setFileStatus(file.id, 'error');
   } else {
     setFileStatus(file.id, 'success');
+
+    // 如果是文件夹的子文件上传成功，检查文件夹的所有子文件是否都上传成功
+    if (rootFile.isFolder && rootFile.files) {
+      const allFilesSuccess = rootFile.files.every(subFile => subFile.isComplete() || subFile.isUploading() === false);
+
+      if (allFilesSuccess) {
+        setFileStatus(rootFile.id, 'success');
+      }
+    }
   }
   // 如果服务端返回需要合并文件
   if (data.merge) {
@@ -287,9 +303,25 @@ function onFileSuccess(
     fetchMergeFile(mergeParams);
     removeFileStatus(file.id);
     setFileStatus(file.id, 'success');
-    window.$message?.success('上传成功');
+
+    // 对于文件夹上传，只在所有子文件都上传完成时才显示成功提示
+    if (rootFile.isFolder && rootFile.files) {
+      const allFilesSuccess = rootFile.files.every(subFile => subFile.isComplete() || subFile.isUploading() === false);
+      if (allFilesSuccess) {
+        window.$message?.success('文件夹上传成功');
+      }
+    } else {
+      window.$message?.success('上传成功');
+    }
+
     if (process.value === -10 || process.value === 100 || diskStore.fileListLength === 0) {
       uploaderCancel();
+    }
+  } else if (rootFile.isFolder && rootFile.files) {
+    // 对于文件夹上传，只在所有子文件都上传完成时才显示成功提示
+    const allFilesSuccess = rootFile.files.every(subFile => subFile.isComplete() || subFile.isUploading() === false);
+    if (allFilesSuccess) {
+      window.$message?.success('文件夹上传成功');
     }
   } else {
     window.$message?.success('上传成功');
