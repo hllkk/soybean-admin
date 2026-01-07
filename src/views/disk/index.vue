@@ -22,6 +22,7 @@ const gap = computed(() => (appStore.isMobile ? 0 : 16));
 
 const fileList = computed(() => diskStore.fileList);
 const creatingItem = computed(() => diskStore.creatingItem);
+const renamingItem = computed(() => diskStore.renamingItem);
 const selectedCount = computed(() => diskStore.selectedFileIds.length);
 
 /** 切换显示容量 */
@@ -100,6 +101,36 @@ function handleConfirmCreate(inputName: string) {
 /** 取消创建 */
 function handleCancelCreate() {
   diskStore.cancelCreateItem();
+}
+
+/** 重命名文件 */
+function handleRename() {
+  if (selectedFiles.value.length !== 1) {
+    window.$message?.destroyAll();
+    window.$message?.error('请选择一个文件进行重命名');
+    return;
+  }
+  const file = selectedFiles.value[0];
+  diskStore.setRenamingItem(file);
+}
+
+/** 确认重命名 */
+function handleConfirmRename(newName: string) {
+  if (!newName.trim()) {
+    window.$message?.destroyAll();
+    window.$message?.error('名称不能为空');
+    return;
+  }
+  const renamedItem = diskStore.confirmRenameItem(newName.trim());
+  if (renamedItem) {
+    window.$message?.destroyAll();
+    window.$message?.success(`已重命名为：${renamedItem.name}`);
+  }
+}
+
+/** 取消重命名 */
+function handleCancelRename() {
+  diskStore.cancelRenameItem();
 }
 
 /** 切换批量操作模式 */
@@ -193,7 +224,7 @@ function handleContextMenuAction(action: string) {
       window.$message?.success('删除文件');
       break;
     case 'rename':
-      window.$message?.success('重命名文件');
+      handleRename();
       break;
     case 'copy':
       window.$message?.success('复制文件');
@@ -498,8 +529,11 @@ onMounted(() => {
             :is-batch-mode="isBatchMode"
             :data="fileList"
             :creating-item="creatingItem"
+            :renaming-item="renamingItem"
             @confirm-create="handleConfirmCreate"
             @cancel-create="handleCancelCreate"
+            @confirm-rename="handleConfirmRename"
+            @cancel-rename="handleCancelRename"
             @context-menu="handleContextMenu"
           />
           <FileDisplayList
@@ -507,8 +541,11 @@ onMounted(() => {
             :is-batch-mode="isBatchMode"
             :data="fileList"
             :creating-item="creatingItem"
+            :renaming-item="renamingItem"
             @confirm-create="handleConfirmCreate"
             @cancel-create="handleCancelCreate"
+            @confirm-rename="handleConfirmRename"
+            @cancel-rename="handleCancelRename"
             @context-menu="handleContextMenu"
           />
           <FileEmpty v-else />

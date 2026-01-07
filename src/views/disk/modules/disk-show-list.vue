@@ -1,5 +1,5 @@
 <script lang="tsx" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useWindowSize } from '@vueuse/core';
 import type { DataTableColumns } from 'naive-ui';
 import { useAppStore } from '@/store/modules/app';
@@ -16,18 +16,22 @@ interface Props {
   data?: Api.Disk.FileItem[];
   isBatchMode?: boolean;
   creatingItem?: Api.Disk.FileItem | null;
+  renamingItem?: Api.Disk.FileItem | null;
 }
 
 interface Emits {
   (e: 'confirmCreate', name: string): void;
   (e: 'cancelCreate'): void;
+  (e: 'confirmRename', name: string): void;
+  (e: 'cancelRename'): void;
   (e: 'contextMenu', event: MouseEvent, file: Api.Disk.FileItem): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   data: () => [],
   isBatchMode: false,
-  creatingItem: null
+  creatingItem: null,
+  renamingItem: null
 });
 
 const emit = defineEmits<Emits>();
@@ -40,7 +44,9 @@ const { height } = useWindowSize();
 // 跟踪每行的悬停状态
 const hoveredRowId = ref<CommonType.IdType | null>(null);
 const creatingName = ref('');
+const renamingName = ref('');
 const inputRef = ref<HTMLInputElement | null>(null);
+const renameInputRef = ref<HTMLInputElement | null>(null);
 
 const selectedFileIds = computed(() => diskStore.selectedFileIds);
 
@@ -59,6 +65,22 @@ function handleConfirm() {
 
 function handleCancel() {
   emit('cancelCreate');
+}
+
+function handleRenameConfirm() {
+  emit('confirmRename', renamingName.value);
+}
+
+function handleRenameCancel() {
+  emit('cancelRename');
+}
+
+function handleRenameKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter') {
+    handleRenameConfirm();
+  } else if (e.key === 'Escape') {
+    handleRenameCancel();
+  }
 }
 
 function handleKeydown(e: KeyboardEvent) {
@@ -80,18 +102,22 @@ function getFullFileName(item: Api.Disk.FileItem): string {
 }
 
 const displayData = computed(() => {
-  if (!props.creatingItem) {
+  if (!props.creatingItem && !props.renamingItem) {
     return props.data;
   }
-  const creatingRow: Api.Disk.FileItem = {
-    id: props.creatingItem.id,
-    name: '',
-    isDir: props.creatingItem.isDir,
-    size: 0,
-    extendName: props.creatingItem.isDir ? '' : props.creatingItem.extendName || '',
-    updateTime: new Date().toISOString()
-  };
-  return [creatingRow, ...props.data];
+  const result = [...props.data];
+  if (props.creatingItem) {
+    const creatingRow: Api.Disk.FileItem = {
+      id: props.creatingItem.id,
+      name: '',
+      isDir: props.creatingItem.isDir,
+      size: 0,
+      extendName: props.creatingItem.isDir ? '' : props.creatingItem.extendName || '',
+      updateTime: new Date().toISOString()
+    };
+    result.unshift(creatingRow);
+  }
+  return result;
 });
 
 function handleCheck(keys: CommonType.IdType[]) {
@@ -106,6 +132,7 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
       width: 300,
       render: row => {
         const isCreating = props.creatingItem && row.id === props.creatingItem.id;
+        const isRenaming = props.renamingItem && row.id === props.renamingItem.id;
         const isHovered = hoveredRowId.value === row.id;
         if (isCreating) {
           return (
@@ -114,7 +141,7 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
                 <FileImage data={row} />
               </div>
               <NInput
-                ref={inputRef}
+                ref={(el: any) => (inputRef.value = el)}
                 value={creatingName.value}
                 onUpdateValue={(v: string) => (creatingName.value = v)}
                 size="tiny"
@@ -126,6 +153,30 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
                 <icon-mdi-check />
               </NButton>
               <NButton size="tiny" type="primary" onClick={handleCancel}>
+                <icon-mdi-close />
+              </NButton>
+            </div>
+          );
+        }
+        if (isRenaming) {
+          return (
+            <div class="h-full w-50% flex items-center gap-2">
+              <div class="h-30px w-30px flex flex-shrink-0 items-center justify-center">
+                <FileImage data={row} />
+              </div>
+              <NInput
+                ref={(el: any) => (renameInputRef.value = el)}
+                value={renamingName.value}
+                onUpdateValue={(v: string) => (renamingName.value = v)}
+                size="tiny"
+                placeholder={props.renamingItem?.isDir ? '文件夹名称' : '文件名称'}
+                class="flex-1"
+                onKeydown={handleRenameKeydown}
+              />
+              <NButton size="tiny" type="primary" onClick={handleRenameConfirm}>
+                <icon-mdi-check />
+              </NButton>
+              <NButton size="tiny" type="primary" onClick={handleRenameCancel}>
                 <icon-mdi-close />
               </NButton>
             </div>
@@ -288,19 +339,41 @@ const rowProps = (row: Api.Disk.FileItem) => {
 
 watch(
   () => props.creatingItem,
-  newItem => {
+  async newItem => {
     if (newItem) {
       if (newItem.isDir) {
         creatingName.value = newItem.name;
       } else {
         creatingName.value = getFullFileName(newItem);
       }
+      await nextTick();
       setTimeout(() => {
         inputRef.value?.focus();
         inputRef.value?.select();
-      }, 100);
+      }, 50);
     } else {
       creatingName.value = '';
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.renamingItem,
+  async newItem => {
+    if (newItem) {
+      if (newItem.isDir) {
+        renamingName.value = newItem.name;
+      } else {
+        renamingName.value = getFullFileName(newItem);
+      }
+      await nextTick();
+      setTimeout(() => {
+        renameInputRef.value?.focus();
+        renameInputRef.value?.select();
+      }, 50);
+    } else {
+      renamingName.value = '';
     }
   },
   { immediate: true }

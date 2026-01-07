@@ -28,9 +28,10 @@ export function generateUniqueName(
   fileList: Api.Disk.FileItem[],
   baseName: string,
   isDir: boolean,
-  extension?: string
+  extension?: string,
+  excludeId?: CommonType.IdType
 ): string {
-  const existingNames = new Set(fileList.map(item => item.name));
+  const existingNames = new Set(fileList.filter(item => item.id !== excludeId).map(item => item.name));
 
   if (isDir) {
     if (!existingNames.has(baseName)) {
@@ -44,11 +45,11 @@ export function generateUniqueName(
   }
   const fullName = extension ? `${baseName}.${extension}` : baseName;
   if (!existingNames.has(fullName)) {
-    return fullName;
+    return baseName;
   }
   let counter = 1;
   while (existingNames.has(`${baseName}(${counter})${extension ? `.${extension}` : ''}`)) {
     counter += 1;
   }
-  return `${baseName}(${counter})${extension ? `.${extension}` : ''}`;
+  return `${baseName}(${counter})`;
 }

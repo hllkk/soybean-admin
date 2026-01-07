@@ -12,6 +12,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const isDragUploadEnabled = ref(true);
   const selectedFileId = ref<CommonType.IdType>('');
   const creatingItem = ref<Api.Disk.FileItem | null>(null);
+  const renamingItem = ref<Api.Disk.FileItem | null>(null);
   const selectedFileIds = ref<CommonType.IdType[]>([]);
   const queryType = ref<SimpleUploader.Uploader.FileListQueryType>('all');
   const fileListLength = ref(0);
@@ -36,6 +37,14 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
 
   function setSelectedFileId(fileId: string) {
     selectedFileId.value = fileId;
+  }
+
+  function setRenamingItem(item: Api.Disk.FileItem | null) {
+    renamingItem.value = item;
+  }
+
+  function cancelRenameItem() {
+    setRenamingItem(null);
   }
 
   function confirmCreateItem(inputName: string): Api.Disk.FileItem | null {
@@ -81,6 +90,35 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
 
   function cancelCreateItem() {
     setCreatingItem(null);
+  }
+
+  function confirmRenameItem(inputName: string): Api.Disk.FileItem | null {
+    if (!renamingItem.value) return null;
+
+    const fileIndex = fileList.value.findIndex(f => f.id === renamingItem.value!.id);
+    if (fileIndex === -1) return null;
+
+    const file = fileList.value[fileIndex];
+
+    if (file.isDir) {
+      const finalName = generateUniqueName(fileList.value, inputName.trim(), true, '', renamingItem.value.id);
+      file.name = finalName;
+      setRenamingItem(null);
+      return file;
+    }
+
+    const { name: baseName, extension } = parseFileName(inputName);
+    let finalExtension = extension;
+
+    if (!finalExtension && file.extendName) {
+      finalExtension = file.extendName;
+    }
+
+    const finalName = generateUniqueName(fileList.value, baseName, false, finalExtension, renamingItem.value.id);
+    file.name = finalName;
+    file.extendName = finalExtension || '';
+    setRenamingItem(null);
+    return file;
   }
 
   function setQueryType(type: SimpleUploader.Uploader.FileListQueryType) {
@@ -150,6 +188,10 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     cancelCreateItem,
     selectedFileIds,
     toggleFileSelection,
+    renamingItem,
+    setRenamingItem,
+    confirmRenameItem,
+    cancelRenameItem,
     setSelectedFileIds,
     getUploadParams,
     getFileList,

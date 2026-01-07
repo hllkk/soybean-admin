@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useDiskStore } from '@/store/modules/disk';
 import FileImage from './disk-image.vue';
 
@@ -11,18 +11,22 @@ interface Props {
   data?: Api.Disk.FileItem[];
   isBatchMode?: boolean;
   creatingItem?: Api.Disk.FileItem | null;
+  renamingItem?: Api.Disk.FileItem | null;
 }
 
 interface Emits {
   (e: 'confirmCreate', name: string): void;
   (e: 'cancelCreate'): void;
+  (e: 'confirmRename', name: string): void;
+  (e: 'cancelRename'): void;
   (e: 'contextMenu', event: MouseEvent, file: Api.Disk.FileItem): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   data: () => [],
   isBatchMode: false,
-  creatingItem: null
+  creatingItem: null,
+  renamingItem: null
 });
 
 const emit = defineEmits<Emits>();
@@ -31,7 +35,9 @@ const diskStore = useDiskStore();
 
 const isLoading = ref<boolean>(false);
 const inputRef = ref<HTMLInputElement | null>(null);
+const renameInputRef = ref<HTMLInputElement | null>(null);
 const creatingName = ref('');
+const renamingName = ref('');
 const selectedFileIds = computed(() => diskStore.selectedFileIds);
 
 function getFullFileName(item: Api.Disk.FileItem): string {
@@ -50,6 +56,26 @@ function handleConfirm() {
 
 function handleCancel() {
   emit('cancelCreate');
+}
+
+function handleRenameConfirm() {
+  emit('confirmRename', renamingName.value);
+}
+
+function handleRenameCancel() {
+  emit('cancelRename');
+}
+
+function handleRenameKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter') {
+    handleRenameConfirm();
+  } else if (e.key === 'Escape') {
+    handleRenameCancel();
+  }
+}
+
+function isRenaming(fileId: CommonType.IdType): boolean {
+  return props.renamingItem?.id === fileId;
 }
 
 function handleKeydown(e: KeyboardEvent) {
@@ -79,6 +105,23 @@ watch(
       }, 100);
     } else {
       creatingName.value = '';
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.renamingItem,
+  async newItem => {
+    if (newItem) {
+      renamingName.value = getFullFileName(newItem);
+      await nextTick();
+      setTimeout(() => {
+        renameInputRef.value?.focus();
+        renameInputRef.value?.select();
+      }, 50);
+    } else {
+      renamingName.value = '';
     }
   },
   { immediate: true }
@@ -126,43 +169,80 @@ watch(
     <NGridItem v-for="item in props.data" :key="item.id">
       <div
         class="pos-relative mt-12px h-150px w-auto hover:bg-primary-100 dark:hover:bg-[rgba(255,255,255,0.1)]"
-        :class="isBatchMode || isSelected(item.id) ? 'bg-primary-100 dark:bg-[rgba(255,255,255,0.1)]' : ''"
+        :class="
+          isBatchMode || isSelected(item.id) || isRenaming(item.id)
+            ? 'bg-primary-100 dark:bg-[rgba(255,255,255,0.1)]'
+            : ''
+        "
         @contextmenu="(e: MouseEvent) => emit('contextMenu', e, item)"
       >
-        <!-- 顶部操作内容，悬停展示-->
-        <div class="flex justify-between">
-          <div class="ml-1 mt-1" :class="isBatchMode || isSelected(item.id) ? 'checkbox-always-show' : 'hover-info'">
-            <NCheckbox
-              size="small"
-              :checked="isSelected(item.id)"
-              @update:checked="() => handleToggleSelection(item.id)"
-            ></NCheckbox>
-          </div>
-          <div class="hover-info">
-            <div
-              class="mr-1 mt-2 h-auto w-40px flex-x-center gap-1 rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]"
-            >
-              <NButton size="tiny" text>
+        <!-- 正在重命名的项目 -->
+        <template v-if="isRenaming(item.id)">
+          <div class="flex justify-between">
+            <div class="ml-1 mt-1"></div>
+            <div class="mr-1 mt-2 w-40px flex-x-center gap-1 rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]">
+              <NButton size="tiny" text @click="handleRenameConfirm">
                 <template #icon>
-                  <icon-solar-share-outline class="text-primary" />
+                  <icon-mdi-check class="text-primary" />
                 </template>
               </NButton>
-              <NButton size="tiny" text>
+              <NButton size="tiny" text @click="handleRenameCancel">
                 <template #icon>
-                  <icon-material-symbols-download-rounded class="text-primary" />
+                  <icon-mdi-close class="text-primary" />
                 </template>
               </NButton>
             </div>
           </div>
-        </div>
-        <div class="mt-8px h-65px flex-x-center">
-          <NSkeleton v-if="isLoading" :sharp="false" size="medium" :width="60" :height="60"></NSkeleton>
-          <FileImage v-else :data="item" />
-        </div>
-        <div class="mt-12px flex-x-center select-none text-ellipsis text-center text-12px">
-          <NSkeleton v-if="isLoading" :width="60" :sharp="false" text />
-          <p v-else>{{ item.name }}</p>
-        </div>
+          <div class="mt-8px h-65px flex-x-center">
+            <FileImage :data="item" />
+          </div>
+          <div class="mt-12px flex-x-center px-2">
+            <NInput
+              ref="renameInputRef"
+              v-model:value="renamingName"
+              size="tiny"
+              :placeholder="item.isDir ? '文件夹名称' : '文件名称'"
+              @keydown="handleRenameKeydown"
+            />
+          </div>
+        </template>
+        <!-- 正常显示的项目 -->
+        <template v-else>
+          <!-- 顶部操作内容，悬停展示-->
+          <div class="flex justify-between">
+            <div class="ml-1 mt-1" :class="isBatchMode || isSelected(item.id) ? 'checkbox-always-show' : 'hover-info'">
+              <NCheckbox
+                size="small"
+                :checked="isSelected(item.id)"
+                @update:checked="() => handleToggleSelection(item.id)"
+              ></NCheckbox>
+            </div>
+            <div class="hover-info">
+              <div
+                class="mr-1 mt-2 h-auto w-40px flex-x-center gap-1 rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]"
+              >
+                <NButton size="tiny" text>
+                  <template #icon>
+                    <icon-solar-share-outline class="text-primary" />
+                  </template>
+                </NButton>
+                <NButton size="tiny" text>
+                  <template #icon>
+                    <icon-material-symbols-download-rounded class="text-primary" />
+                  </template>
+                </NButton>
+              </div>
+            </div>
+          </div>
+          <div class="mt-8px h-65px flex-x-center">
+            <NSkeleton v-if="isLoading" :sharp="false" size="medium" :width="60" :height="60"></NSkeleton>
+            <FileImage v-else :data="item" />
+          </div>
+          <div class="mt-12px flex-x-center select-none text-ellipsis text-center text-12px">
+            <NSkeleton v-if="isLoading" :width="60" :sharp="false" text />
+            <p v-else>{{ item.name }}</p>
+          </div>
+        </template>
       </div>
     </NGridItem>
   </NGrid>
