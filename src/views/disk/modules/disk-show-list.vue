@@ -69,20 +69,6 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-function getDisplayName(item: Api.Disk.FileItem): string {
-  if (item.isDir) {
-    return item.name;
-  }
-  if (!item.extendName) {
-    return item.name;
-  }
-  const extWithDot = `.${item.extendName}`;
-  if (item.name.endsWith(extWithDot)) {
-    return item.name.slice(0, -extWithDot.length);
-  }
-  return item.name;
-}
-
 function getFullFileName(item: Api.Disk.FileItem): string {
   if (item.isDir) {
     return item.name;
@@ -146,13 +132,13 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
           );
         }
         return (
-          <div class="group h-full w-full flex items-center justify-between">
+          <div class="h-full w-full flex items-center justify-between">
             {/* 左侧：图标和文件名 */}
             <div class="mr-4 min-w-0 flex flex-1 items-center overflow-hidden">
               <div class="mr-3 h-30px w-30px flex-shrink-0">
                 <FileImage data={row} />
               </div>
-              <span class="select-none truncate text-13px">{getDisplayName(row)}</span>
+              <span class="select-none truncate text-13px">{row.name}</span>
             </div>
 
             {/* 右侧：按钮组 */}

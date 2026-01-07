@@ -44,10 +44,11 @@ const FileIcon: FileExtendNameIconMap = {
   xmind: 'file-mind',
   json: 'file-json',
   yaml: 'file-yaml',
-  '7z': 'file-7z',
+  '7z': 'file_7z',
   pdf: 'file_pdf',
   tar: 'file-tar',
   png: 'file_image',
+  iso: 'file_iso',
   other: 'file_other' // 未知文件
 };
 
