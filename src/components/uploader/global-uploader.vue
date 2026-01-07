@@ -7,7 +7,8 @@ import { fetchCheckExist, fetchMergeFile, fetchUploadFolder, simpleUploadURL } f
 import { getAuthorization } from '@/service/request/shared';
 import { useDiskStore } from '@/store/modules/disk';
 import { encodeIfNeeded, formatNetSpeed, isPath } from '@/utils/file';
-import { localStg } from '../../utils/storage';
+import { localStg } from '@/utils/storage';
+import { $t } from '@/locales';
 const { Uploader, UploaderBtn, UploaderDrop, UploaderUnsupport } = VueSimpleUploader;
 
 defineOptions({
@@ -173,7 +174,7 @@ async function onFilesAdded(files: SimpleUploader.Uploader.UploaderFile[]) {
     };
     const { data, error } = await fetchCheckExist(query);
     if (error) {
-      window.$message?.error(`Failed to check exist: ${error}`);
+      window.$message?.error(`文件存在检查失败: ${error}`);
       uploaderCancel();
       return;
     }
@@ -198,14 +199,14 @@ async function onFilesAdded(files: SimpleUploader.Uploader.UploaderFile[]) {
       await doUploadBefore(files);
     }
   } catch (error) {
-    window.$message?.error(`Failed to add files: ${error}`);
+    window.$message?.error(`文件添加失败: ${error}`);
     uploaderCancel();
   }
 }
 
 function setPageTitle(speed: string) {
   if (process.value === -10 || process.value === 100 || diskStore.fileListLength === 0) {
-    document.title = `${route.meta.title}`;
+    document.title = route.meta.i18nKey ? $t(route.meta.i18nKey) : document.title;
   } else {
     document.title = `${process.value}% | ${speed}`;
   }
@@ -221,10 +222,11 @@ function onFileProgress(
   setPageTitle(netSpeed.value);
 
   if (process.value < 100) {
-    if (rootFile.isFolder) {
-      setFileStatus(rootFile.id, 'uploading');
-    } else {
-      setFileStatus(file.id, 'uploading');
+    const fileId = rootFile.isFolder ? rootFile.id : file.id;
+    const currentStatus = fileStatusMap.value.get(fileId);
+
+    if (currentStatus !== 'paused') {
+      setFileStatus(fileId, 'uploading');
     }
   }
 
@@ -243,7 +245,8 @@ function handleClose() {
     uploaderCancel();
   } else {
     window.$dialog?.warning({
-      title: '还有文件正在上传,确定要关闭吗？',
+      title: '关闭',
+      content: '还有文件正在上传,确定要关闭吗？',
       positiveText: '确定',
       negativeText: '取消',
       onPositiveClick() {
@@ -284,6 +287,7 @@ function onFileSuccess(
         setFileStatus(rootFile.id, 'success');
       }
     }
+    diskStore.getFileList();
   }
   // 如果服务端返回需要合并文件
   if (data.merge) {
@@ -330,16 +334,20 @@ function onFileSuccess(
   if (file.parent === null) {
     handleClose();
   }
+
+  diskStore.getFileList();
+}
+function onFileError(
+  _: SimpleUploader.Uploader.UploaderFile,
+  _rootFile: SimpleUploader.Uploader.UploaderFile,
+  response: string
+) {
+  window.$message?.error(`上传失败: ${response}`);
 }
 
-// function onFileError(
-//   rootFile: SimpleUploader.Uploader.UploaderFile,
-//   file: SimpleUploader.Uploader.UploaderFile,
-//   response: string
-// ) {
-//   const res = JSON.parse(response);
-//   console.log(res);
-// }
+function onFileRemoved() {
+  diskStore.fileListLength = window.uploader?.fileList.length as number;
+}
 
 // 拖拽开始时
 function handleDragstart(e: DragEvent) {
@@ -404,6 +412,10 @@ function handleDrop(e: DragEvent) {
   dragover.value = false;
 }
 
+function handleStatusChange(fileId: number, status: string) {
+  fileStatusMap.value.set(fileId, status);
+}
+
 // 初始化上传组件
 function initUploader() {
   nextTick(() => {
@@ -451,6 +463,8 @@ onUnmounted(() => {
       @files-added="onFilesAdded"
       @file-progress="onFileProgress"
       @file-success="onFileSuccess"
+      @file-error="onFileError"
+      @file-removed="onFileRemoved"
     >
       <UploaderUnsupport>您的浏览器不支持上传组件</UploaderUnsupport>
       <!-- 上传区域-->
@@ -465,6 +479,8 @@ onUnmounted(() => {
         :process="process"
         :is-uploading="isUploading"
         :file-status-map="fileStatusMap"
+        @close="handleClose"
+        @status-change="handleStatusChange"
       ></GlobalUploaderList>
     </Uploader>
   </div>

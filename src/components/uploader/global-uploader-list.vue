@@ -17,6 +17,13 @@ interface Props {
   fileStatusMap?: Map<number, string>;
 }
 
+interface Emits {
+  (e: 'close'): void;
+  (e: 'statusChange', fileId: number, status: string): void;
+}
+
+const emit = defineEmits<Emits>();
+
 const props = withDefaults(defineProps<Props>(), {
   netSpeed: '0B/s',
   process: 0,
@@ -192,6 +199,20 @@ function shrink() {
   processAreaClass.value.width = '92px';
   processAreaClass.value.height = '92px';
 }
+
+function handlePause(file: UploaderListSlotProps['fileList'][0]) {
+  file.pause();
+  emit('statusChange', file.id, 'paused');
+}
+
+function handleResume(file: UploaderListSlotProps['fileList'][0]) {
+  file.resume();
+  emit('statusChange', file.id, 'uploading');
+}
+
+function close() {
+  emit('close');
+}
 </script>
 
 <template>
@@ -212,7 +233,7 @@ function shrink() {
                   <icon-ep-position />
                 </template>
               </NButton>
-              <NButton text class="ml-0 p-[16px_5px] text-25px" @click="diskStore.closePanel()">
+              <NButton text class="ml-0 p-[16px_5px] text-25px" @click="close">
                 <template #icon>
                   <icon-ep:circle-close />
                 </template>
@@ -253,13 +274,19 @@ function shrink() {
                 <!-- 下段：文件元信息 -->
                 <div class="file-meta">
                   <span class="file-size select-none">{{ handleFileSize(file) }}</span>
-                  <span class="file-speed select-none">{{ getFileSpeed(file) }}</span>
+                  <span v-if="file.isUploading()" class="file-speed select-none">{{ getFileSpeed(file) }}</span>
+                  <span v-else class="file-speed select-none">0 KB/s</span>
                 </div>
               </div>
 
               <!-- 右侧操作按钮区 -->
               <div class="file-actions">
-                <NButton text class="action-btn" size="small">
+                <NButton v-if="file.isUploading()" text class="action-btn" size="small" @click="handlePause(file)">
+                  <template #icon>
+                    <icon-ep-video-pause />
+                  </template>
+                </NButton>
+                <NButton v-else text class="action-btn" size="small" @click="handleResume(file)">
                   <template #icon>
                     <icon-ep-video-play />
                   </template>
@@ -282,13 +309,7 @@ function shrink() {
         </div>
       </Transition>
       <Transition name="ball-fade">
-        <div
-          v-show="isShrink || appStore.isMobile"
-          id="drag-ball"
-          class="process-area"
-          :style="processAreaClass"
-          @click="expand"
-        >
+        <div v-show="isShrink || appStore.isMobile" class="process-area" :style="processAreaClass" @click="expand">
           <div class="process-anime">
             <div class="cube-a" :style="{ top: -props.process - 65 + '%' }"></div>
             <div class="cube-b" :style="{ top: -props.process - 65 + '%' }"></div>
@@ -299,8 +320,8 @@ function shrink() {
             </div>
 
             <div v-if="listProps.fileList.length && props.process >= 100" class="done">
-              <svg xmlns="http://www.w3.org/2000/svg" class="done-icon checkmark">
-                <path d="M 13.1 21.2 l 5.1 5.2 l 12.7 -12.8" class="checkmark__check fill-transparent"></path>
+              <svg xmlns="http://www.w3.org/2000/svg" class="done-icon" viewBox="0 0 50 50">
+                <path d="M 13.1 21.2 l 5.1 5.2 l 12.7 -12.8" class="checkmark__check"></path>
               </svg>
             </div>
 
@@ -612,10 +633,10 @@ function shrink() {
 
 @keyframes fill-data {
   0% {
-    box-shadow: inset 0 0 0 #fdda65;
+    stroke-width: 0;
   }
   100% {
-    box-shadow: inset 0 0 0 45px #fdda65;
+    stroke-width: 50;
   }
 }
 
@@ -642,34 +663,28 @@ function shrink() {
 
 .process-anime .done {
   position: absolute;
-  width: 45px;
-  height: 45px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(2.25);
+  width: 90px;
+  height: 90px;
+  top: 58%;
+  left: 58%;
+  transform: translate(-50%, -50%);
   z-index: 10;
 }
 
-.process-anime .done .checkmark {
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  display: block;
-  stroke-width: 2;
-  stroke: #fff;
-  stroke-miterlimit: 10;
-  box-shadow: inset 0 0 0 #fdda65;
-  animation:
-    fill-data 0.4s ease-in-out 0.4s forwards,
-    scale-data 0.3s ease-in-out 0.9s both;
+.process-anime .done .done-icon {
+  width: 100%;
+  height: 100%;
 }
 
 .process-anime .done .checkmark__check {
-  transform: translate(2px, 2px);
-  transform-origin: 50% 50%;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   stroke-dasharray: 48;
   stroke-dashoffset: 48;
-  animation: stroke-data 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+  animation: stroke-data 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
 }
 
 .process-anime .empty-state {

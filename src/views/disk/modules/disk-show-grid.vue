@@ -34,20 +34,6 @@ const inputRef = ref<HTMLInputElement | null>(null);
 const creatingName = ref('');
 const selectedFileIds = computed(() => diskStore.selectedFileIds);
 
-function getDisplayName(item: Api.Disk.FileItem): string {
-  if (item.isDir) {
-    return item.name;
-  }
-  if (!item.extendName) {
-    return item.name;
-  }
-  const extWithDot = `.${item.extendName}`;
-  if (item.name.endsWith(extWithDot)) {
-    return item.name.slice(0, -extWithDot.length);
-  }
-  return item.name;
-}
-
 function getFullFileName(item: Api.Disk.FileItem): string {
   if (item.isDir) {
     return item.name;
@@ -175,7 +161,7 @@ watch(
         </div>
         <div class="mt-12px flex-x-center select-none text-ellipsis text-center text-12px">
           <NSkeleton v-if="isLoading" :width="60" :sharp="false" text />
-          <p v-else>{{ getDisplayName(item) }}</p>
+          <p v-else>{{ item.name }}</p>
         </div>
       </div>
     </NGridItem>
