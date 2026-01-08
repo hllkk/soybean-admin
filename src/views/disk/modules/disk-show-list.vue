@@ -333,7 +333,8 @@ const rowProps = (row: Api.Disk.FileItem) => {
       emit('contextMenu', e, row);
     },
     onmouseleave: () => handleRowMouseLeave(),
-    class: hoveredRowId.value === row.id ? 'hovered-row' : ''
+    class: hoveredRowId.value === row.id ? 'hovered-row' : '',
+    onclick: () => diskStore.handleSelectFile(row)
   };
 };
 

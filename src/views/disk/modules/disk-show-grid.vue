@@ -175,6 +175,7 @@ watch(
             : ''
         "
         @contextmenu="(e: MouseEvent) => emit('contextMenu', e, item)"
+        @click="diskStore.handleSelectFile(item)"
       >
         <!-- 正在重命名的项目 -->
         <template v-if="isRenaming(item.id)">

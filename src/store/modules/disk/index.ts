@@ -1,8 +1,9 @@
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
 import { fetchGetFileList } from '@/service/api/disk/list';
+import { useRouterPush } from '@/hooks/common/router';
 import { SetupStoreId } from '@/enum';
 import { useAuthStore } from '../auth';
 import { generateUniqueName, parseFileName } from './shared';
@@ -13,15 +14,26 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const selectedFileId = ref<CommonType.IdType>('');
   const creatingItem = ref<Api.Disk.FileItem | null>(null);
   const renamingItem = ref<Api.Disk.FileItem | null>(null);
+  const openingItem = ref<Api.Disk.FileItem | null>(null);
   const selectedFileIds = ref<CommonType.IdType[]>([]);
   const queryType = ref<SimpleUploader.Uploader.FileListQueryType>('all');
+  const fileList = ref<Api.Disk.FileItem[]>([]);
   const fileListLength = ref(0);
+  const basePath = ref('/');
+  const pathList = ref<Array<{ folder: string; shareBase?: string }>>([]);
+  const pageIndex = ref(1);
 
   const route = useRoute();
   const authStore = useAuthStore();
   const { bool: panelVisible, setTrue: openPanel, setFalse: closePanel } = useBoolean();
+  const { routerPushByKey } = useRouterPush();
 
-  const fileList = ref<Api.Disk.FileItem[]>([]);
+  const path = computed(() => {
+    const paramPath = typeof route.params.path === 'string' ? route.params.path : '';
+    if (!paramPath) return '';
+    const pathWithSpace = paramPath.replace(/\+/g, ' ');
+    return decodeURIComponent(pathWithSpace);
+  });
 
   function setUploadDragEnabled(value: boolean) {
     isDragUploadEnabled.value = value;
@@ -139,20 +151,22 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   }
 
   function getQueryPath() {
-    const basePath = typeof route.query.basePath === 'string' ? route.query.basePath : '/';
-    const path = typeof route.query.path === 'string' ? route.query.path : '';
-
-    let finalPath = basePath;
+    let finalPath = basePath.value;
     if (finalPath && finalPath.endsWith('/')) {
       finalPath = finalPath.slice(0, -1);
     }
 
-    return encodeURIComponent(finalPath + path);
+    const currentPath = path.value || '';
+    if (currentPath) {
+      finalPath += currentPath;
+    }
+
+    return encodeURIComponent(finalPath);
   }
 
   async function getUploadParams() {
     return {
-      folder: route.query.searchOpenFolder || route.query.folder,
+      folder: route.query.folder,
       currentDirectory: getQueryPath(),
       userId: authStore.userInfo.userId
     };
@@ -162,7 +176,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     return {
       userId: authStore.userInfo.userId,
       currentDirectory: getQueryPath(),
-      folder: route.query.searchOpenFolder || route.query.folder,
+      folder: route.query.folder,
       queryType: queryType.value
     };
   }
@@ -174,6 +188,62 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
       return;
     }
     fileList.value = data || [];
+  }
+
+  function handleSelectFile(item: Api.Disk.FileItem) {
+    openingItem.value = item;
+    if (item.isDir) {
+      handleOpenFolder(item);
+    } else {
+      handleOpenFile(item);
+    }
+  }
+
+  function handleOpenFolder(item: Api.Disk.FileItem) {
+    const notHomePage = route.path.length > 1;
+
+    if (notHomePage && `${path.value}/` !== (item.filePath || '') && basePath.value.length === 1) {
+      basePath.value = item.filePath || '/';
+    }
+
+    let newPath = `${path.value}/${item.name}`;
+    newPath = newPath.replace(/\\/g, '/');
+    newPath = newPath.replace(/\/\//g, '/');
+    newPath = newPath.replace(basePath.value, '/');
+
+    const pathListItem = { folder: item.name };
+    pathList.value.push(pathListItem);
+
+    pageIndex.value = 1;
+
+    routerPushByKey('disk', {
+      query: {
+        path: newPath,
+        ...(basePath.value && basePath.value.length > 1 ? { basePath: basePath.value } : {})
+      }
+    });
+
+    getFileList();
+  }
+
+  function handleOpenFile(item: Api.Disk.FileItem) {
+    console.log(item);
+  }
+
+  function initPathListFromRoute() {
+    const paramPath = typeof route.params.path === 'string' ? route.params.path : '';
+    if (paramPath && paramPath !== '/') {
+      const pathWithSpace = paramPath.replace(/\+/g, ' ');
+      const decodedPath = decodeURI(pathWithSpace);
+      pathList.value = [];
+      decodedPath.split('/').forEach((pathName, index) => {
+        if (index > 0 && pathName) {
+          pathList.value.push({ folder: pathName });
+        }
+      });
+    } else {
+      pathList.value = [];
+    }
   }
 
   return {
@@ -199,6 +269,12 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     setQueryType,
     panelVisible,
     openPanel,
-    closePanel
+    closePanel,
+    handleSelectFile,
+    basePath,
+    path,
+    pathList,
+    pageIndex,
+    initPathListFromRoute
   };
 });
