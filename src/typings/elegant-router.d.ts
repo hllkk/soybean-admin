@@ -31,6 +31,7 @@ declare module "@elegant-router/types" {
     "log_operate": "/log/operate";
     "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
     "personal-center": "/personal-center";
+    "share": "/s/:id";
     "system": "/system";
     "system_dept": "/system/dept";
     "system_dict": "/system/dict";
@@ -83,6 +84,7 @@ declare module "@elegant-router/types" {
     | "log"
     | "login"
     | "personal-center"
+    | "share"
     | "system"
   >;
 
@@ -113,6 +115,7 @@ declare module "@elegant-router/types" {
     | "disk"
     | "log_login"
     | "log_operate"
+    | "share"
     | "system_dept"
     | "system_dict"
     | "system_menu"

@@ -38,7 +38,7 @@ function createDefaultProfileModel(): ProfileModel {
     nickName: userInfo.nickName || '',
     userEmail: userInfo.userEmail || '',
     userPhone: userInfo.userPhone || '',
-    sex: userInfo.userGender || '0'
+    gender: (userInfo.userGender ?? '0') as UnionKey.UserGender
   };
 }
 
@@ -50,14 +50,14 @@ function createDefaultPasswordModel(): PasswordModel {
   };
 }
 
-type ProfileRuleKey = Extract<keyof ProfileModel, 'nickName' | 'userEmail' | 'userPhone' | 'sex'>;
+type ProfileRuleKey = Extract<keyof ProfileModel, 'nickName' | 'userEmail' | 'userPhone' | 'gender'>;
 type PasswordRuleKey = Extract<keyof PasswordModel, 'oldPassword' | 'newPassword' | 'confirmPassword'>;
 
 const profileRules: Record<ProfileRuleKey, App.Global.FormRule> = {
   nickName: createRequiredRule('昵称不能为空'),
   userEmail: { ...patternRules.email, required: true },
   userPhone: { ...patternRules.phone, required: true },
-  sex: createRequiredRule('性别不能为空')
+  gender: createRequiredRule('性别不能为空')
 };
 
 const passwordRules: Record<PasswordRuleKey, App.Global.FormRule> = {
@@ -160,7 +160,7 @@ async function updatePassword() {
               <NInput v-model:value="profileModel.userPhone" placeholder="请输入手机号" />
             </NFormItem>
             <NFormItem label="性别" path="sex">
-              <NRadioGroup v-model:value="profileModel.sex">
+              <NRadioGroup v-model:value="profileModel.gender">
                 <NRadio value="0">男</NRadio>
                 <NRadio value="1">女</NRadio>
               </NRadioGroup>

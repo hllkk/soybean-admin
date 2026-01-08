@@ -260,7 +260,8 @@ const local: App.I18n.Schema = {
     log: 'Log Management',
     log_login: 'Login Log',
     log_operate: 'Operation Log',
-    about: 'About'
+    about: 'About',
+    share: 'Share'
   },
   page: {
     login: {

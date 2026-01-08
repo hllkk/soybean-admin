@@ -235,7 +235,7 @@ function close() {
               </NButton>
               <NButton text class="ml-0 p-[16px_5px] text-25px" @click="close">
                 <template #icon>
-                  <icon-ep:circle-close />
+                  <icon-ep-circle-close />
                 </template>
               </NButton>
             </div>

@@ -169,6 +169,19 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'share',
+    path: '/s/:id',
+    component: 'layout.blank$view.share',
+    props: true,
+    meta: {
+      title: 'share',
+      i18nKey: 'route.share',
+      module: 'disk',
+      hideInMenu: true,
+      constant: true
+    }
+  },
+  {
     name: 'system',
     path: '/system',
     component: 'layout.base',

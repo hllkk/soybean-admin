@@ -30,6 +30,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   disk: () => import("@/views/disk/index.vue"),
   log_login: () => import("@/views/log/login/index.vue"),
   log_operate: () => import("@/views/log/operate/index.vue"),
+  share: () => import("@/views/share/[id].vue"),
   system_dept: () => import("@/views/system/dept/index.vue"),
   system_dict: () => import("@/views/system/dict/index.vue"),
   system_menu: () => import("@/views/system/menu/index.vue"),

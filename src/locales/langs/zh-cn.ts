@@ -256,7 +256,8 @@ const local: App.I18n.Schema = {
     log: '日志管理',
     log_login: '登录日志',
     log_operate: '操作日志',
-    about: '关于'
+    about: '关于',
+    share: '分享'
   },
   page: {
     login: {

@@ -19,6 +19,9 @@ export function setupElegantRouter() {
 
         return `/login/:module(${moduleReg})?`;
       }
+      if (key === 'share') {
+        return `/s/:id`;
+      }
 
       return routePath;
     },

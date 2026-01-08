@@ -31,6 +31,9 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
   /** 标签页按模块分组存储 */
   const moduleTabs = ref<Map<UnionKey.MenuModule, App.Global.Tab[]>>(new Map());
 
+  /** Tabs */
+  const tabs = ref<App.Global.Tab[]>([]);
+
   /** Home tab */
   const homeTab = ref<App.Global.Tab>();
 

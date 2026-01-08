@@ -22,7 +22,7 @@ declare namespace Api {
       /** 手机号码 */
       userPhone: string;
       /** 用户性别（0未知 1男 2女） */
-      gender: UnionKey.UserGender;
+      gender?: UnionKey.UserGender;
       /** 头像地址 */
       avatar: string;
       /** 密码 */

@@ -1,6 +1,6 @@
 <script lang="tsx" setup>
 import { computed, ref } from 'vue';
-import type { DataTableColumns, TreeInst, TreeOption } from 'naive-ui';
+import { type DataTableColumns, NIcon, type TreeInst, type TreeOption } from 'naive-ui';
 import { useLoading } from '@sa/hooks';
 import { menuTypeRecord } from '@/constants/common';
 import { fetchGetMenuBtnList, fetchGetMenuList } from '@/service/api/system/menu';
