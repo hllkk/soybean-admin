@@ -3,18 +3,18 @@ defineOptions({
   name: 'DeptOperateDrawer'
 });
 
-interface Props {
-  /** the type of operation */
-  operateType: NaiveUI.TableOperateType;
-  /** the edit row data */
-  rowData?: Api.System.Dept | null;
-}
+// interface Props {
+//   /** the type of operation */
+//   operateType: NaiveUI.TableOperateType;
+//   /** the edit row data */
+//   rowData?: Api.System.Dept | null;
+// }
 
-const props = defineProps<Props>();
+// const props = defineProps<Props>();
 
-const visible = defineModel<boolean>('visible', {
-  default: false
-});
+// const visible = defineModel<boolean>('visible', {
+//   default: false
+// });
 </script>
 
 <template>
