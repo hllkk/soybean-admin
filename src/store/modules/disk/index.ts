@@ -1,9 +1,8 @@
-import { computed, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
 import { fetchGetFileList } from '@/service/api/disk/list';
-import { useRouterPush } from '@/hooks/common/router';
 import { SetupStoreId } from '@/enum';
 import { useAuthStore } from '../auth';
 import { generateUniqueName, parseFileName } from './shared';
@@ -24,16 +23,32 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const pageIndex = ref(1);
 
   const route = useRoute();
+  const router = useRouter();
   const authStore = useAuthStore();
   const { bool: panelVisible, setTrue: openPanel, setFalse: closePanel } = useBoolean();
-  const { routerPushByKey } = useRouterPush();
 
-  const path = computed(() => {
-    const paramPath = typeof route.params.path === 'string' ? route.params.path : '';
-    if (!paramPath) return '';
-    const pathWithSpace = paramPath.replace(/\+/g, ' ');
-    return decodeURIComponent(pathWithSpace);
-  });
+  const path = ref<string>((route.query.path as string) || '');
+
+  watch(
+    () => route.query.path,
+    newPath => {
+      const newPathValue = (newPath as string) || '';
+      if (path.value !== newPathValue) {
+        path.value = newPathValue;
+
+        // 根据新的路径更新pathList
+        pathList.value = [];
+        if (newPathValue) {
+          newPathValue.split('/').forEach(folder => {
+            if (folder) {
+              pathList.value.push({ folder });
+            }
+          });
+        }
+        getFileList();
+      }
+    }
+  );
 
   function setUploadDragEnabled(value: boolean) {
     isDragUploadEnabled.value = value;
@@ -200,29 +215,35 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   }
 
   function handleOpenFolder(item: Api.Disk.FileItem) {
-    const notHomePage = route.path.length > 1;
+    // 获取当前路径的完整路径（包括basePath）
+    const currentFullPath = path.value ? `/${path.value}` : '/';
 
-    if (notHomePage && `${path.value}/` !== (item.filePath || '') && basePath.value.length === 1) {
-      basePath.value = item.filePath || '/';
+    // 构建新的路径，确保格式正确
+    let newPath = '';
+    if (currentFullPath === '/') {
+      newPath = `/${item.name}`;
+    } else {
+      newPath = `${currentFullPath}/${item.name}`;
     }
 
-    let newPath = `${path.value}/${item.name}`;
-    newPath = newPath.replace(/\\/g, '/');
+    // 规范化路径，确保没有双斜杠
     newPath = newPath.replace(/\/\//g, '/');
-    newPath = newPath.replace(basePath.value, '/');
 
-    const pathListItem = { folder: item.name };
-    pathList.value.push(pathListItem);
+    // 移除开头的斜杠，因为path.value存储的是相对路径（不包含开头斜杠）
+    path.value = newPath.substring(1);
+
+    // 更新pathList
+    pathList.value.push({ folder: item.name });
 
     pageIndex.value = 1;
 
-    routerPushByKey('disk', {
-      query: {
-        path: newPath,
-        ...(basePath.value && basePath.value.length > 1 ? { basePath: basePath.value } : {})
-      }
-    });
+    // 构建查询参数
+    const encodedPath = encodeURIComponent(path.value);
+    const finalBasePath =
+      basePath.value && basePath.value.length > 1 ? `&basePath=${encodeURIComponent(basePath.value)}` : '';
+    const finalQueryParams = `?path=${encodedPath}${finalBasePath}`;
 
+    router.push(finalQueryParams);
     getFileList();
   }
 
@@ -230,21 +251,40 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     console.log(item);
   }
 
-  function initPathListFromRoute() {
-    const paramPath = typeof route.params.path === 'string' ? route.params.path : '';
-    if (paramPath && paramPath !== '/') {
-      const pathWithSpace = paramPath.replace(/\+/g, ' ');
-      const decodedPath = decodeURI(pathWithSpace);
-      pathList.value = [];
-      decodedPath.split('/').forEach((pathName, index) => {
-        if (index > 0 && pathName) {
-          pathList.value.push({ folder: pathName });
-        }
-      });
-    } else {
-      pathList.value = [];
-    }
-  }
+  // function initQueryParamsPath() {
+  //   console.log(route.query.path);
+  //   const paramsPath = decodeURI(route.query.path as string);
+  //   console.log(paramsPath);
+  //   console.log(path.value);
+  // }
+  // function initPathListFromRoute() {
+  //   const paramPath = typeof route.query.path === 'string' ? route.query.path : '';
+  //   if (!paramPath) {
+  //     pathList.value = [];
+  //     return;
+  //   }
+
+  //   try {
+  //     const decodedPath = decodeURIComponent(paramPath);
+  //     const reEncodedPath = encodeURIComponent(decodedPath);
+
+  //     if (paramPath !== reEncodedPath) {
+  //       const basePathParam =
+  //         basePath.value && basePath.value.length > 1 ? `&basePath=${encodeURIComponent(basePath.value)}` : '';
+  //       router.replace(`/disk?path=${reEncodedPath}${basePathParam}`);
+  //     }
+
+  //     pathList.value = [];
+  //     decodedPath.split('/').forEach((pathName, index) => {
+  //       if (index > 0 && pathName) {
+  //         pathList.value.push({ folder: pathName });
+  //       }
+  //     });
+  //   } catch (error) {
+  //     console.error('Failed to decode path:', error);
+  //     pathList.value = [];
+  //   }
+  // }
 
   return {
     fileShowMode,
@@ -274,7 +314,6 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     basePath,
     path,
     pathList,
-    pageIndex,
-    initPathListFromRoute
+    pageIndex
   };
 });
