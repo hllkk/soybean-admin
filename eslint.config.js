@@ -19,7 +19,7 @@ export default defineConfig(
         }
       ],
       'unocss/order-attributify': 'off',
-      'max-params': ['warn', 5],
+      'max-params': ['warn', 6],
       complexity: ['warn', 27]
     }
   }

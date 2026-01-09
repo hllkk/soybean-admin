@@ -5,7 +5,7 @@ import { useBoolean } from '@sa/hooks';
 import { fetchGetFileList } from '@/service/api/disk/list';
 import { SetupStoreId } from '@/enum';
 import { useAuthStore } from '../auth';
-import { generateUniqueName, parseFileName } from './shared';
+import { generateUniqueName, packageDownload, parseFileName, singleDownload } from './shared';
 
 export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const fileShowMode = ref<UnionKey.FileListMode>('grid');
@@ -251,40 +251,15 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     console.log(item);
   }
 
-  // function initQueryParamsPath() {
-  //   console.log(route.query.path);
-  //   const paramsPath = decodeURI(route.query.path as string);
-  //   console.log(paramsPath);
-  //   console.log(path.value);
-  // }
-  // function initPathListFromRoute() {
-  //   const paramPath = typeof route.query.path === 'string' ? route.query.path : '';
-  //   if (!paramPath) {
-  //     pathList.value = [];
-  //     return;
-  //   }
-
-  //   try {
-  //     const decodedPath = decodeURIComponent(paramPath);
-  //     const reEncodedPath = encodeURIComponent(decodedPath);
-
-  //     if (paramPath !== reEncodedPath) {
-  //       const basePathParam =
-  //         basePath.value && basePath.value.length > 1 ? `&basePath=${encodeURIComponent(basePath.value)}` : '';
-  //       router.replace(`/disk?path=${reEncodedPath}${basePathParam}`);
-  //     }
-
-  //     pathList.value = [];
-  //     decodedPath.split('/').forEach((pathName, index) => {
-  //       if (index > 0 && pathName) {
-  //         pathList.value.push({ folder: pathName });
-  //       }
-  //     });
-  //   } catch (error) {
-  //     console.error('Failed to decode path:', error);
-  //     pathList.value = [];
-  //   }
-  // }
+  async function handleDownloadFile(item: Api.Disk.FileItem) {
+    const fileIds = item.isDir ? [item.id] : selectedFileIds.value;
+    if (item.isDir || fileIds.length > 1) {
+      // 进行打包下载
+      await packageDownload(fileIds);
+      return;
+    }
+    await singleDownload(authStore.userInfo.userId, authStore.userInfo.userName, item, authStore.token);
+  }
 
   return {
     fileShowMode,
@@ -314,6 +289,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     basePath,
     path,
     pathList,
-    pageIndex
+    pageIndex,
+    handleDownloadFile
   };
 });

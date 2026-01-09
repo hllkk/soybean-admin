@@ -1,3 +1,9 @@
+import { fetchIsAllowDownload } from '@/service/api/disk/list';
+import { useDownload } from '@/hooks/business/download';
+
+const { download } = useDownload();
+const backendUrl = '/api';
+
 export function parseFileName(inputName: string): { name: string; extension: string } {
   if (!inputName || inputName.trim() === '') {
     return { name: '新建文件', extension: 'txt' };
@@ -52,4 +58,78 @@ export function generateUniqueName(
     counter += 1;
   }
   return `${baseName}(${counter})`;
+}
+
+function isFilePath(str: string) {
+  // 匹配 test/r2/file.txt
+  // eslint-disable-next-line unicorn/escape-case, no-useless-escape
+  const filePathRegex = /^[\w\-\/]+[\u4e00-\u9fa5\w\-]+\.\w+$/;
+  return filePathRegex.test(str);
+}
+
+// 构建下载Url
+// eslint-disable-next-line max-params
+function previewUrl(
+  userId: CommonType.IdType,
+  userName: string,
+  file: Api.Disk.FileItem,
+  token: string,
+  shareToken?: string,
+  serverUrl?: string,
+  joinToken?: string
+) {
+  const baseUrl = serverUrl || backendUrl;
+  let fileUrl = `${baseUrl}/file/${userName}${encodeURIComponent(file.filePath || '')}${encodeURIComponent(file.name)}`;
+  fileUrl = fileUrl.replaceAll(/%5C|%2F/g, '/');
+
+  if (file.userId !== userId && token && !shareToken) {
+    return `${baseUrl}/pre-file/${file.id}/${encodeURIComponent(file.name)}`;
+  }
+
+  if (token) {
+    if (joinToken) {
+      return `${fileUrl}?token=${token}&name=${userName}`;
+    }
+    return `${fileUrl}`;
+  }
+
+  if (shareToken) {
+    if (isFilePath(file.id)) {
+      return `${fileUrl}?share-token=${shareToken}`;
+    }
+    return `${baseUrl}/share-file/${file.id}/${shareToken}/${encodeURIComponent(file.name)}`;
+  }
+
+  if (isFilePath(file.id)) {
+    return fileUrl;
+  }
+  return `${baseUrl}/share-file/${file.id}/${encodeURIComponent(file.name)}`;
+}
+
+export async function singleDownload(
+  userId: CommonType.IdType,
+  userName: string,
+  file: Api.Disk.FileItem,
+  token: string
+) {
+  // 检查下载权限
+  const { data: downloadInfo, error } = await fetchIsAllowDownload({ fileIds: [file.id] });
+  if (!error) {
+    const { allowDownload, isRedirect, redirectUrl } = downloadInfo;
+    if (!allowDownload) {
+      throw new Error('文件不允许下载');
+    }
+    if (isRedirect && redirectUrl) {
+      download('GET', redirectUrl, {}, file.name);
+      return;
+    }
+
+    const downloadUrl = `${previewUrl(userId, userName, file, token)}?o=download`;
+    await download('GET', downloadUrl, {}, file.name);
+  }
+}
+
+export async function packageDownload(fileIds: CommonType.IdType[]) {
+  // 检查下载权限
+  console.log(fileIds);
 }

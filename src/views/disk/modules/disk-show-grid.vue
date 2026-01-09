@@ -94,6 +94,14 @@ function handleToggleSelection(fileId: CommonType.IdType) {
   diskStore.toggleFileSelection(fileId);
 }
 
+function handleShare(file: Api.Disk.FileItem) {
+  window.$message?.info(`分享文件: ${file.name}`);
+}
+
+function handleDownload(file: Api.Disk.FileItem) {
+  window.$message?.info(`下载文件: ${file.name}`);
+}
+
 watch(
   () => props.creatingItem,
   newItem => {
@@ -175,7 +183,7 @@ watch(
             : ''
         "
         @contextmenu="(e: MouseEvent) => emit('contextMenu', e, item)"
-        @click="diskStore.handleSelectFile(item)"
+        @click="!isBatchMode && diskStore.handleSelectFile(item)"
       >
         <!-- 正在重命名的项目 -->
         <template v-if="isRenaming(item.id)">
@@ -216,18 +224,19 @@ watch(
                 size="small"
                 :checked="isSelected(item.id)"
                 @update:checked="() => handleToggleSelection(item.id)"
+                @click.stop
               ></NCheckbox>
             </div>
             <div class="hover-info">
               <div
                 class="mr-1 mt-2 h-auto w-40px flex-x-center gap-1 rounded-md bg-white dark:bg-[rgba(255,255,255,0.1)]"
               >
-                <NButton size="tiny" text>
+                <NButton size="tiny" text @click.stop="handleShare(item)">
                   <template #icon>
                     <icon-solar-share-outline class="text-primary" />
                   </template>
                 </NButton>
-                <NButton size="tiny" text>
+                <NButton size="tiny" text @click.stop="handleDownload(item)">
                   <template #icon>
                     <icon-material-symbols-download-rounded class="text-primary" />
                   </template>

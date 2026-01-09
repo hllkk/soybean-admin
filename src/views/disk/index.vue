@@ -154,13 +154,38 @@ function handleFolderUpload() {
   }
 }
 
+/** 处理文件夹打开 */
+function handleOpenFolder(folder?: Api.Disk.FileItem) {
+  if (folder) {
+    diskStore.handleSelectFile(folder);
+  } else {
+    window.$message?.error('请选择要打开的文件夹');
+  }
+}
+
+/** 处理文件下载 */
+function handleDownload(file?: Api.Disk.FileItem) {
+  if (file) {
+    diskStore.handleDownloadFile(file);
+  } else {
+    window.$message?.error('请选择要下载的文件');
+  }
+}
+
+type ContextMenuStateType = {
+  show: boolean;
+  x: number;
+  y: number;
+  contextType: 'file' | 'folder' | 'empty' | 'multiple';
+  targetFile?: Api.Disk.FileItem;
+};
+
 /** 右键菜单状态 */
-const contextMenuState = ref({
+const contextMenuState = ref<ContextMenuStateType>({
   show: false,
   x: 0,
   y: 0,
-  contextType: 'empty' as 'file' | 'folder' | 'empty' | 'multiple',
-  targetFile: null as Api.Disk.FileItem | null
+  contextType: 'empty' as 'file' | 'folder' | 'empty' | 'multiple'
 });
 
 /** 处理右键菜单打开 */
@@ -176,8 +201,7 @@ function handleContextMenu(event: MouseEvent, file?: Api.Disk.FileItem) {
         show: true,
         x: event.clientX,
         y: event.clientY,
-        contextType: 'multiple',
-        targetFile: null
+        contextType: 'multiple'
       };
     } else {
       if (!isBatchMode.value) {
@@ -196,8 +220,7 @@ function handleContextMenu(event: MouseEvent, file?: Api.Disk.FileItem) {
       show: true,
       x: event.clientX,
       y: event.clientY,
-      contextType: 'empty',
-      targetFile: null
+      contextType: 'empty'
     };
   }
 }
@@ -208,14 +231,13 @@ function handleContextMenuClose() {
 }
 
 /** 处理右键菜单操作 */
-// eslint-disable-next-line complexity
 function handleContextMenuAction(action: string) {
   switch (action) {
     case 'open':
-      window.$message?.success('打开文件');
+      handleOpenFolder(contextMenuState.value.targetFile);
       break;
     case 'download':
-      window.$message?.success('下载文件');
+      handleDownload(contextMenuState.value.targetFile);
       break;
     case 'share':
       window.$message?.success('分享文件');

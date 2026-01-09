@@ -17,6 +17,8 @@ declare namespace Api {
       isDir: boolean;
       /** 文件或文件夹路径 */
       filePath?: string;
+      /** 文件或文件夹所有者 */
+      userId?: CommonType.IdType;
     }
 
     interface GetFileListRequest {
@@ -61,6 +63,12 @@ declare namespace Api {
       isFolder?: boolean;
       lastModified?: number;
       fileId?: string;
+    }
+
+    interface IsAllowDownloadResponse {
+      allowDownload: boolean;
+      isRedirect: boolean;
+      redirectUrl?: string;
     }
   }
 }

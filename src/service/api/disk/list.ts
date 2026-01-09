@@ -49,3 +49,12 @@ export function fetchNewFolder(params: any) {
     data: params
   });
 }
+
+export function fetchIsAllowDownload(params: { fileIds: CommonType.IdType[] }) {
+  console.log(params);
+  return request<Api.Disk.IsAllowDownloadResponse>({
+    url: 'file/isAllowDownload',
+    method: 'post',
+    data: params
+  });
+}

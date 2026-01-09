@@ -334,7 +334,11 @@ const rowProps = (row: Api.Disk.FileItem) => {
     },
     onmouseleave: () => handleRowMouseLeave(),
     class: hoveredRowId.value === row.id ? 'hovered-row' : '',
-    onclick: () => diskStore.handleSelectFile(row)
+    onclick: () => {
+      if (!props.isBatchMode) {
+        diskStore.handleSelectFile(row);
+      }
+    }
   };
 };
 
