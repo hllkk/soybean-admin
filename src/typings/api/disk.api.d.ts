@@ -67,6 +67,8 @@ declare namespace Api {
 
     interface IsAllowDownloadResponse {
       allowDownload: boolean;
+      /** 下载令牌 */
+      downloadUrl?: string;
       isRedirect: boolean;
       redirectUrl?: string;
     }

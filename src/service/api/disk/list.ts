@@ -50,7 +50,7 @@ export function fetchNewFolder(params: any) {
   });
 }
 
-export function fetchIsAllowDownload(params: { fileIds: CommonType.IdType[] }) {
+export function fetchIsAllowDownload(params: { fileIds: CommonType.IdType[]; userId: CommonType.IdType }) {
   return request<Api.Disk.IsAllowDownloadResponse>({
     url: 'file/isAllowDownload',
     method: 'post',

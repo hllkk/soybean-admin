@@ -18,11 +18,11 @@ export function useDownload() {
   const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
   const abortControllers = ref<Map<string, AbortController>>(new Map());
 
-  const isHttps = () => {
-    const protocol = document.location.protocol;
-    const hostname = document.location.hostname;
-    return protocol === 'https' || hostname === 'localhost' || hostname === '127.0.0.1';
-  };
+  // const isHttps = () => {
+  //   const protocol = document.location.protocol;
+  //   const hostname = document.location.hostname;
+  //   return protocol === 'https' || hostname === 'localhost' || hostname === '127.0.0.1';
+  // };
 
   /** 获取通用请求头 */
   const getCommonHeaders = (contentType = 'application/octet-stream') => ({
@@ -137,7 +137,8 @@ export function useDownload() {
       const rawHeader = response.headers.get('Download-Filename');
       const finalFilename = filename || (rawHeader ? decodeURIComponent(rawHeader) : null) || `download-${timestamp}`;
 
-      if (response.body && isHttps()) {
+      // if (response.body && isHttps()) {
+      if (response.body) {
         const contentLength = Number(response.headers.get('Content-Length'));
         await downloadByStream(response.body, finalFilename, contentLength);
         return;
