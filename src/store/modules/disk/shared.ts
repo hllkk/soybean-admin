@@ -1,8 +1,8 @@
 import { fetchIsAllowDownload } from '@/service/api/disk/list';
-import { useDownload } from '@/hooks/business/download';
+// import { useDownload } from '@/hooks/business/download';
 
-const { download } = useDownload();
-const backendUrl = '/api';
+// const { download } = useDownload();
+const backendUrl = '/dl';
 
 export function parseFileName(inputName: string): { name: string; extension: string } {
   if (!inputName || inputName.trim() === '') {
@@ -114,18 +114,27 @@ export async function singleDownload(
 ) {
   // 检查下载权限
   const { data: downloadInfo, error } = await fetchIsAllowDownload({ fileIds: [file.id] });
+  console.log(downloadInfo, error);
   if (!error) {
     const { allowDownload, isRedirect, redirectUrl } = downloadInfo;
     if (!allowDownload) {
       throw new Error('文件不允许下载');
     }
-    if (isRedirect && redirectUrl) {
-      download('GET', redirectUrl, {}, file.name);
-      return;
-    }
-
+    const a = document.createElement('a');
     const downloadUrl = `${previewUrl(userId, userName, file, token)}?o=download`;
-    await download('GET', downloadUrl, {}, file.name);
+    console.log(downloadUrl);
+    a.href = isRedirect && redirectUrl ? redirectUrl : downloadUrl;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // if (isRedirect && redirectUrl) {
+    //   download('GET', redirectUrl, {}, file.name);
+    //   return;
+    // }
+
+    // const downloadUrl = `${previewUrl(userId, userName, file, token)}?o=download`;
+    // await download('GET', downloadUrl, {}, file.name);
   }
 }
 

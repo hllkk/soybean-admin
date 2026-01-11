@@ -248,7 +248,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   }
 
   function handleOpenFile(item: Api.Disk.FileItem) {
-    console.log(item);
+    window.$message?.info(`打开文件${item.name}`);
   }
 
   async function handleDownloadFile(item: Api.Disk.FileItem) {
