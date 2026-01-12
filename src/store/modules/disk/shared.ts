@@ -126,7 +126,7 @@ export async function singleDownload(
     }
 
     const url = `${downloadUrl}?o=download`;
-    await download('GET', url, {}, file.name);
+    download('GET', url, {}, file.name);
   }
 }
 
