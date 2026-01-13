@@ -285,9 +285,11 @@ function onFileSuccess(
 
       if (allFilesSuccess) {
         setFileStatus(rootFile.id, 'success');
+        diskStore.getFileList();
       }
+    } else {
+      diskStore.getFileList();
     }
-    diskStore.getFileList();
   }
   // 如果服务端返回需要合并文件
   if (data.merge) {
@@ -335,7 +337,10 @@ function onFileSuccess(
     handleClose();
   }
 
-  diskStore.getFileList();
+  // 如果不是文件夹上传，刷新文件列表（文件夹上传在上面已经处理）
+  if (!rootFile.isFolder) {
+    diskStore.getFileList();
+  }
 }
 function onFileError(
   _: SimpleUploader.Uploader.UploaderFile,

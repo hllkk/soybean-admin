@@ -18,11 +18,11 @@ export function useDownload() {
   const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
   const abortControllers = ref<Map<string, AbortController>>(new Map());
 
-  // const isHttps = () => {
-  //   const protocol = document.location.protocol;
-  //   const hostname = document.location.hostname;
-  //   return protocol === 'https' || hostname === 'localhost' || hostname === '127.0.0.1';
-  // };
+  const isHttps = () => {
+    const protocol = document.location.protocol;
+    const hostname = document.location.hostname;
+    return protocol === 'https' || hostname === 'localhost' || hostname === '127.0.0.1';
+  };
 
   /** 获取通用请求头 */
   const getCommonHeaders = (contentType = 'application/octet-stream') => ({
@@ -128,20 +128,35 @@ export function useDownload() {
 
       const response = await fetch(fullUrl, requestOptions);
 
-      if (response.status !== 200) {
-        throw new Error(errorCodeRecord.default);
-      }
+      // if (response.status !== 200) {
+      //   throw new Error(errorCodeRecord.default);
+      // }
 
       await handleResponse(response);
 
       const rawHeader = response.headers.get('Download-Filename');
       const finalFilename = filename || (rawHeader ? decodeURIComponent(rawHeader) : null) || `download-${timestamp}`;
 
-      // if (response.body && isHttps()) {
+      const contentLength = Number(response.headers.get('Content-Length'));
+
       if (response.body) {
-        const contentLength = Number(response.headers.get('Content-Length'));
-        await downloadByStream(response.body, finalFilename, contentLength);
-        return;
+        if (isHttps()) {
+          await downloadByStream(response.body, finalFilename, contentLength);
+          return;
+        }
+
+        if (contentLength > 50 * 1024 * 1024) {
+          window.$loading?.endLoading();
+          window.$message?.warning('大文件下载中，请在浏览器下载列表查看');
+          const hiddenIframe = document.createElement('iframe');
+          hiddenIframe.style.display = 'none';
+          hiddenIframe.src = fullUrl;
+          document.body.appendChild(hiddenIframe);
+          setTimeout(() => {
+            document.body.removeChild(hiddenIframe);
+          }, 1000);
+          return;
+        }
       }
 
       const responseContentType = response.headers.get('Content-Type');
