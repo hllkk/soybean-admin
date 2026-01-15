@@ -255,10 +255,10 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     const fileIds = item.isDir ? [item.id] : selectedFileIds.value;
     if (item.isDir || fileIds.length > 1) {
       // 进行打包下载
-      await packageDownload(fileIds);
+      await packageDownload(authStore.userInfo.userId, fileIds);
       return;
     }
-    await singleDownload(authStore.userInfo.userId, authStore.userInfo.userName, item, authStore.token);
+    await singleDownload(authStore.userInfo.userId, item);
   }
 
   return {

@@ -35,7 +35,7 @@ const createFolderParams = ref<Api.Disk.CreateFolderParams>({
 
 const uploaderOptions = {
   target: simpleUploadURL,
-  chunkSize: localStg.get('chunkSize') || 1024 * 1024,
+  chunkSize: localStg.get('chunkSize') || 5 * 1024 * 1024,
   maxChunkRetries: 3, // 最大重试次数
   simultaneousUploads: 3, // 并发上传数
   testChunks: true, // 是否开启服务器分片校验

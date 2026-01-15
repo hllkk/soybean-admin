@@ -57,3 +57,11 @@ export function fetchIsAllowDownload(params: { fileIds: CommonType.IdType[]; use
     data: params
   });
 }
+
+export function fetchIsAllowPackageDownload(params: { fileIds: CommonType.IdType[]; userId: CommonType.IdType }) {
+  return request<Api.Disk.IsAllowPackageDownloadResponse>({
+    url: 'file/isAllowPackageDownload',
+    method: 'post',
+    data: params
+  });
+}

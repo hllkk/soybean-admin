@@ -1,4 +1,4 @@
-import { fetchIsAllowDownload } from '@/service/api/disk/list';
+import { fetchIsAllowDownload, fetchIsAllowPackageDownload } from '@/service/api/disk/list';
 import { useDownload } from '@/hooks/business/download';
 
 const { download } = useDownload();
@@ -106,13 +106,7 @@ export function generateUniqueName(
 //   return `${baseUrl}/share-file/${file.id}/${encodeURIComponent(file.name)}`;
 // }
 
-export async function singleDownload(
-  userId: CommonType.IdType,
-  userName: string,
-  file: Api.Disk.FileItem,
-  token: string
-) {
-  console.log(userName, token);
+export async function singleDownload(userId: CommonType.IdType, file: Api.Disk.FileItem) {
   // 检查下载权限
   const { data: downloadInfo, error } = await fetchIsAllowDownload({ fileIds: [file.id], userId });
   if (!error) {
@@ -130,7 +124,15 @@ export async function singleDownload(
   }
 }
 
-export async function packageDownload(fileIds: CommonType.IdType[]) {
+export async function packageDownload(userId: CommonType.IdType, fileIds: CommonType.IdType[]) {
   // 检查下载权限
-  console.log(fileIds);
+  const { data: packageDownloadInfo, error } = await fetchIsAllowPackageDownload({ fileIds, userId });
+  if (!error) {
+    const { allowDownload, downloadUrl } = packageDownloadInfo;
+    if (!allowDownload) {
+      throw new Error('不支持打包下载');
+    }
+    console.log(downloadUrl);
+    // download('GET', downloadUrl, {}, `package.zip`);
+  }
 }
