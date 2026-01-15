@@ -2,7 +2,6 @@
 import { ref } from 'vue';
 import { NDivider } from 'naive-ui';
 import { jsonClone } from '@sa/utils';
-import type { RowKey } from 'naive-ui/es/data-table/src/interface';
 import { fetchBatchDeleteDept, fetchGetDeptList } from '@/service/api/system/dept';
 import { useAppStore } from '@/store/modules/app';
 import { useAuth } from '@/hooks/business/auth';
@@ -193,7 +192,7 @@ function addInRow(row: Api.System.Dept) {
         </TableHeaderOperation>
       </template>
       <NDataTable
-        v-model:expanded-row-keys="expandedRowKeys as RowKey[]"
+        v-model:expanded-row-keys="expandedRowKeys"
         :columns="columns"
         :data="data"
         size="small"

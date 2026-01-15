@@ -235,7 +235,7 @@ function handleResetTreeData() {
 }
 
 function handleExport() {
-  download('/user/export', searchParams.value, `${$t('page.system.user.title')}_${new Date().getTime()}.xlsx`);
+  download('GET', '/user/export', searchParams.value, `${$t('page.system.user.title')}_${new Date().getTime()}.xlsx`);
 }
 
 function handleResetSearchParams() {

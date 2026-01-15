@@ -158,11 +158,11 @@ async function onFilesAdded(files: SimpleUploader.Uploader.UploaderFile[]) {
   //   window.$message?.warning('没有选择要上传的文件或者上传的文件夹为空文件夹');
   //   return;
   // }
-  console.log(window.uploader?.fileList)
+  console.log(window.uploader?.fileList);
   try {
     uploadParams.value = await diskStore.getUploadParams();
     const filenames = files.map(file => file.name);
-    console.log(filenames)
+    console.log(filenames);
     const paths = Object.keys(uploaderRef.value?.uploader.filePaths || {});
     paths.forEach(path => {
       if (isPath(path)) {

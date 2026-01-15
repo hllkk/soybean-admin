@@ -176,7 +176,7 @@ async function edit(postId: CommonType.IdType) {
 }
 
 async function handleExport() {
-  download('/post/export', searchParams, `岗位信息_${new Date().getTime()}.xlsx`);
+  download('GET', '/post/export', searchParams, `岗位信息_${new Date().getTime()}.xlsx`);
 }
 
 const selectable = computed(() => {

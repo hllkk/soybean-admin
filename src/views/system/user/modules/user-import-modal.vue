@@ -81,7 +81,12 @@ function handleError(options: { file: UploadFileInfo; event?: ProgressEvent }) {
 }
 
 function handleDownloadTemplate() {
-  download('/system/user/importTemplate', {}, `${$t('page.system.user.title')}_用户模板_${new Date().getTime()}.xlsx`);
+  download(
+    'GET',
+    '/system/user/importTemplate',
+    {},
+    `${$t('page.system.user.title')}_用户模板_${new Date().getTime()}.xlsx`
+  );
 }
 
 watch(visible, () => {
