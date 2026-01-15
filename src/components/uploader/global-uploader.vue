@@ -154,13 +154,15 @@ async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
 
 // 添加文件时触发
 async function onFilesAdded(files: SimpleUploader.Uploader.UploaderFile[]) {
-  if (!files.length) {
-    window.$message?.warning('没有选择要上传的文件或者上传的文件夹为空文件夹');
-    return;
-  }
+  // if (!files.length) {
+  //   window.$message?.warning('没有选择要上传的文件或者上传的文件夹为空文件夹');
+  //   return;
+  // }
+  console.log(window.uploader?.fileList)
   try {
     uploadParams.value = await diskStore.getUploadParams();
     const filenames = files.map(file => file.name);
+    console.log(filenames)
     const paths = Object.keys(uploaderRef.value?.uploader.filePaths || {});
     paths.forEach(path => {
       if (isPath(path)) {
@@ -259,6 +261,7 @@ function handleClose() {
   }
 }
 
+// eslint-disable-next-line complexity
 function onFileSuccess(
   rootFile: SimpleUploader.Uploader.UploaderFile,
   file: SimpleUploader.Uploader.UploaderFile,
