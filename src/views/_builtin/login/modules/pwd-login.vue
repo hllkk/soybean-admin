@@ -13,6 +13,7 @@ defineOptions({
 
 const authStore = useAuthStore();
 const { routerPushByKey } = useRouterPush();
+const { toggleLoginModule } = useRouterPush();
 const { formRef, validate } = useNaiveForm();
 const remberMe = ref<boolean>(false);
 // 使用验证码 hook
@@ -114,7 +115,7 @@ handleLoginRember();
           <NCheckbox v-model:checked="remberMe">{{ $t('page.login.pwdLogin.rememberMe') }}</NCheckbox>
           <NSpace :size="1">
             <ButtonIcon class="color-#44b549" icon="ic:outline-wechat" />
-            <ButtonIcon local-icon="page-wecom" />
+            <ButtonIcon local-icon="page-wecom" @click="toggleLoginModule('wecom-login')" />
             <ButtonIcon class="color-#c71d23" icon="simple-icons:gitee" />
           </NSpace>
         </div>

@@ -312,6 +312,9 @@ const local: App.I18n.Schema = {
       },
       bindWeChat: {
         title: '绑定微信'
+      },
+      wecomLogin: {
+        title: '企业微信登录'
       }
     },
     home: {

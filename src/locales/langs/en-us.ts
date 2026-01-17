@@ -316,6 +316,9 @@ const local: App.I18n.Schema = {
       },
       bindWeChat: {
         title: 'Bind WeChat'
+      },
+      wecomLogin: {
+        title: 'WeCom Login'
       }
     },
     home: {

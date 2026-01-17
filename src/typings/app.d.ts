@@ -584,6 +584,9 @@ declare namespace App {
           bindWeChat: {
             title: string;
           };
+          wecomLogin: {
+            title: string;
+          };
         };
         home: {
           branchDesc: string;
