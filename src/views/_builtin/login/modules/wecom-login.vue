@@ -1,99 +1,127 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-
-// import { onMounted, onUnmounted, ref } from 'vue';
-// import { fetchWecomQrCode, fetchWecomQrCodeStatus } from '@/service/api/system/auth';
-// import { useAuthStore } from '@/store/modules/auth';
-// import { useRouterPush } from '@/hooks/common/router';
-// import { $t } from '@/locales';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { fetchWecomQrCode, fetchWecomQrCodeStatus } from '@/service/api';
+import { useRouterPush } from '@/hooks/common/router';
+import { useAuthStore } from '@/store/modules/auth';
+import { $t } from '@/locales';
 
 defineOptions({
   name: 'WecomLogin'
 });
 
-// const authStore = useAuthStore();
-// const { toggleLoginModule } = useRouterPush();
+const { toggleLoginModule, redirectFromLogin } = useRouterPush(false);
+const authStore = useAuthStore();
 
 const qrCodeUrl = ref<string>('');
 // const qrCodeKey = ref<string>('');
 const qrCodeStatus = ref<Api.Auth.WecomQrCodeStatus>('waiting');
+const qrCodeSceneId = ref<string>('');
 const loading = ref<boolean>(false);
 const error = ref<string>('');
-// const pollingTimer = ref<number | null>(null);
+const pollingTimer = ref<number | null>(null);
 
-// const POLLING_INTERVAL = 2000;
+const POLLING_INTERVAL = 2000;
 
-// async function loadQrCode() {
-//   try {
-//     loading.value = true;
-//     error.value = '';
-//     const blob = await fetchWecomQrCode();
-//     qrCodeUrl.value = URL.createObjectURL(blob);
+async function loadQrCode() {
+  try {
+    loading.value = true;
+    error.value = '';
+    const { data: blob, error: err, response } = await fetchWecomQrCode();
+    if (err) {
+      error.value = `${err}，请点击刷新后重试`;
+      return;
+    }
+    // 从响应头中获取场景ID
+    const sceneId = response?.headers['x-scene-id'] as string | undefined;
+    if (sceneId) {
+      qrCodeSceneId.value = sceneId;
+      startPolling();
+    }
+    qrCodeUrl.value = URL.createObjectURL(blob);
+    qrCodeStatus.value = 'waiting';
+  } catch (err) {
+    error.value = `${err}，请点击刷新后重试`;
+  } finally {
+    loading.value = false;
+  }
+}
 
-//     const response = await fetchWecomQrCodeStatus('');
-//     qrCodeKey.value = response.qrCodeKey;
-//     qrCodeStatus.value = response.status;
+function startPolling() {
+  stopPolling();
+  pollingTimer.value = window.setInterval(async () => {
+    try {
+      if (!qrCodeSceneId.value) {
+        return;
+      }
+      const { data: response, error: err } = await fetchWecomQrCodeStatus(qrCodeSceneId.value);
+      if (err) {
+        stopPolling();
+        error.value = '查询二维码状态失败';
+        return;
+      }
+      qrCodeStatus.value = response.status;
 
-//     startPolling();
-//   } catch (err) {
-//     error.value = $t('page.login.wecomLogin.loadFailed');
-//   } finally {
-//     loading.value = false;
-//   }
-// }
+      if (response.status === 'confirmed' && response.token && response.refreshToken) {
+        stopPolling();
+        const success = await authStore.loginByToken({
+          token: response.token,
+          refreshToken: response.refreshToken
+        });
+        if (success) {
+          window.$notification?.success({
+            title: $t('page.login.common.loginSuccess'),
+            content: $t('page.login.common.welcomeBack', { userName: authStore.userInfo.userName }),
+            duration: 4500
+          });
+          await redirectFromLogin();
+        } else {
+          error.value = '登录失败';
+        }
+        return;
+      }
 
-// function startPolling() {
-//   stopPolling();
-//   pollingTimer.value = window.setInterval(async () => {
-//     try {
-//       const response = await fetchWecomQrCodeStatus(qrCodeKey.value);
-//       qrCodeStatus.value = response.status;
+      if (response.status === 'expired' || response.status === 'canceled') {
+        stopPolling();
+      }
+    } catch (err) {
+      stopPolling();
+      error.value = `查询二维码状态失败:${err}`;
+    }
+  }, POLLING_INTERVAL);
+}
 
-//       if (response.status === 'confirmed' && response.token) {
-//         stopPolling();
-//         await authStore.handleLoginSuccess(response.token, response.refreshToken);
-//       } else if (response.status === 'expired' || response.status === 'canceled') {
-//         stopPolling();
-//       }
-//     } catch (err) {
-//       stopPolling();
-//     }
-//   }, POLLING_INTERVAL);
-// }
-
-// function stopPolling() {
-//   if (pollingTimer.value) {
-//     clearInterval(pollingTimer.value);
-//     pollingTimer.value = null;
-//   }
-// }
+function stopPolling() {
+  if (pollingTimer.value) {
+    clearInterval(pollingTimer.value);
+    pollingTimer.value = null;
+  }
+}
 
 function handleRefresh() {
-  window.$message?.info('刷新二维码');
-  // if (qrCodeUrl.value) {
-  //   URL.revokeObjectURL(qrCodeUrl.value);
-  // }
-  // loadQrCode();
+  if (qrCodeUrl.value) {
+    URL.revokeObjectURL(qrCodeUrl.value);
+  }
+  loadQrCode();
 }
 
 function handleBack() {
-  // stopPolling();
-  // if (qrCodeUrl.value) {
-  //   URL.revokeObjectURL(qrCodeUrl.value);
-  // }
-  // toggleLoginModule('pwd-login');
+  stopPolling();
+  if (qrCodeUrl.value) {
+    URL.revokeObjectURL(qrCodeUrl.value);
+  }
+  toggleLoginModule('pwd-login');
 }
 
-// onMounted(() => {
-//   loadQrCode();
-// });
+onMounted(() => {
+  loadQrCode();
+});
 
-// onUnmounted(() => {
-//   stopPolling();
-//   if (qrCodeUrl.value) {
-//     URL.revokeObjectURL(qrCodeUrl.value);
-//   }
-// });
+onUnmounted(() => {
+  stopPolling();
+  if (qrCodeUrl.value) {
+    URL.revokeObjectURL(qrCodeUrl.value);
+  }
+});
 </script>
 
 <template>

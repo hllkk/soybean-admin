@@ -36,7 +36,7 @@ export default defineConfig(configEnv => {
       port: 9527,
       open: false,
       proxy: createViteProxy(viteEnv, enableProxy),
-      allowedHosts: ['jump.chinargb.com.cn']
+      allowedHosts: ['j.chinargb.com.cn']
     },
     preview: {
       port: 9725

@@ -29,7 +29,7 @@ declare module "@elegant-router/types" {
     "log": "/log";
     "log_login": "/log/login";
     "log_operate": "/log/operate";
-    "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat|wecom-login)?";
+    "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
     "personal-center": "/personal-center";
     "share": "/s/:id";
     "system": "/system";
@@ -195,7 +195,7 @@ declare module "@elegant-router/types" {
         component: `view.${K}`;
       }
     : never;
-
+  
   /**
    * the center level route
    */
@@ -218,7 +218,7 @@ declare module "@elegant-router/types" {
         children: (CenterLevelRoute<GetChildRouteKey<K>> | LastLevelRoute<GetChildRouteKey<K>>)[];
       }
     : never;
-
+  
   /**
    * the custom first level route
    */

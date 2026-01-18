@@ -47,3 +47,26 @@ export function fetchRefreshToken(refreshToken: string) {
 export function fetchCustomBackendError(code: string, msg: string) {
   return request({ url: '/auth/error', params: { code, msg } });
 }
+
+export function fetchWecomQrCode() {
+  return request<Blob, 'blob'>({
+    url: '/auth/wecomLogin',
+    method: 'get',
+    responseType: 'blob'
+  });
+}
+
+/**
+ * Check wecom login status
+ *
+ * @param token Wecom login token
+ */
+export function fetchWecomQrCodeStatus(sceneId: string) {
+  return request<Api.Auth.QrCodeStatusResponse>({
+    url: '/auth/qrCodeStatus',
+    method: 'get',
+    params: {
+      sceneId
+    }
+  });
+}

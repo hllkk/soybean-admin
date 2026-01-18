@@ -5,7 +5,13 @@ declare namespace Api {
    * backend api module: "auth"
    */
   namespace Auth {
-    type WecomQrCodeStatus = 'waiting' | 'scanned' | 'fail';
+    type WecomQrCodeStatus = 'waiting' | 'scanned' | 'fail' | 'expired' | 'canceled' | 'confirmed';
+
+    interface QrCodeStatusResponse {
+      status: WecomQrCodeStatus;
+      token?: string;
+      refreshToken?: string;
+    }
 
     interface LoginToken {
       token: string;
