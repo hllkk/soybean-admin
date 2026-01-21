@@ -310,6 +310,7 @@ function onFileSuccess(
     fetchMergeFile(mergeParams);
     removeFileStatus(file.id);
     setFileStatus(file.id, 'success');
+    diskStore.getFileList();
 
     // 对于文件夹上传，只在所有子文件都上传完成时才显示成功提示
     if (rootFile.isFolder && rootFile.files) {
