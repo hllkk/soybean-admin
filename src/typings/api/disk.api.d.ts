@@ -19,6 +19,12 @@ declare namespace Api {
       filePath?: string;
       /** 文件或文件夹所有者 */
       userId?: CommonType.IdType;
+      /** 是否收藏 */
+      isFavorite?: boolean;
+      /** 是否分享 */
+      isShare?: boolean;
+      /** 文件的类型 */
+      contentType?: string;
     }
 
     interface GetFileListRequest {

@@ -138,7 +138,7 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
           return (
             <div class="h-full w-50% flex items-center gap-2">
               <div class="h-30px w-30px flex flex-shrink-0 items-center justify-center">
-                <FileImage data={row} />
+                <FileImage item={row} />
               </div>
               <NInput
                 ref={(el: any) => (inputRef.value = el)}
@@ -162,7 +162,7 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
           return (
             <div class="h-full w-50% flex items-center gap-2">
               <div class="h-30px w-30px flex flex-shrink-0 items-center justify-center">
-                <FileImage data={row} />
+                <FileImage item={row} />
               </div>
               <NInput
                 ref={(el: any) => (renameInputRef.value = el)}
@@ -187,7 +187,7 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
             {/* 左侧：图标和文件名 */}
             <div class="mr-4 min-w-0 flex flex-1 items-center overflow-hidden">
               <div class="mr-3 h-30px w-30px flex-shrink-0">
-                <FileImage data={row} />
+                <FileImage item={row} />
               </div>
               <span class="select-none truncate text-13px">{row.name}</span>
             </div>

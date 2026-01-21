@@ -1,28 +1,43 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
+import { useAppStore } from '@/store/modules/app';
+import { useDiskStore } from '@/store/modules/disk';
 
 defineOptions({
   name: 'FileImage'
 });
 
 interface Props {
-  data: Api.Disk.FileItem;
+  item: Api.Disk.FileItem;
+  public?: boolean;
+  details?: boolean;
+  gridWidth?: number;
 }
 
 interface FileExtendNameIconMap {
   [key: string]: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {});
+const props = withDefaults(defineProps<Props>(), {
+  public: false,
+  details: false,
+  gridWidth: 120
+});
+
+const appStore = useAppStore();
+const diskStore = useDiskStore();
+
+// 是否是Pc
+const isPC = computed(() => appStore.isMobile === false);
+const imageUrl = computed(() => `${import.meta.env.VITE_APP_BASE_API}/view/thumbnail?id=`);
 
 /** 图片类型 */
-const ImageTypes = ['jpg', 'png', 'gif', 'jpeg'];
+// const ImageTypes = ['jpg', 'png', 'gif', 'jpeg'];
 
 /** 文件类型图标 Map 映射 */
 const FileIcon: FileExtendNameIconMap = {
   mp3: 'file_music',
   mp4: 'file_video',
-  dir: 'file_dir',
   dll: 'file_dll',
   ppt: 'file_ppt',
   doc: 'file_wps',
@@ -52,48 +67,111 @@ const FileIcon: FileExtendNameIconMap = {
   other: 'file_other' // 未知文件
 };
 
-const hasImageError = ref<boolean>(false);
-const isLoadingImage = ref(false);
+// const hasImageError = ref<boolean>(false);
+// const isLoadingImage = ref(false);
 // const imageBlob = ref<string>('');
 
 // 是否是图片类型文件且成功加载
-const isImage = computed(() => {
-  if (!props.data || props.data.isDir) {
-    return false; // 文件夹不可能是图片
-  }
-  const extendName = props.data.extendName?.toLowerCase() || '';
-  return ImageTypes.includes(extendName) && !hasImageError.value;
-});
+// const isImage = computed(() => {
+//   if (!props.item || props.item.isDir) {
+//     return false; // 文件夹不可能是图片
+//   }
+//   const extendName = props.item.extendName?.toLowerCase() || '';
+//   return ImageTypes.includes(extendName) && !hasImageError.value;
+// });
 
 // 获取文件图标，如果是图片就显示图片
 const getFileImg = computed(() => {
-  const extendName = props.data.extendName?.toLowerCase() || '';
-  if (props.data?.isDir) {
-    return `disk-${FileIcon.dir}`;
-  }
+  const extendName = props.item.extendName?.toLowerCase() || '';
   if (!Object.keys(FileIcon).includes(extendName)) {
     return `disk-${FileIcon.other}`;
   }
   return `disk-${FileIcon[extendName]}`;
 });
 
-// 修改后的获取缩略图函数
+const imageHeightStyle = computed(() => {
+  if (props.details) {
+    return 'height: 110px';
+  }
+  return `height: ${props.gridWidth - 35}px;`;
+});
 // const getThumbnail = computed(() => {
 //   return imageBlob.value;
 // });
 </script>
 
 <template>
-  <div v-if="isImage" class="relative h-full w-auto">
-    <img
+  <div class="relative h-full w-auto">
+    <!-- 收藏图标 -->
+    <div v-if="item.isFavorite && !public">
+      <div v-if="isPC">
+        <SvgIcon
+          v-if="diskStore.fileShowMode === 'grid'"
+          icon="ic-round-favorite"
+          class="absolute left-0 top-2 z-1 text-5 c-emerald"
+        />
+        <SvgIcon
+          v-if="diskStore.fileShowMode === 'list'"
+          icon="ic-round-favorite"
+          class="absolute left-0 top-0 z-1 text-3 c-emerald"
+        />
+      </div>
+      <div v-else></div>
+    </div>
+    <!-- 分享图标 -->
+    <div v-if="item.isShare && !public">
+      <div v-if="isPC">
+        <SvgIcon
+          v-if="diskStore.fileShowMode === 'grid'"
+          icon="ic-round-share"
+          class="absolute right-0 top-2 z-1 text-5 c-emerald"
+        />
+        <SvgIcon
+          v-if="diskStore.fileShowMode === 'list'"
+          icon="ic-round-share"
+          class="absolute right-0 top-0 z-1 text-3 c-emerald"
+        />
+      </div>
+      <div v-else></div>
+    </div>
+    <!-- 文件夹图标 -->
+    <SvgIcon
+      v-if="item.isDir"
+      local-icon="disk-file_dir"
+      class="h-full w-auto object-cover transition-all duration-300"
+    />
+    <!-- 图片缩略图 -->
+    <div v-else-if="item.contentType && item.contentType.startsWith('image')" class="h-full">
+      <NImage
+        v-if="diskStore.fileShowMode === 'grid'"
+        object-fit="contain"
+        :style="imageHeightStyle"
+        class="h-full w-auto transition-all duration-300"
+        :src="imageUrl + item.id"
+      >
+        <template #error>
+          <SvgIcon local-icon="disk-file_image" class="h-full w-auto transition-all duration-300" />
+        </template>
+      </NImage>
+      <NAvatar v-if="diskStore.fileShowMode !== 'grid'" :src="imageUrl + item.id"></NAvatar>
+    </div>
+    <!-- 音频缩略图 -->
+    <div v-else-if="item.contentType && item.contentType.includes('audio')"></div>
+    <!-- 视频缩略图 -->
+    <div v-else-if="item.contentType && item.contentType.includes('video')"></div>
+    <!-- 其他文件图标 -->
+    <SvgIcon v-else :local-icon="getFileImg" class="h-full w-auto object-cover transition-all duration-300" />
+    <!--
+ <img
       v-if="!isLoadingImage"
       class="h-full w-auto object-cover transition-all duration-300"
-      :src="props.data.src"
-      :alt="props.data.name"
+      :src="props.item.src"
+      :alt="props.item.name"
     />
     <div v-else-if="isLoadingImage" class="h-full w-auto flex items-center justify-center">
       <NSpin size="small" />
     </div>
+-->
   </div>
-  <SvgIcon v-else :local-icon="getFileImg" class="h-full w-auto object-cover transition-all duration-300" />
+  <!-- <SvgIcon v-else :local-icon="getFileImg" class="h-full w-auto object-cover transition-all duration-300" /> -->
 </template>

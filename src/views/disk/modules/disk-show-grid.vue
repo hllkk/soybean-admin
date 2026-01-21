@@ -160,7 +160,7 @@ watch(
         </div>
         <!-- 图标 -->
         <div class="mt-8px h-65px flex-x-center">
-          <FileImage :data="creatingItem" />
+          <FileImage :item="creatingItem" />
         </div>
         <!-- 输入框 -->
         <div class="mt-12px flex-x-center px-2">
@@ -203,7 +203,7 @@ watch(
             </div>
           </div>
           <div class="mt-8px h-65px flex-x-center">
-            <FileImage :data="item" />
+            <FileImage :item="item" />
           </div>
           <div class="mt-12px flex-x-center px-2">
             <NInput
@@ -246,7 +246,7 @@ watch(
           </div>
           <div class="mt-8px h-65px flex-x-center">
             <NSkeleton v-if="isLoading" :sharp="false" size="medium" :width="60" :height="60"></NSkeleton>
-            <FileImage v-else :data="item" />
+            <FileImage v-else :item="item" />
           </div>
           <div class="mt-12px flex-x-center select-none text-ellipsis text-center text-12px">
             <NSkeleton v-if="isLoading" :width="60" :sharp="false" text />

@@ -261,8 +261,13 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     await singleDownload(authStore.userInfo.userId, item);
   }
 
+  function toggleFileShowMode() {
+    fileShowMode.value = fileShowMode.value === 'grid' ? 'list' : 'grid';
+  }
+
   return {
     fileShowMode,
+    toggleFileShowMode,
     fileList,
     fileListLength,
     isDragUploadEnabled,

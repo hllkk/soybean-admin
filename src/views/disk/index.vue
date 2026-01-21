@@ -17,7 +17,6 @@ const { SvgIconVNode } = useSvgIcon();
 const showCapacity = ref(false);
 const isBatchMode = ref(false);
 const searchKeyword = ref<string>('');
-const currentMode = ref<string>('grid');
 const gap = computed(() => (appStore.isMobile ? 0 : 16));
 
 const fileList = computed(() => diskStore.fileList);
@@ -44,10 +43,6 @@ const selectedFiles = computed(() => {
   return fileList.value.filter(file => diskStore.selectedFileIds.includes(file.id));
 });
 
-/** 切换显示模式 */
-function toggleMode() {
-  currentMode.value = currentMode.value === 'grid' ? 'list' : 'grid';
-}
 // 搜索文件
 function handleSearch() {
   if (!searchKeyword.value) {
@@ -523,9 +518,9 @@ onMounted(() => {
                     </NTooltip>
                     <NTooltip placement="bottom" trigger="hover">
                       <template #trigger>
-                        <NButton @click="toggleMode">
+                        <NButton @click="diskStore.toggleFileShowMode">
                           <template #icon>
-                            <icon-material-symbols-apps v-if="currentMode === 'grid'" />
+                            <icon-material-symbols-apps v-if="diskStore.fileShowMode === 'grid'" />
                             <icon-mdi-format-list-bulleted v-else />
                           </template>
                         </NButton>
@@ -547,7 +542,7 @@ onMounted(() => {
         <!-- 可滚动的内容区域 -->
         <div class="custom-scrollbar h-full flex-1 overflow-y-auto p-12px" @contextmenu.prevent="handleContextMenu">
           <FileDiskplayGrid
-            v-if="currentMode === 'grid' && fileList.length > 0"
+            v-if="diskStore.fileShowMode === 'grid' && fileList.length > 0"
             :is-batch-mode="isBatchMode"
             :data="fileList"
             :creating-item="creatingItem"
@@ -559,7 +554,7 @@ onMounted(() => {
             @context-menu="handleContextMenu"
           />
           <FileDisplayList
-            v-else-if="currentMode === 'list' && fileList.length > 0"
+            v-else-if="diskStore.fileShowMode === 'list' && fileList.length > 0"
             :is-batch-mode="isBatchMode"
             :data="fileList"
             :creating-item="creatingItem"
