@@ -147,7 +147,7 @@ async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
   });
   nextTick(() => {
     if (window.uploader) {
-      // window.uploader.resume();
+      window.uploader.resume();
     }
   });
 }
