@@ -31,9 +31,6 @@ const diskStore = useDiskStore();
 const isPC = computed(() => appStore.isMobile === false);
 const imageUrl = computed(() => `${import.meta.env.VITE_APP_BASE_API}/view/thumbnail?id=`);
 
-/** 图片类型 */
-// const ImageTypes = ['jpg', 'png', 'gif', 'jpeg'];
-
 /** 文件类型图标 Map 映射 */
 const FileIcon: FileExtendNameIconMap = {
   mp3: 'file_music',
@@ -67,19 +64,6 @@ const FileIcon: FileExtendNameIconMap = {
   other: 'file_other' // 未知文件
 };
 
-// const hasImageError = ref<boolean>(false);
-// const isLoadingImage = ref(false);
-// const imageBlob = ref<string>('');
-
-// 是否是图片类型文件且成功加载
-// const isImage = computed(() => {
-//   if (!props.item || props.item.isDir) {
-//     return false; // 文件夹不可能是图片
-//   }
-//   const extendName = props.item.extendName?.toLowerCase() || '';
-//   return ImageTypes.includes(extendName) && !hasImageError.value;
-// });
-
 // 获取文件图标，如果是图片就显示图片
 const getFileImg = computed(() => {
   const extendName = props.item.extendName?.toLowerCase() || '';
@@ -95,9 +79,6 @@ const imageHeightStyle = computed(() => {
   }
   return `height: ${props.gridWidth - 35}px;`;
 });
-// const getThumbnail = computed(() => {
-//   return imageBlob.value;
-// });
 </script>
 
 <template>
@@ -161,17 +142,5 @@ const imageHeightStyle = computed(() => {
     <div v-else-if="item.contentType && item.contentType.includes('video')"></div>
     <!-- 其他文件图标 -->
     <SvgIcon v-else :local-icon="getFileImg" class="h-full w-auto object-cover transition-all duration-300" />
-    <!--
- <img
-      v-if="!isLoadingImage"
-      class="h-full w-auto object-cover transition-all duration-300"
-      :src="props.item.src"
-      :alt="props.item.name"
-    />
-    <div v-else-if="isLoadingImage" class="h-full w-auto flex items-center justify-center">
-      <NSpin size="small" />
-    </div>
--->
   </div>
-  <!-- <SvgIcon v-else :local-icon="getFileImg" class="h-full w-auto object-cover transition-all duration-300" /> -->
 </template>
