@@ -2,7 +2,6 @@ import { fetchIsAllowDownload, fetchIsAllowPackageDownload } from '@/service/api
 import { useDownload } from '@/hooks/business/download';
 
 const { download } = useDownload();
-// const backendUrl = '/dl';
 
 export function parseFileName(inputName: string): { name: string; extension: string } {
   if (!inputName || inputName.trim() === '') {
