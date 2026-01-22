@@ -132,7 +132,7 @@ export async function packageDownload(userId: CommonType.IdType, fileIds: Common
     if (!allowDownload) {
       throw new Error('不支持打包下载');
     }
-    console.log(downloadUrl);
-    // download('GET', downloadUrl, {}, `package.zip`);
+    const url = `${downloadUrl}?o=download`;
+    download('GET', url, {}, `package.zip`);
   }
 }
