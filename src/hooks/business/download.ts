@@ -115,7 +115,7 @@ export function useDownload() {
       const requestOptions: RequestInit = {
         method,
         headers: getCommonHeaders(contentType),
-        signal: abortController.signal // 添加信号
+        signal: abortController.signal
       };
 
       if (method === 'POST' && params) {
@@ -127,10 +127,6 @@ export function useDownload() {
       }
 
       const response = await fetch(fullUrl, requestOptions);
-
-      // if (response.status !== 200) {
-      //   throw new Error(errorCodeRecord.default);
-      // }
 
       await handleResponse(response);
 
@@ -145,9 +141,10 @@ export function useDownload() {
           return;
         }
 
+        // 优化：对于大于50MB的文件，立即显示提示并使用iframe下载
         if (contentLength > 50 * 1024 * 1024) {
           window.$loading?.endLoading();
-          window.$message?.warning('大文件下载中，请在浏览器下载列表查看');
+          window.$message?.success('下载已开始，请在浏览器下载列表查看');
           const hiddenIframe = document.createElement('iframe');
           hiddenIframe.style.display = 'none';
           hiddenIframe.src = fullUrl;
