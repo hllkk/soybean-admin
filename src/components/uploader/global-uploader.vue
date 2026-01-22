@@ -23,6 +23,7 @@ const dragover = ref(false); // 是否是拖拽进入
 const showUploader = ref(true); // 是否显示上传组件
 const isDragStart = ref(false); // 是否是拖拽开始
 const isUploading = ref(false); // 是否正在上传
+const isOverwrite = ref(false); // 是否覆盖已存在的文件
 const enableDragUpload = ref(true);
 const fileListScrollTop = ref(0);
 const netSpeed = ref('');
@@ -127,7 +128,8 @@ async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
         fileName: encodeIfNeeded(folder.name),
         folder: route.query.folder,
         currentDirectory: encodeIfNeeded(uploadParams.value.currentDirectory || ''),
-        userId: uploadParams.value.userId
+        userId: uploadParams.value.userId,
+        override: isOverwrite.value
       };
       // 后端上传文件夹接口
       fetchUploadFolder(createFolderParams.value);
@@ -140,6 +142,7 @@ async function doUploadBefore(files: SimpleUploader.Uploader.UploaderFile[]) {
         query: {
           isFolder: false,
           lastModified: file.file.lastModified || 0,
+          override: isOverwrite.value,
           ...uploadParams.value
         }
       });
@@ -186,7 +189,7 @@ async function onFilesAdded(files: SimpleUploader.Uploader.UploaderFile[]) {
         positiveText: '覆盖',
         negativeText: '取消',
         onPositiveClick() {
-          createFolderParams.value.override = true;
+          isOverwrite.value = true;
           // 上传文件
           doUploadBefore(files);
         },

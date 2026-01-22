@@ -134,7 +134,12 @@ const imageHeightStyle = computed(() => {
           <SvgIcon local-icon="disk-file_image" class="h-full w-auto transition-all duration-300" />
         </template>
       </NImage>
-      <NAvatar v-if="diskStore.fileShowMode !== 'grid'" :src="imageUrl + item.id"></NAvatar>
+      <NAvatar
+        v-if="diskStore.fileShowMode !== 'grid'"
+        object-fit="cover"
+        :src="imageUrl + item.id"
+        class="h-full"
+      ></NAvatar>
     </div>
     <!-- 音频缩略图 -->
     <div v-else-if="item.contentType && item.contentType.includes('audio')"></div>
