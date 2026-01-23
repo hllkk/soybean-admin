@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import type { MenuOption } from 'naive-ui';
 import { useAppStore } from '@/store/modules/app';
@@ -8,6 +8,7 @@ import DiskSider from './modules/disk-sider.vue';
 import FileDiskplayGrid from './modules/disk-show-grid.vue';
 import FileDisplayList from './modules/disk-show-list.vue';
 import FileContextMenu from './modules/file-context-menu.vue';
+import DiskShareModal from './modules/disk-share-modal.vue';
 import FileEmpty from './modules/file-empty.vue';
 
 const appStore = useAppStore();
@@ -18,11 +19,19 @@ const showCapacity = ref(false);
 const isBatchMode = ref(false);
 const searchKeyword = ref<string>('');
 const gap = computed(() => (appStore.isMobile ? 0 : 16));
+// const isPc = computed(() => !appStore.isMobile);
 
 const fileList = computed(() => diskStore.fileList);
 const creatingItem = computed(() => diskStore.creatingItem);
 const renamingItem = computed(() => diskStore.renamingItem);
 const selectedCount = computed(() => diskStore.selectedFileIds.length);
+
+const shareDialogVisible = ref<boolean>(false);
+
+// const isPrivateLink = ref(false);
+// const extractCodeType = ref<'random' | 'custom'>('random');
+// const customExtractCode = ref('');
+// const customUrlSuffix = ref('');
 
 /** 切换显示容量 */
 function handleChange(value: boolean) {
@@ -131,6 +140,10 @@ function handleCancelRename() {
 /** 切换批量操作模式 */
 function handleToggleBatchMode() {
   isBatchMode.value = !isBatchMode.value;
+  // 取消批量操作需要清空选中文件
+  if (!isBatchMode.value) {
+    diskStore.clearSelectedFiles();
+  }
 }
 
 /** 处理文件上传 */
@@ -164,6 +177,59 @@ function handleDownload(file?: Api.Disk.FileItem) {
     diskStore.handleDownloadFile(file);
   } else {
     window.$message?.error('请选择要下载的文件');
+  }
+}
+
+// 自定义开关样式
+// function railStyle({ focused, checked }: { focused: boolean; checked: boolean }) {
+//   const style: CSSProperties = {};
+//   if (checked) {
+//     style.background = '#d03050';
+//     if (focused) {
+//       style.boxShadow = '0 0 0 2px #d0305040';
+//     }
+//   } else {
+//     style.background = '#2080f0';
+//     if (focused) {
+//       style.boxShadow = '0 0 0 2px #2080f040';
+//     }
+//   }
+//   return style;
+// }
+/** 处理文件共享 */
+function handleShare() {
+  if (diskStore.selectedFileIds.length === 0) {
+    window.$message?.error('请选择要分享的文件');
+    return;
+  }
+  shareDialogVisible.value = true;
+}
+
+/** 处理文件删除 */
+function handleDelete(fileId?: string) {
+  if (fileId) {
+    window.$dialog?.warning({
+      title: '删除',
+      content: `确定删除所选的${selectedFiles.value.length}个文件吗？`,
+      contentClass: 'bg-yellow-100 text-yellow-800 rounded-4 px-4 py-2',
+      action: () => (
+        <div class="w-full flex justify-between">
+          <NButton type="error" round size="small">
+            彻底删除
+          </NButton>
+          <div class="flex gap-8px">
+            <NButton type="warning" round size="small">
+              移至回收站
+            </NButton>
+            <NButton round size="small">
+              取消
+            </NButton>
+          </div>
+        </div>
+      )
+    });
+  } else {
+    window.$message?.error('请选择要删除的文件');
   }
 }
 
@@ -232,13 +298,17 @@ function handleContextMenuAction(action: string) {
       handleOpenFolder(contextMenuState.value.targetFile);
       break;
     case 'download':
-      handleDownload(contextMenuState.value.targetFile);
+      if (contextMenuState.value.contextType === 'multiple') {
+        handleDownload();
+      } else {
+        handleDownload(contextMenuState.value.targetFile);
+      }
       break;
     case 'share':
-      window.$message?.success('分享文件');
+      handleShare();
       break;
     case 'delete':
-      window.$message?.success('删除文件');
+      handleDelete(contextMenuState.value.targetFile?.id);
       break;
     case 'rename':
       handleRename();
@@ -450,31 +520,25 @@ onMounted(() => {
                 </div>
                 <div v-show="selectedCount > 0" class="flex gap-8px">
                   <NButtonGroup class="operation-button-group">
-                    <NButton round class="operation-button">
+                    <NButton round class="operation-button" @click="handleShare()">
                       <template #icon>
                         <icon-ic-outline-share />
                       </template>
                       分享
                     </NButton>
-                    <NButton v-if="selectedCount > 1" round class="operation-button">
-                      <template #icon>
-                        <icon-fluent-share-multiple-16-regular />
-                      </template>
-                      批量分享
-                    </NButton>
-                    <NButton class="operation-button">
+                    <NButton class="operation-button" @click="handleDownload()">
                       <template #icon>
                         <icon-ic-outline-file-download />
                       </template>
                       下载
                     </NButton>
-                    <NButton class="operation-button">
+                    <NButton class="operation-button" @click="handleDelete()">
                       <template #icon>
                         <icon-material-symbols-delete-outline />
                       </template>
                       删除
                     </NButton>
-                    <NButton v-if="selectedCount === 1" class="operation-button">
+                    <NButton v-if="selectedCount === 1" class="operation-button" @click="handleRename">
                       <template #icon>
                         <icon-fluent-rename-16-regular />
                       </template>
@@ -577,6 +641,12 @@ onMounted(() => {
           :selected-files="selectedFiles"
           @close="handleContextMenuClose"
           @action="handleContextMenuAction"
+        />
+        <!--分享模态框-->
+        <DiskShareModal
+          v-model:visible="shareDialogVisible"
+          :file-name="selectedFiles[0]?.name || ''"
+          :file-ids="diskStore.selectedFileIds"
         />
       </NCard>
     </div>

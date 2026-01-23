@@ -265,6 +265,26 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     fileShowMode.value = fileShowMode.value === 'grid' ? 'list' : 'grid';
   }
 
+  async function handleShareFile(item: Api.Disk.FileItem) {
+    // 判断item的id是否在选择列表中
+    if (!selectedFileIds.value.includes(item.id)) {
+      selectedFileIds.value.push(item.id);
+    }
+    // 调用接口实现文件的分享
+  }
+
+  async function handleDeleteFile(item: Api.Disk.FileItem) {
+    // 判断item的id是否在选择列表中
+    if (!selectedFileIds.value.includes(item.id)) {
+      selectedFileIds.value.push(item.id);
+    }
+    // 调用接口实现文件的删除
+  }
+
+  function clearSelectedFiles() {
+    selectedFileIds.value = [];
+  }
+
   return {
     fileShowMode,
     toggleFileShowMode,
@@ -283,6 +303,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     confirmRenameItem,
     cancelRenameItem,
     setSelectedFileIds,
+    clearSelectedFiles,
     getUploadParams,
     getFileList,
     queryType,
@@ -295,6 +316,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     path,
     pathList,
     pageIndex,
-    handleDownloadFile
+    handleDownloadFile,
+    handleShareFile,
+    handleDeleteFile
   };
 });
