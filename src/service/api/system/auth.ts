@@ -70,3 +70,11 @@ export function fetchWecomQrCodeStatus(sceneId: string) {
     }
   });
 }
+
+/** Logout */
+export function fetchLogout() {
+  return request<boolean>({
+    url: '/auth/logout',
+    method: 'post'
+  });
+}

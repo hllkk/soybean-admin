@@ -69,6 +69,12 @@ const options = computed(() => {
     });
   }
 
+  opts.push({
+    label: $t('common.logout'),
+    key: 'logout',
+    icon: SvgIconVNode({ icon: 'ph:sign-out', fontSize: 18 })
+  });
+
   return opts;
 });
 
@@ -88,6 +94,7 @@ function logout() {
     negativeText: $t('common.cancel'),
     onPositiveClick: () => {
       authStore.resetStore();
+      authStore.logout();
     }
   });
 }

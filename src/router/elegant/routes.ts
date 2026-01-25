@@ -48,7 +48,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       i18nKey: 'route.about',
       module: 'admin',
       order: 999,
-      icon: 'fluent:book-information-24-regular'
+      icon: 'fluent:book-information-24-regular',
+      roles: ['SuperAdmin', 'admin']
     }
   },
   {
@@ -60,7 +61,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       i18nKey: 'route.admin',
       icon: 'mdi:monitor-dashboard',
       order: 1,
-      module: 'admin'
+      module: 'admin',
+      roles: ['SuperAdmin', 'admin']
     }
   },
   {
@@ -71,7 +73,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'admin-center',
       i18nKey: 'route.admin-center',
       module: 'admin',
-      hideInMenu: true
+      hideInMenu: true,
+      roles: ['SuperAdmin', 'admin']
     }
   },
   {
@@ -118,7 +121,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       i18nKey: 'route.log',
       module: 'admin',
       order: 998,
-      icon: 'hugeicons:align-box-top-right'
+      icon: 'hugeicons:align-box-top-right',
+      roles: ['SuperAdmin', 'admin']
     },
     children: [
       {
@@ -129,7 +133,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'log_login',
           i18nKey: 'route.log_login',
           order: 1,
-          icon: 'hugeicons:logout-circle-01'
+          icon: 'hugeicons:logout-circle-01',
+          roles: ['SuperAdmin', 'admin']
         }
       },
       {
@@ -140,7 +145,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'log_operate',
           i18nKey: 'route.log_operate',
           order: 2,
-          icon: 'hugeicons:activity-04'
+          icon: 'hugeicons:activity-04',
+          roles: ['SuperAdmin', 'admin']
         }
       }
     ]
@@ -190,7 +196,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       i18nKey: 'route.system',
       module: 'admin',
       order: 10,
-      icon: 'carbon:cloud-service-management'
+      icon: 'carbon:cloud-service-management',
+      roles: ['SuperAdmin', 'admin']
     },
     children: [
       {
@@ -201,7 +208,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'system_dept',
           i18nKey: 'route.system_dept',
           order: 4,
-          icon: 'proicons-branch-fork'
+          icon: 'proicons-branch-fork',
+          roles: ['SuperAdmin', 'admin']
         }
       },
       {
@@ -212,7 +220,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'system_dict',
           i18nKey: 'route.system_dict',
           order: 6,
-          icon: 'qlementine-icons:dictionary-16'
+          icon: 'qlementine-icons:dictionary-16',
+          roles: ['SuperAdmin', 'admin']
         }
       },
       {
@@ -223,7 +232,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'system_menu',
           i18nKey: 'route.system_menu',
           order: 3,
-          icon: 'mingcute:list-ordered-line'
+          icon: 'mingcute:list-ordered-line',
+          roles: ['SuperAdmin', 'admin']
         }
       },
       {
@@ -234,7 +244,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'system_notice',
           i18nKey: 'route.system_notice',
           order: 7,
-          icon: 'hugeicons:chat-notification'
+          icon: 'hugeicons:chat-notification',
+          roles: ['SuperAdmin', 'admin']
         }
       },
       {
@@ -245,7 +256,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'system_post',
           i18nKey: 'route.system_post',
           order: 5,
-          icon: 'hugeicons:investigation'
+          icon: 'hugeicons:investigation',
+          roles: ['SuperAdmin', 'admin']
         }
       },
       {
@@ -256,7 +268,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'system_role',
           i18nKey: 'route.system_role',
           order: 2,
-          icon: 'carbon:user-role'
+          icon: 'carbon:user-role',
+          roles: ['SuperAdmin', 'admin']
         }
       },
       {
@@ -267,7 +280,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'system_setting',
           i18nKey: 'route.system_setting',
           order: 7,
-          icon: 'hugeicons:settings-02'
+          icon: 'hugeicons:settings-02',
+          roles: ['SuperAdmin', 'admin']
         }
       },
       {
@@ -278,7 +292,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'system_user',
           i18nKey: 'route.system_user',
           order: 1,
-          icon: 'lucide:user-cog'
+          icon: 'lucide:user-cog',
+          roles: ['SuperAdmin', 'admin']
         }
       }
     ]

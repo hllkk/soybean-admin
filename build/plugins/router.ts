@@ -39,6 +39,12 @@ export function setupElegantRouter() {
         meta.constant = true;
       }
 
+      const adminRoutes: RouteKey[] = ['admin', 'admin-center', 'log', 'system', 'about'];
+
+      if (adminRoutes.some(route => key === route || key.startsWith(`${route}_`))) {
+        meta.roles = ['SuperAdmin', 'admin'];
+      }
+
       return meta;
     }
   });
