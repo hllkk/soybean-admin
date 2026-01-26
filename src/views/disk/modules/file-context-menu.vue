@@ -94,7 +94,7 @@ const staticMenuOptions = markRaw({
     { type: 'divider' },
     {
       key: 'properties',
-      label: '属性',
+      label: '详细信息',
       icon: iconCache.fileProperty
     }
   ],

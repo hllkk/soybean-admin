@@ -9,6 +9,7 @@ import FileDiskplayGrid from './modules/disk-show-grid.vue';
 import FileDisplayList from './modules/disk-show-list.vue';
 import FileContextMenu from './modules/file-context-menu.vue';
 import DiskShareModal from './modules/disk-share-modal.vue';
+import DiskPropertyModel from './modules/disk-property-model.vue';
 import FileEmpty from './modules/file-empty.vue';
 
 const appStore = useAppStore();
@@ -27,11 +28,7 @@ const renamingItem = computed(() => diskStore.renamingItem);
 const selectedCount = computed(() => diskStore.selectedFileIds.length);
 
 const shareDialogVisible = ref<boolean>(false);
-
-// const isPrivateLink = ref(false);
-// const extractCodeType = ref<'random' | 'custom'>('random');
-// const customExtractCode = ref('');
-// const customUrlSuffix = ref('');
+const propertiesDialogVisible = ref<boolean>(false);
 
 /** 切换显示容量 */
 function handleChange(value: boolean) {
@@ -205,6 +202,15 @@ function handleShare() {
   shareDialogVisible.value = true;
 }
 
+/** 处理文件属性 */
+function handleShowProperties() {
+  if (diskStore.selectedFileIds.length === 0) {
+    window.$message?.error('请选择要查看属性的文件');
+    return;
+  }
+  propertiesDialogVisible.value = true;
+}
+
 /** 处理文件删除 */
 function handleDelete(fileId?: string) {
   if (fileId) {
@@ -320,7 +326,7 @@ function handleContextMenuAction(action: string) {
       window.$message?.success('移动文件');
       break;
     case 'properties':
-      window.$message?.success('查看属性');
+      handleShowProperties();
       break;
     case 'upload-file':
       handleFileUpload();
@@ -648,6 +654,8 @@ onMounted(() => {
           :file-name="selectedFiles[0]?.name || ''"
           :file-ids="diskStore.selectedFileIds"
         />
+        <!--文件属性模态框-->
+        <DiskPropertyModel v-model:visible="propertiesDialogVisible" :item="contextMenuState.targetFile" />
       </NCard>
     </div>
   </DiskSider>

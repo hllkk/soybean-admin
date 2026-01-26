@@ -79,16 +79,6 @@ const imageHeightStyle = computed(() => {
   }
   return `height: ${props.gridWidth - 35}px;`;
 });
-
-// const videoImageHeight = computed(() => {
-//   if (props.details) {
-//     return 'height: 110px';
-//   }
-//   if (props.item.video && props.item.video.width && props.item.video.height) {
-//     return '';
-//   }
-//   return `${props.gridWidth - 35}px`;
-// });
 </script>
 
 <template>
@@ -153,8 +143,8 @@ const imageHeightStyle = computed(() => {
       ></NAvatar>
     </div>
     <!-- 音频缩略图 -->
-    <div v-else-if="item.contentType && item.contentType.includes('audio')">
-      <div v-if="item.music !== null">
+    <div v-else-if="item.contentType && item.contentType.includes('audio')" class="h-full">
+      <div v-if="item.music !== null && item.mediaCover">
         <NImage
           v-if="diskStore.fileShowMode === 'grid'"
           object-fit="contain"
@@ -173,9 +163,10 @@ const imageHeightStyle = computed(() => {
           class="h-full"
         ></NAvatar>
       </div>
+      <SvgIcon v-else local-icon="disk-file_music" class="h-full w-auto object-cover transition-all duration-300" />
     </div>
     <!-- 视频缩略图 -->
-    <div v-else-if="item.contentType && item.contentType.includes('video')">
+    <div v-else-if="item.contentType && item.contentType.includes('video')" class="h-full">
       <div v-if="item.mediaCover">
         <div v-if="diskStore.fileShowMode === 'grid' && isPC && !details" class="grid-play-icon">
           <SvgIcon icon="ic-sharp-play-circle-outline" class="text-2em" />

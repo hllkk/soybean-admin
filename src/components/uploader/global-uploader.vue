@@ -310,24 +310,33 @@ function onFileSuccess(
       lastModified: file.file.lastModified,
       fileId: uploadParams.value.fileId || ''
     };
-    fetchMergeFile(mergeParams);
-    removeFileStatus(file.id);
-    setFileStatus(file.id, 'success');
-    diskStore.getFileList();
+    // 等待文件合并完成后再刷新文件列表
+    fetchMergeFile(mergeParams)
+      .then(() => {
+        removeFileStatus(file.id);
+        setFileStatus(file.id, 'success');
+        diskStore.getFileList();
 
-    // 对于文件夹上传，只在所有子文件都上传完成时才显示成功提示
-    if (rootFile.isFolder && rootFile.files) {
-      const allFilesSuccess = rootFile.files.every(subFile => subFile.isComplete() || subFile.isUploading() === false);
-      if (allFilesSuccess) {
-        window.$message?.success('文件夹上传成功');
-      }
-    } else {
-      window.$message?.success('上传成功');
-    }
+        // 对于文件夹上传，只在所有子文件都上传完成时才显示成功提示
+        if (rootFile.isFolder && rootFile.files) {
+          const allFilesSuccess = rootFile.files.every(
+            subFile => subFile.isComplete() || subFile.isUploading() === false
+          );
+          if (allFilesSuccess) {
+            window.$message?.success('文件夹上传成功');
+          }
+        } else {
+          window.$message?.success('上传成功');
+        }
 
-    if (process.value === -10 || process.value === 100 || diskStore.fileListLength === 0) {
-      uploaderCancel();
-    }
+        if (process.value === -10 || process.value === 100 || diskStore.fileListLength === 0) {
+          uploaderCancel();
+        }
+      })
+      .catch(error => {
+        window.$message?.error(`文件合并失败: ${error}`);
+        setFileStatus(file.id, 'error');
+      });
   } else if (rootFile.isFolder && rootFile.files) {
     // 对于文件夹上传，只在所有子文件都上传完成时才显示成功提示
     const allFilesSuccess = rootFile.files.every(subFile => subFile.isComplete() || subFile.isUploading() === false);

@@ -41,6 +41,8 @@ declare namespace Api {
       extendName: string;
       /** 文件更新时间 */
       updateTime: string;
+      /** 文件创建时间 */
+      createTime?: string;
       /** 是否是文件夹 */
       isDir: boolean;
       /** 文件或文件夹路径 */
