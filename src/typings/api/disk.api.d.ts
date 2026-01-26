@@ -1,5 +1,33 @@
 declare namespace Api {
   namespace Disk {
+    type MusicInfo = {
+      /** 音乐标题 */
+      songName?: string;
+      /** 音乐艺术家 */
+      singer?: string;
+      /** 音乐专辑 */
+      album?: string;
+      /** 音乐时长 */
+      duration?: number;
+    };
+
+    type VideoInfo = {
+      /** 视频宽度 */
+      width?: number;
+      /** 视频高度 */
+      height?: number;
+      /** 视频码率 */
+      bitrate?: string;
+      /** 视频码率数值 */
+      bitrateNum?: number | null;
+      /** 视频格式 */
+      format?: string;
+      /** 视频帧率 */
+      frameRate?: number;
+      /** 视频时长 */
+      duration?: number;
+    };
+
     interface FileItem {
       /** 文件唯一ID */
       id: string;
@@ -25,6 +53,12 @@ declare namespace Api {
       isShare?: boolean;
       /** 文件的类型 */
       contentType?: string;
+      /** 音乐信息 */
+      music?: MusicInfo;
+      /** 视频信息 */
+      video?: VideoInfo;
+      /** 是否有封面 */
+      mediaCover?: boolean;
     }
 
     interface GetFileListRequest {

@@ -2,7 +2,6 @@
 import { computed } from 'vue';
 import { useAppStore } from '@/store/modules/app';
 import { useDiskStore } from '@/store/modules/disk';
-
 defineOptions({
   name: 'FileImage'
 });
@@ -30,6 +29,7 @@ const diskStore = useDiskStore();
 // 是否是Pc
 const isPC = computed(() => appStore.isMobile === false);
 const imageUrl = computed(() => `${import.meta.env.VITE_APP_BASE_API}/view/thumbnail?id=`);
+const audioCoverUrl = computed(() => `${import.meta.env.VITE_APP_BASE_API}/view/cover?id=`);
 
 /** 文件类型图标 Map 映射 */
 const FileIcon: FileExtendNameIconMap = {
@@ -79,6 +79,16 @@ const imageHeightStyle = computed(() => {
   }
   return `height: ${props.gridWidth - 35}px;`;
 });
+
+// const videoImageHeight = computed(() => {
+//   if (props.details) {
+//     return 'height: 110px';
+//   }
+//   if (props.item.video && props.item.video.width && props.item.video.height) {
+//     return '';
+//   }
+//   return `${props.gridWidth - 35}px`;
+// });
 </script>
 
 <template>
@@ -125,6 +135,7 @@ const imageHeightStyle = computed(() => {
     <div v-else-if="item.contentType && item.contentType.startsWith('image')" class="h-full">
       <NImage
         v-if="diskStore.fileShowMode === 'grid'"
+        lazy
         object-fit="contain"
         :style="imageHeightStyle"
         class="h-full w-auto transition-all duration-300"
@@ -142,10 +153,62 @@ const imageHeightStyle = computed(() => {
       ></NAvatar>
     </div>
     <!-- 音频缩略图 -->
-    <div v-else-if="item.contentType && item.contentType.includes('audio')"></div>
+    <div v-else-if="item.contentType && item.contentType.includes('audio')">
+      <div v-if="item.music !== null">
+        <NImage
+          v-if="diskStore.fileShowMode === 'grid'"
+          object-fit="contain"
+          lazy
+          :style="{ height: details ? '110px' : gridWidth - 50 + 'px' }"
+          :src="audioCoverUrl + item.id"
+        >
+          <template #error>
+            <SvgIcon local-icon="disk-file_music" class="h-full w-auto transition-all duration-300" />
+          </template>
+        </NImage>
+        <NAvatar
+          v-if="diskStore.fileShowMode !== 'grid'"
+          object-fit="cover"
+          :src="audioCoverUrl + item.id"
+          class="h-full"
+        ></NAvatar>
+      </div>
+    </div>
     <!-- 视频缩略图 -->
-    <div v-else-if="item.contentType && item.contentType.includes('video')"></div>
+    <div v-else-if="item.contentType && item.contentType.includes('video')">
+      <div v-if="item.mediaCover">
+        <div v-if="diskStore.fileShowMode === 'grid' && isPC && !details" class="grid-play-icon">
+          <SvgIcon icon="ic-sharp-play-circle-outline" class="text-2em" />
+        </div>
+      </div>
+      <NImage
+        v-if="diskStore.fileShowMode === 'grid'"
+        lazy
+        object-fit="contain"
+        :style="{ height: details ? '110px' : gridWidth - 50 + 'px' }"
+        :src="audioCoverUrl + item.id"
+      >
+        <template #error>
+          <SvgIcon local-icon="disk-file_video" class="h-full w-auto transition-all duration-300" />
+        </template>
+      </NImage>
+      <NAvatar v-if="diskStore.fileShowMode !== 'grid'" :src="audioCoverUrl + item.id" class="h-full"></NAvatar>
+    </div>
     <!-- 其他文件图标 -->
     <SvgIcon v-else :local-icon="getFileImg" class="h-full w-auto object-cover transition-all duration-300" />
   </div>
 </template>
+
+<style scoped lang="scss">
+.grid-play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  background: rgb(255 255 255 / 30%);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
+  border-radius: 50%;
+}
+</style>

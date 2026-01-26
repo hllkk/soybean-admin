@@ -248,9 +248,13 @@ watch(
             <NSkeleton v-if="isLoading" :sharp="false" size="medium" :width="60" :height="60"></NSkeleton>
             <FileImage v-else :item="item" />
           </div>
-          <div class="mt-12px flex-x-center select-none text-ellipsis text-center text-12px">
-            <NSkeleton v-if="isLoading" :width="60" :sharp="false" text />
-            <p v-else>{{ item.name }}</p>
+          <div class="mt-12px flex-x-center select-none px-2 text-3.3">
+            <p
+              :title="item.name"
+              class="line-clamp-2 max-h-[2.8em] overflow-hidden text-ellipsis whitespace-nowrap break-all leading-[1.4]"
+            >
+              {{ item.name }}
+            </p>
           </div>
         </template>
       </div>

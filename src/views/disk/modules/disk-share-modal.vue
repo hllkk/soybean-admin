@@ -107,7 +107,7 @@ function handleCreateShare() {
             <NTabPane name="custom" tab="自定义" />
           </NTabs>
           <div v-if="showCustomValidityInput" class="mt-2">
-            <NInput v-model:value="customValidityDays" placeholder="请输入有效天数" type="number" :min="1" :max="3650">
+            <NInput v-model:value="customValidityDays" placeholder="请输入有效天数" :min="1" :max="3650">
               <template #suffix>天</template>
             </NInput>
           </div>
