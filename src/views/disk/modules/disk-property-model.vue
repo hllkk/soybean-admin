@@ -18,6 +18,40 @@ const visible = defineModel<boolean>('visible', {
 });
 
 const title = computed(() => `详细信息 - ${props.item?.name || ''}`);
+
+function formatBitrate(bitrate?: number | string): string {
+  if (!bitrate) return '';
+  const numBitrate = typeof bitrate === 'string' ? Number.parseFloat(bitrate) : bitrate;
+  if (Number.isNaN(numBitrate)) return '';
+  if (numBitrate >= 1000000) {
+    return `${(numBitrate / 1000000).toFixed(2)} Mbps`;
+  }
+  if (numBitrate >= 1000) {
+    return `${(numBitrate / 1000).toFixed(2)} kbps`;
+  }
+  return `${numBitrate} bps`;
+}
+
+function formatFrameRate(frameRate?: number | string): string {
+  if (!frameRate) return '';
+  const numFrameRate = typeof frameRate === 'string' ? Number.parseFloat(frameRate) : frameRate;
+  if (Number.isNaN(numFrameRate)) return '';
+  return `${numFrameRate} fps`;
+}
+
+function formatDuration(duration?: number | string): string {
+  if (!duration) return '';
+  const numDuration = typeof duration === 'string' ? Number.parseFloat(duration) : duration;
+  if (Number.isNaN(numDuration)) return '';
+  const hours = Math.floor(numDuration / 3600);
+  const minutes = Math.floor((numDuration % 3600) / 60);
+  const seconds = Math.floor(numDuration % 60);
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
 </script>
 
 <template>
@@ -45,21 +79,21 @@ const title = computed(() => `详细信息 - ${props.item?.name || ''}`);
       </div>
       <div v-if="props.item?.music" class="flex items-center">
         <div class="w-30 flex items-center text-gray-500">
-          <SvgIcon icon="iconamoon-music-2-fill" class="mr-2 color-[#4299e1]" />
+          <SvgIcon icon="iconamoon-music-2-fill" class="mr-2 text-4 color-[#4299e1]" />
           艺术家
         </div>
         <span>{{ props.item?.music?.singer || '' }}</span>
       </div>
       <div v-if="props.item?.music" class="flex items-center">
         <div class="w-30 flex items-center text-gray-500">
-          <SvgIcon icon="iconamoon-music-2-fill" class="mr-2 color-[#4299e1]" />
+          <SvgIcon icon="iconamoon-music-2-fill" class="mr-2 text-4 color-[#4299e1]" />
           专辑
         </div>
         <span>{{ props.item?.music?.album || '' }}</span>
       </div>
       <div v-if="props.item?.music" class="flex items-center">
         <div class="w-30 flex items-center text-gray-500">
-          <SvgIcon icon="iconamoon-music-2-fill" class="mr-2 color-[#4299e1]" />
+          <SvgIcon icon="iconamoon-music-2-fill" class="mr-2 text-4 color-[#4299e1]" />
           歌曲名称
         </div>
         <span>{{ props.item?.music?.songName || '' }}</span>
@@ -67,6 +101,45 @@ const title = computed(() => `详细信息 - ${props.item?.name || ''}`);
       <div class="flex items-center">
         <div class="w-30 text-gray-500">大小</div>
         <div>{{ formatFileSize(props.item?.size || 0) }} ({{ props.item?.size || 0 }} 字节)</div>
+      </div>
+      <div class="flex items-center">
+        <div class="w-30 text-gray-500">文件位置</div>
+        <div>{{ props.item?.filePath || '' }}</div>
+      </div>
+      <div v-if="props.item?.video" class="flex items-center">
+        <div class="w-30 flex items-center text-gray-500">
+          <SvgIcon icon="bx-film" class="mr-2 text-4 color-[#4299e1]" />
+          视频尺寸
+        </div>
+        <div>{{ props.item?.video?.width || '' }} x {{ props.item?.video?.height || '' }}</div>
+      </div>
+      <div v-if="props.item?.video" class="flex items-center">
+        <div class="w-30 flex items-center text-gray-500">
+          <SvgIcon icon="bx-film" class="mr-2 text-4 color-[#4299e1]" />
+          视频码率
+        </div>
+        <div>{{ formatBitrate(props.item?.video?.bitrate) }}</div>
+      </div>
+      <div v-if="props.item?.video" class="flex items-center">
+        <div class="w-30 flex items-center text-gray-500">
+          <SvgIcon icon="bx-film" class="mr-2 text-4 color-[#4299e1]" />
+          视频帧率
+        </div>
+        <div>{{ formatFrameRate(props.item?.video?.frameRate) }}</div>
+      </div>
+      <div v-if="props.item?.video" class="flex items-center">
+        <div class="w-30 flex items-center text-gray-500">
+          <SvgIcon icon="bx-film" class="mr-2 text-4 color-[#4299e1]" />
+          视频时长
+        </div>
+        <div>{{ formatDuration(props.item?.video?.duration) }}</div>
+      </div>
+      <div v-if="props.item?.video" class="flex items-center">
+        <div class="w-30 flex items-center text-gray-500">
+          <SvgIcon icon="bx-film" class="mr-2 text-4 color-[#4299e1]" />
+          视频格式
+        </div>
+        <div>{{ props.item?.video?.format || '' }}</div>
       </div>
       <div class="flex items-center">
         <div class="w-30 text-gray-500">创建时间</div>
