@@ -107,9 +107,8 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
 
     // the route is captured by the "not-found" route because the constant route is not initialized
     // after the constant route is initialized, redirect to the original route
-    const path = to.fullPath;
     const location: RouteLocationRaw = {
-      path,
+      path: to.path,
       replace: true,
       query: to.query,
       hash: to.hash

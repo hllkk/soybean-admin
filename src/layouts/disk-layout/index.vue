@@ -84,9 +84,19 @@ const siderCollapsedWidth = computed(() => themeStore.sider.diskCollapsedWidth);
     <template #sider>
       <DiskSider />
     </template>
+
     <GlobalMenu />
     <GlobalUploader />
     <GlobalContent />
+    <AudioPreview />
+    <VideoPreview />
+    <!--
+ <ImageViewer v-model:visible="imagePreviewVisible" :file="imagePreviewRow" />
+    <AudioPreview v-model:visible="audioPreviewVisible" :file="audioPreviewRow" />
+    <VideoPreview v-model:visible="videoPreviewVisible" :file="videoPreviewRow" />
+    <TextPreview v-model:visible="textPreviewVisible" :file="textPreviewRow" />
+    <IframePreview v-model:visible="iframePreviewVisible" :file="iframePreviewRow" />
+-->
   </AdminLayout>
 </template>
 

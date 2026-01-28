@@ -77,52 +77,6 @@ export function generateUniqueName(
   return `${baseName}(${counter})`;
 }
 
-// function isFilePath(str: string) {
-//   // 匹配 test/r2/file.txt
-//   // eslint-disable-next-line unicorn/escape-case, no-useless-escape
-//   const filePathRegex = /^[\w\-\/]+[\u4e00-\u9fa5\w\-]+\.\w+$/;
-//   return filePathRegex.test(str);
-// }
-
-// 构建下载Url
-// eslint-disable-next-line max-params
-// function previewUrl(
-//   userId: CommonType.IdType,
-//   userName: string,
-//   file: Api.Disk.FileItem,
-//   token: string,
-//   shareToken?: string,
-//   serverUrl?: string,
-//   joinToken?: string
-// ) {
-//   const baseUrl = serverUrl || backendUrl;
-//   let fileUrl = `${baseUrl}/file/${userName}${encodeURIComponent(file.filePath || '')}${encodeURIComponent(file.name)}`;
-//   fileUrl = fileUrl.replaceAll(/%5C|%2F/g, '/');
-
-//   if (file.userId !== userId && token && !shareToken) {
-//     return `${baseUrl}/pre-file/${file.id}/${encodeURIComponent(file.name)}`;
-//   }
-
-//   if (token) {
-//     if (joinToken) {
-//       return `${fileUrl}?token=${token}&name=${userName}`;
-//     }
-//     return `${fileUrl}`;
-//   }
-
-//   if (shareToken) {
-//     if (isFilePath(file.id)) {
-//       return `${fileUrl}?share-token=${shareToken}`;
-//     }
-//     return `${baseUrl}/share-file/${file.id}/${shareToken}/${encodeURIComponent(file.name)}`;
-//   }
-
-//   if (isFilePath(file.id)) {
-//     return fileUrl;
-//   }
-//   return `${baseUrl}/share-file/${file.id}/${encodeURIComponent(file.name)}`;
-// }
-
 export async function singleDownload(userId: CommonType.IdType, file: Api.Disk.FileItem) {
   const cacheKey = `single_${userId}_${file.id}`;
 

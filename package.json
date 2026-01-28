@@ -56,6 +56,8 @@
     "@sa/utils": "workspace:*",
     "@types/streamsaver": "^2.0.5",
     "@vueuse/core": "14.1.0",
+    "@worstone/vue-aplayer": "^1.0.8",
+    "artplayer": "^5.3.0",
     "clipboard": "2.0.11",
     "dayjs": "1.11.19",
     "defu": "6.1.4",
@@ -72,7 +74,9 @@
     "vue-draggable-plus": "0.6.0",
     "vue-i18n": "11.2.7",
     "vue-router": "4.6.4",
-    "vue-simple-uploader": "^1.0.3"
+    "vue-simple-uploader": "^1.0.3",
+    "xgplayer": "^3.0.23",
+    "xgplayer-music": "^3.0.23"
   },
   "devDependencies": {
     "@elegant-router/vue": "0.3.8",

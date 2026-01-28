@@ -35,3 +35,47 @@ export function formatNetSpeed(size: number, space = false) {
   if (size < 1024 * 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + (space ? ' MB / s' : 'MB/s');
   return (size / (1024 * 1024 * 1024)).toFixed(2) + (space ? ' GB / s' : 'GB/s');
 }
+
+export const suffix = {
+  simText: [
+    'vue',
+    'txt',
+    'asp',
+    'jsp',
+    'TXT',
+    'xml',
+    'xsl',
+    'iml',
+    'm',
+    'bas',
+    'prg',
+    'cmd',
+    'sass',
+    'sas',
+    'php',
+    'lst',
+    'key',
+    'pem',
+    'log',
+    'cmake',
+    'db',
+    'gradle',
+    'bat',
+    'conf',
+    'dart',
+    'plist',
+    'cfg',
+    'ini',
+    'sql',
+    'rst',
+    'toml',
+    'vbs',
+    'yml',
+    'yaml',
+    'properties',
+    'gitignore',
+    'ts'
+  ],
+  compressedFile: ['zip', 'tar', '7z', 'rar', 'jar', 'tar.gz', 'tgz', 'tar.bz2'],
+  iframePreviewFile: ['pdf', 'csv', 'drawio', 'mind', 'glb', 'gltf', 'dwg', 'excalidraw', 'stl', '3mf', 'amf', 'obj']
+};

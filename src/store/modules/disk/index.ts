@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
 import { fetchGetFileList } from '@/service/api/disk/list';
+import { suffix } from '@/utils/file';
 import { SetupStoreId } from '@/enum';
 import { useAuthStore } from '../auth';
 import { generateUniqueName, packageDownload, parseFileName, singleDownload } from './shared';
@@ -21,6 +22,16 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const basePath = ref('/');
   const pathList = ref<Array<{ folder: string; shareBase?: string }>>([]);
   const pageIndex = ref(1);
+  const audioPreviewVisible = ref(false);
+  const audioPreviewRow = ref<Api.Disk.FileItem | null>(null);
+  const imagePreviewVisible = ref(false);
+  const imagePreviewRow = ref<Api.Disk.FileItem | null>(null);
+  const videoPreviewVisible = ref(false);
+  const videoPreviewRow = ref<Api.Disk.FileItem | null>(null);
+  const textPreviewVisible = ref(false);
+  const textPreviewRow = ref<Api.Disk.FileItem | null>(null);
+  const iframePreviewVisible = ref(false);
+  const iframePreviewRow = ref<Api.Disk.FileItem | null>(null);
 
   const route = useRoute();
   const router = useRouter();
@@ -248,7 +259,36 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   }
 
   function handleOpenFile(item: Api.Disk.FileItem) {
-    window.$message?.info(`打开文件${item.name}`);
+    if (item.contentType?.startsWith('image')) {
+      imagePreviewVisible.value = true;
+      imagePreviewRow.value = item;
+      return;
+    }
+    if (item.contentType?.includes('audio')) {
+      audioPreviewVisible.value = true;
+      audioPreviewRow.value = item;
+      return;
+    }
+    if (item.contentType?.includes('video')) {
+      videoPreviewVisible.value = true;
+      videoPreviewRow.value = item;
+      return;
+    }
+    if (suffix.simText.includes(item.extendName)) {
+      textPreviewVisible.value = true;
+      textPreviewRow.value = item;
+      return;
+    }
+    if (suffix.compressedFile.includes(item.extendName)) {
+      window.$message?.info(`压缩文件暂不支持预览，请下载后查看`);
+      return;
+    }
+    if (item.contentType?.includes('office') || suffix.iframePreviewFile.includes(item.extendName)) {
+      iframePreviewVisible.value = true;
+      iframePreviewRow.value = item;
+      return;
+    }
+    window.$message?.warning(`不支持的文件类型: ${item.name}`);
   }
 
   async function handleDownloadFile(item: Api.Disk.FileItem) {
@@ -318,6 +358,16 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     pageIndex,
     handleDownloadFile,
     handleShareFile,
-    handleDeleteFile
+    handleDeleteFile,
+    audioPreviewVisible,
+    audioPreviewRow,
+    imagePreviewVisible,
+    imagePreviewRow,
+    videoPreviewVisible,
+    videoPreviewRow,
+    textPreviewVisible,
+    textPreviewRow,
+    iframePreviewVisible,
+    iframePreviewRow
   };
 });

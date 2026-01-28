@@ -126,6 +126,7 @@ const imageHeightStyle = computed(() => {
       <NImage
         v-if="diskStore.fileShowMode === 'grid'"
         lazy
+        preview-disabled
         object-fit="contain"
         :style="imageHeightStyle"
         class="h-full w-auto transition-all duration-300"
@@ -149,6 +150,7 @@ const imageHeightStyle = computed(() => {
           v-if="diskStore.fileShowMode === 'grid'"
           object-fit="contain"
           lazy
+          preview-disabled
           :style="{ height: details ? '110px' : gridWidth - 50 + 'px' }"
           :src="audioCoverUrl + item.id"
         >
@@ -175,6 +177,7 @@ const imageHeightStyle = computed(() => {
       <NImage
         v-if="diskStore.fileShowMode === 'grid'"
         lazy
+        preview-disabled
         object-fit="contain"
         :style="{ height: details ? '110px' : gridWidth - 50 + 'px' }"
         :src="audioCoverUrl + item.id"
