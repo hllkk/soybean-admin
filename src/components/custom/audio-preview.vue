@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
+import { addColorAlpha } from '@sa/color';
 import Player from 'xgplayer';
-import MusicPreset, { Analyze, Lyric } from 'xgplayer-music';
+import MusicPreset, { Lyric } from 'xgplayer-music';
 import 'xgplayer/dist/index.min.css';
 import 'xgplayer-music/dist/index.min.css';
 import { useDiskStore } from '@/store/modules/disk';
@@ -23,16 +24,14 @@ const isMobile = breakpoints.smaller('md');
 const isDark = computed(() => themeStore.darkMode);
 
 const playerContainerRef = ref<HTMLElement | null>(null);
-const canvasRef = ref<HTMLCanvasElement | null>(null);
 const lyricContainerRef = ref<HTMLElement | null>(null);
 const playerInstance = ref<any>(null);
-const analyzeInstance = ref<any>(null);
 const lyricInstance = ref<any>(null);
 
 // Window State
 const isFullscreen = ref(false);
 const windowPos = reactive({ x: 0, y: 0 });
-const windowSize = reactive({ width: 900, height: 600 });
+const windowSize = reactive({ width: 700, height: 500 });
 const isDragging = ref(false);
 const dragOffset = reactive({ x: 0, y: 0 });
 const isPlaying = ref(false);
@@ -70,16 +69,6 @@ const containerStyle = computed(() => {
   };
 });
 
-const analyzeMode = ref('waves');
-const analyzeOptions = [
-  { label: '波形 (Waves)', value: 'waves' },
-  { label: '柱状 (Bars)', value: 'bars' },
-  { label: '闪电 (Lightning)', value: 'lightning' },
-  { label: '竖线 (VertLines)', value: 'vertLines' },
-  { label: '双线 (DoubleLine)', value: 'doubleLine' },
-  { label: '双柱 (DoubleBars)', value: 'doubleBars' }
-];
-
 const songInfo = ref({
   name: '',
   singer: '',
@@ -87,23 +76,13 @@ const songInfo = ref({
   cover: ''
 });
 
-function handleModeChange(value: string) {
-  analyzeMode.value = value;
-  if (analyzeInstance.value) {
-    analyzeInstance.value.mode = value;
-    if (value === 'lightning') {
-      analyzeInstance.value.options.count = 512;
-      analyzeInstance.value.options.stroke = 4;
-    } else {
-      if (value === 'waves') {
-        analyzeInstance.value.options.stroke = 3;
-      } else {
-        analyzeInstance.value.options.stroke = 2;
-      }
-      analyzeInstance.value.options.count = 256;
-    }
-  }
-}
+const footerStyle = computed(() => {
+  const primary = themeStore.themeColors.primary;
+  return {
+    backgroundColor: addColorAlpha(primary, isDark.value ? 0.2 : 0.1),
+    borderTopColor: addColorAlpha(primary, 0.3)
+  };
+});
 
 async function initPlayer() {
   if (!diskStore.audioPreviewRow || !playerContainerRef.value) return;
@@ -162,19 +141,6 @@ async function initPlayer() {
       crossOrigin: 'anonymous'
     });
 
-    // Initialize Analyze
-    if (canvasRef.value) {
-      // Set canvas width/height
-      canvasRef.value.width = canvasRef.value.parentElement?.clientWidth || window.innerWidth;
-      canvasRef.value.height = 80;
-
-      analyzeInstance.value = new Analyze(playerInstance.value, canvasRef.value, {
-        bgColor: 'rgba(0,0,0,0)',
-        stroke: 3
-      });
-      handleModeChange(analyzeMode.value);
-    }
-
     // Initialize Lyric
     const lyrics = ['[00:00.00] 暂无歌词\n[99:59.00] '];
     if (lyricContainerRef.value) {
@@ -195,17 +161,8 @@ async function initPlayer() {
     playerInstance.value.on('ended', () => {
       isPlaying.value = false;
     });
-
-    // Resize handler for canvas
-    window.addEventListener('resize', handleResize);
   } catch (err) {
     window.$message?.error(`初始化音频播放器失败：${err}`);
-  }
-}
-
-function handleResize() {
-  if (canvasRef.value) {
-    canvasRef.value.width = canvasRef.value.parentElement?.clientWidth || window.innerWidth;
   }
 }
 
@@ -215,20 +172,18 @@ function close() {
     playerInstance.value.destroy();
     playerInstance.value = null;
   }
-  window.removeEventListener('resize', handleResize);
   // Reset state
   isFullscreen.value = false;
 }
 
 function toggleFullscreen() {
   isFullscreen.value = !isFullscreen.value;
-  nextTick(() => handleResize());
 }
 
 function centerWindow() {
   if (isMobile.value) return; // Mobile always full
-  const width = Math.min(window.innerWidth * 0.9, 900);
-  const height = Math.min(window.innerHeight * 0.9, 600);
+  const width = Math.min(window.innerWidth * 0.9, 700);
+  const height = Math.min(window.innerHeight * 0.9, 500);
   windowSize.width = width;
   windowSize.height = height;
   windowPos.x = (window.innerWidth - width) / 2;
@@ -270,9 +225,8 @@ watch(
     } else {
       if (playerInstance.value) {
         playerInstance.value.destroy();
-        playerInstance.value = null;
       }
-      window.removeEventListener('resize', handleResize);
+      playerInstance.value = null;
     }
   }
 );
@@ -283,14 +237,12 @@ watch(isMobile, mobile => {
   } else {
     centerWindow();
   }
-  nextTick(() => handleResize());
 });
 
 onBeforeUnmount(() => {
   if (playerInstance.value) {
     playerInstance.value.destroy();
   }
-  window.removeEventListener('resize', handleResize);
   window.removeEventListener('mousemove', onDrag);
   window.removeEventListener('mouseup', stopDrag);
 });
@@ -362,14 +314,6 @@ onBeforeUnmount(() => {
 
         <!-- Center/Right: Lyrics & Visualizer Options -->
         <div v-if="!isMobile" class="lyric-section">
-          <div class="visualizer-select">
-            <select :value="analyzeMode" @change="e => handleModeChange((e.target as HTMLSelectElement).value)">
-              <option v-for="opt in analyzeOptions" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-
           <div class="lyric-wrapper">
             <div id="gc" ref="lyricContainerRef"></div>
             <!-- Gradient Masks for Lyrics -->
@@ -380,10 +324,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Footer: Visualizer & Controls -->
-      <div class="footer-section">
-        <div class="canvas-wrapper">
-          <canvas ref="canvasRef"></canvas>
-        </div>
+      <div class="footer-section" :style="footerStyle">
         <div id="mse" ref="playerContainerRef" class="player-controls"></div>
       </div>
     </div>
@@ -569,6 +510,7 @@ onBeforeUnmount(() => {
   height: 140px;
   margin-bottom: 0;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
 }
 
 .album-cover {
@@ -644,35 +586,6 @@ onBeforeUnmount(() => {
   min-height: 200px;
 }
 
-.visualizer-select {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 20;
-}
-
-.is-mobile .visualizer-select {
-  top: -40px; /* Move slightly up on mobile or hide if needed */
-  right: 0;
-}
-
-select {
-  background: rgba(0, 0, 0, 0.3);
-  color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  outline: none;
-  cursor: pointer;
-  backdrop-filter: blur(4px);
-}
-.light-theme select {
-  background: rgba(255, 255, 255, 0.5);
-  color: #333;
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
 .lyric-wrapper {
   flex: 1;
   position: relative;
@@ -741,23 +654,6 @@ select {
 .light-theme .footer-section {
   background: rgba(255, 255, 255, 0.2);
   border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.canvas-wrapper {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
 }
 
 .player-controls {
