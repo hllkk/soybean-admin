@@ -46,7 +46,7 @@ export function previewUrl(
 ) {
   const authStore = useAuthStore();
   const baseUrl = serverUrl || import.meta.env.VITE_APP_BASE_API;
-  let fileUrl = `${baseUrl}/file/${file.userId}${encodeURIComponent(file.filePath || '')}${encodeURIComponent(file.name)}`;
+  let fileUrl = `${baseUrl}/file/${file.userId}${encodeURIComponent(file.filePath || '')}/${encodeURIComponent(file.name)}`;
   fileUrl = fileUrl.replaceAll(/%5C|%2F/g, '/');
 
   if (file.userId !== authStore.userInfo.userId && token && !shareToken) {
