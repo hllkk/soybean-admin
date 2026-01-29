@@ -59,7 +59,11 @@ async function handleSubmit() {
     localStg.remove('loginRember');
   }
 
-  await authStore.login(model.userName, model.password, captchaToken.value);
+  const isSuccess = await authStore.login(model.userName, model.password, captchaToken.value);
+  if (!isSuccess) {
+    captchaVerified.value = false;
+    captchaToken.value = undefined;
+  }
 }
 
 async function showCaptchaModal() {
