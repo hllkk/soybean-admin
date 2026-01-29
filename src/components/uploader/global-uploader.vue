@@ -62,8 +62,10 @@ const uploaderOptions = {
       .replace(/\sminutes?/, '分钟')
       .replace(/\sseconds?/, '秒');
   },
-  headers: {
-    Authorization: getAuthorization()
+  headers: () => {
+    return {
+      Authorization: getAuthorization()
+    };
   },
   query() {}
 };
