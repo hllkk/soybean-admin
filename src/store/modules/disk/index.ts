@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
@@ -22,6 +22,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const basePath = ref('/');
   const pathList = ref<Array<{ folder: string; shareBase?: string }>>([]);
   const pageIndex = ref(1);
+  const pageSize = ref(50);
+  const total = ref(0);
   const audioPreviewVisible = ref(false);
   const audioPreviewRow = ref<Api.Disk.FileItem | null>(null);
   const imagePreviewVisible = ref(false);
@@ -39,6 +41,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const { bool: panelVisible, setTrue: openPanel, setFalse: closePanel } = useBoolean();
 
   const path = ref<string>((route.query.path as string) || '');
+
+  const isFinished = computed(() => fileList.value.length >= total.value && total.value > 0);
 
   watch(
     () => route.query.path,
@@ -203,17 +207,34 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
       userId: authStore.userInfo.userId,
       currentDirectory: getQueryPath(),
       folder: route.query.folder,
-      queryType: queryType.value
+      queryType: queryType.value,
+      page: pageIndex.value,
+      size: pageSize.value
     };
   }
 
-  async function getFileList() {
+  async function getFileList(isLoadMore = false) {
+    if (!isLoadMore) {
+      pageIndex.value = 1;
+    }
     const params = await getFileListParams();
     const { data, error } = await fetchGetFileList(params);
     if (error) {
       return;
     }
-    fileList.value = data || [];
+    if (data) {
+      if (isLoadMore) {
+        fileList.value.push(...data.list);
+      } else {
+        fileList.value = data.list;
+      }
+      total.value = data.total;
+      fileListLength.value = data.total;
+    }
+  }
+
+  function setPageSize(size: number) {
+    pageSize.value = size;
   }
 
   function handleSelectFile(item: Api.Disk.FileItem) {
@@ -356,6 +377,10 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     path,
     pathList,
     pageIndex,
+    pageSize,
+    total,
+    isFinished,
+    setPageSize,
     handleDownloadFile,
     handleShareFile,
     handleDeleteFile,

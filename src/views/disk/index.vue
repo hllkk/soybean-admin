@@ -1,5 +1,6 @@
 <script lang="tsx" setup>
 import { computed, onMounted, ref, watch } from 'vue';
+import { useDebounceFn, useResizeObserver } from '@vueuse/core';
 import type { MenuOption } from 'naive-ui';
 import { useAppStore } from '@/store/modules/app';
 import { useDiskStore } from '@/store/modules/disk';
@@ -29,6 +30,60 @@ const selectedCount = computed(() => diskStore.selectedFileIds.length);
 
 const shareDialogVisible = ref<boolean>(false);
 const propertiesDialogVisible = ref<boolean>(false);
+
+const scrollContainerRef = ref<HTMLElement | null>(null);
+const isLoadingMore = ref(false);
+
+const calculatePageSize = useDebounceFn(() => {
+  if (!scrollContainerRef.value) return;
+  const { clientWidth, clientHeight } = scrollContainerRef.value;
+
+  let size = 20;
+
+  if (diskStore.fileShowMode === 'grid') {
+    const itemWidth = 120; // approximate with gap
+    const itemHeight = 140; // approximate with gap
+    const cols = Math.max(1, Math.floor(clientWidth / itemWidth));
+    const rows = Math.max(1, Math.floor(clientHeight / itemHeight));
+    size = (rows + 1) * cols;
+  } else {
+    const itemHeight = 48; // approximate
+    const rows = Math.max(1, Math.floor(clientHeight / itemHeight));
+    size = rows + 5;
+  }
+
+  size = Math.max(size, 20);
+
+  if (diskStore.pageSize !== size) {
+    diskStore.setPageSize(size);
+    // Reload with new page size
+    diskStore.getFileList();
+  } else if (diskStore.fileList.length === 0) {
+    diskStore.getFileList();
+  }
+}, 200);
+
+useResizeObserver(scrollContainerRef, calculatePageSize);
+
+watch(
+  () => diskStore.fileShowMode,
+  () => {
+    calculatePageSize();
+  }
+);
+
+const handleScroll = (e: Event) => {
+  const target = e.target as HTMLElement;
+  if (target.scrollTop + target.clientHeight >= target.scrollHeight - 50) {
+    if (!diskStore.isFinished && !isLoadingMore.value) {
+      isLoadingMore.value = true;
+      diskStore.pageIndex += 1;
+      diskStore.getFileList(true).finally(() => {
+        isLoadingMore.value = false;
+      });
+    }
+  }
+};
 
 /** 切换显示容量 */
 function handleChange(value: boolean) {
@@ -177,22 +232,6 @@ function handleDownload(file?: Api.Disk.FileItem) {
   }
 }
 
-// 自定义开关样式
-// function railStyle({ focused, checked }: { focused: boolean; checked: boolean }) {
-//   const style: CSSProperties = {};
-//   if (checked) {
-//     style.background = '#d03050';
-//     if (focused) {
-//       style.boxShadow = '0 0 0 2px #d0305040';
-//     }
-//   } else {
-//     style.background = '#2080f0';
-//     if (focused) {
-//       style.boxShadow = '0 0 0 2px #2080f040';
-//     }
-//   }
-//   return style;
-// }
 /** 处理文件共享 */
 function handleShare() {
   if (diskStore.selectedFileIds.length === 0) {
@@ -610,7 +649,12 @@ onMounted(() => {
           </div>
         </div>
         <!-- 可滚动的内容区域 -->
-        <div class="custom-scrollbar h-full flex-1 overflow-y-auto p-12px" @contextmenu.prevent="handleContextMenu">
+        <div
+          ref="scrollContainerRef"
+          class="custom-scrollbar h-full flex-1 overflow-y-auto p-12px"
+          @contextmenu.prevent="handleContextMenu"
+          @scroll="handleScroll"
+        >
           <FileDiskplayGrid
             v-if="diskStore.fileShowMode === 'grid' && fileList.length > 0"
             :is-batch-mode="isBatchMode"
@@ -636,6 +680,15 @@ onMounted(() => {
             @context-menu="handleContextMenu"
           />
           <FileEmpty v-else />
+          <div v-if="isLoadingMore" class="w-full flex justify-center py-4">
+            <NSpin size="small" />
+          </div>
+          <div
+            v-else-if="diskStore.isFinished && fileList.length > 0"
+            class="w-full flex justify-center py-4 text-gray-400"
+          >
+            <span class="text-12px">没有更多了</span>
+          </div>
         </div>
         <!-- 右键菜单组件 -->
         <FileContextMenu

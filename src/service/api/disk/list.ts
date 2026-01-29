@@ -8,7 +8,7 @@ const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
 export const simpleUploadURL = `${baseURL}/file/upload`;
 
 export function fetchGetFileList(params: Api.Disk.GetFileListRequest) {
-  return request<Api.Disk.FileItem[]>({
+  return request<Api.Disk.FileListPagedResponse>({
     url: 'file/list',
     method: 'get',
     params

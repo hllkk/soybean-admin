@@ -67,6 +67,16 @@ declare namespace Api {
       userId: string;
       currentDirectory: string;
       folder?: import('vue-router').LocationQueryValue | import('vue-router').LocationQueryValue[];
+      page?: number;
+      size?: number;
+      queryType?: SimpleUploader.Uploader.FileListQueryType;
+    }
+
+    interface FileListPagedResponse {
+      list: FileItem[];
+      total: number;
+      page: number;
+      size: number;
     }
 
     interface CheckExistRequest {
