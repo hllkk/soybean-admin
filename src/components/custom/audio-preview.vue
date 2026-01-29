@@ -35,6 +35,7 @@ const windowPos = reactive({ x: 0, y: 0 });
 const windowSize = reactive({ width: 900, height: 600 });
 const isDragging = ref(false);
 const dragOffset = reactive({ x: 0, y: 0 });
+const isPlaying = ref(false);
 
 const containerStyle = computed(() => {
   if (isMobile.value) {
@@ -182,8 +183,17 @@ async function initPlayer() {
     }
 
     playerInstance.value.on('playing', () => {
+      isPlaying.value = true;
       if (lyricInstance.value) lyricInstance.value.show();
       playerInstance.value.mode = 2;
+    });
+
+    playerInstance.value.on('pause', () => {
+      isPlaying.value = false;
+    });
+
+    playerInstance.value.on('ended', () => {
+      isPlaying.value = false;
     });
 
     // Resize handler for canvas
@@ -331,9 +341,11 @@ onBeforeUnmount(() => {
         <div class="info-section">
           <div class="album-cover-wrapper">
             <div
-              class="album-cover"
-              :class="{ 'animate-spin-slow': playerInstance && playerInstance.isPlaying }"
-              :style="{ backgroundImage: songInfo.cover ? `url(${songInfo.cover})` : undefined }"
+              class="album-cover animate-spin-slow"
+              :style="{
+                backgroundImage: songInfo.cover ? `url(${songInfo.cover})` : undefined,
+                animationPlayState: isPlaying ? 'running' : 'paused'
+              }"
             >
               <div v-if="!songInfo.cover" class="no-cover">
                 <icon-mdi-music class="text-6xl" />
@@ -548,7 +560,7 @@ onBeforeUnmount(() => {
   width: 240px;
   height: 240px;
   margin-bottom: 24px;
-  border-radius: 12px;
+  border-radius: 50%;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
@@ -562,7 +574,7 @@ onBeforeUnmount(() => {
 .album-cover {
   width: 100%;
   height: 100%;
-  border-radius: 12px;
+  border-radius: 50%;
   background-size: cover;
   background-position: center;
   overflow: hidden;
