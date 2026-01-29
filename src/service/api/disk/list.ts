@@ -5,11 +5,11 @@ import { request } from '../../request';
 const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
 const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
 
-export const simpleUploadURL = `${baseURL}/file/upload`;
+export const simpleUploadURL = `${baseURL}/file-meta/upload`;
 
 export function fetchGetFileList(params: Api.Disk.GetFileListRequest) {
   return request<Api.Disk.FileListPagedResponse>({
-    url: 'file/list',
+    url: 'file-meta/list',
     method: 'get',
     params
   });
@@ -17,7 +17,7 @@ export function fetchGetFileList(params: Api.Disk.GetFileListRequest) {
 
 export function fetchCheckExist(params: Api.Disk.CheckExistRequest) {
   return request<Api.Disk.CheckExistResponse>({
-    url: 'file/checkExist',
+    url: 'file-meta/checkExist',
     method: 'post',
     data: params
   });
@@ -36,7 +36,7 @@ export function fetchUploadFolder(params: Api.Disk.CreateFolderParams) {
 
 export function fetchMergeFile(params: Api.Disk.FileMergeRequest) {
   return request({
-    url: 'file/merge',
+    url: 'file-meta/merge',
     method: 'post',
     data: params
   });
@@ -44,7 +44,7 @@ export function fetchMergeFile(params: Api.Disk.FileMergeRequest) {
 
 export function fetchNewFolder(params: any) {
   return request({
-    url: 'file/newFolder',
+    url: 'file-meta/newFolder',
     method: 'post',
     data: params
   });
@@ -52,7 +52,7 @@ export function fetchNewFolder(params: any) {
 
 export function fetchIsAllowDownload(params: { fileIds: CommonType.IdType[]; userId: CommonType.IdType }) {
   return request<Api.Disk.IsAllowDownloadResponse>({
-    url: 'file/isAllowDownload',
+    url: 'file-meta/isAllowDownload',
     method: 'post',
     data: params
   });
@@ -60,7 +60,7 @@ export function fetchIsAllowDownload(params: { fileIds: CommonType.IdType[]; use
 
 export function fetchIsAllowPackageDownload(params: { fileIds: CommonType.IdType[]; userId: CommonType.IdType }) {
   return request<Api.Disk.IsAllowPackageDownloadResponse>({
-    url: 'file/isAllowPackageDownload',
+    url: 'file-meta/isAllowPackageDownload',
     method: 'post',
     data: params
   });
