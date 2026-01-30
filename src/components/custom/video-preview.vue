@@ -2,10 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 import Artplayer from 'artplayer';
-import { fetchIsAllowDownload } from '@/service/api/disk/list';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
 import { useThemeStore } from '@/store/modules/theme';
+import { previewUrl } from '@/utils/file-config';
 
 defineOptions({
   name: 'VideoPreview'
@@ -19,7 +19,7 @@ const breakpoints = useBreakpoints(breakpointsTailwind);
 const isMobile = breakpoints.smaller('md');
 const isDark = computed(() => themeStore.darkMode);
 
-const artRef = ref<HTMLElement | null>(null);
+const artRef = ref<HTMLDivElement | null>(null);
 const instance = ref<Artplayer | null>(null);
 
 // Window dragging state
@@ -85,23 +85,6 @@ async function initPlayer() {
   const file = diskStore.videoPreviewRow;
 
   try {
-    const { data: downloadInfo, error } = await fetchIsAllowDownload({
-      fileIds: [file.id],
-      userId: authStore.userInfo.userId
-    });
-
-    if (error || !downloadInfo?.allowDownload) {
-      window.$message?.error('无法获取视频地址');
-      return;
-    }
-
-    let videoUrl = '';
-    if (downloadInfo.isRedirect && downloadInfo.redirectUrl) {
-      videoUrl = downloadInfo.redirectUrl;
-    } else {
-      videoUrl = `${downloadInfo.downloadUrl}`;
-    }
-
     if (instance.value) {
       instance.value.destroy(false);
       instance.value = null;
@@ -109,37 +92,28 @@ async function initPlayer() {
 
     instance.value = new Artplayer({
       container: artRef.value,
-      url: videoUrl,
-      title: file.name,
+      url: '',
       poster: file.mediaCover ? `${import.meta.env.VITE_APP_BASE_API}/view/cover?id=${file.id}` : '',
-      volume: 0.5,
-      isLive: false,
-      muted: false,
-      autoplay: true,
-      pip: true,
-      autoSize: false, // Handle size manually
-      autoMini: true,
-      screenshot: true,
-      setting: true,
-      loop: false,
-      flip: true,
-      playbackRate: true,
-      aspectRatio: true,
-      fullscreen: true,
-      fullscreenWeb: true,
-      subtitleOffset: true,
-      miniProgressBar: true,
-      mutex: true,
-      backdrop: true,
-      playsInline: true,
-      autoPlayback: true,
-      airplay: true,
-      theme: '#23ade5',
-      lang: 'zh-cn',
-      moreVideoAttr: {
-        crossOrigin: 'anonymous'
-      }
+      autoplay: true, // 是否自动播放
+      pip: true, // 是否在底部控制栏显示 画中画开关
+      flip: true, // 是否显示视频翻转功能，目前只出现在 设置面板 和 右键菜单 里
+      playbackRate: true, // 是否显示视频播放速度功能，会出现在 设置面板 和 右键菜单 里
+      aspectRatio: true, // 是否显示视频长宽比功能，会出现在 设置面板 和 右键菜单 里
+      screenshot: true, // 是否在底部控制栏里显示 视频截图功能
+      setting: true, // 是否在底部控制栏内显示 设置面板开关按钮
+      autoPlayback: true, // 是否使用自动 回放功能
+      theme: '#23ade5', // 播放器主题颜色，目前用于 进度条 和 高亮元素 上
+      hotkey: true, // 是否开启全局快捷键
+      autoMini: true, // 当播放器滚动到浏览器视口以外时，自动进入 迷你播放 模式
+      fullscreen: true, // 是否在底部控制栏里显示播放器 全屏 按钮
+      fullscreenWeb: true // 是否在底部控制栏里显示播放器 网页全屏 按钮
     });
+    if (isMobile.value) {
+      // 这里可以去除controls中的各种不需要参数
+    }
+
+    const videoUrl = previewUrl(file, authStore.token);
+    instance.value.url = videoUrl;
   } catch (err) {
     window.$message?.error(`初始化视频播放器失败：${err}`);
   }
@@ -183,183 +157,46 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="diskStore.videoPreviewVisible" class="video-preview-container">
-    <div class="modal-mask" @click="close"></div>
+  <div v-if="diskStore.videoPreviewVisible" class="pointer-events-none fixed left-0 top-0 z-[2000] h-screen w-screen">
+    <div
+      class="pointer-events-auto absolute left-0 top-0 h-full w-full bg-black/60 backdrop-blur-[4px] transition-opacity duration-300"
+      @click="close"
+    ></div>
 
-    <div class="video-window" :style="containerStyle" :class="{ 'is-mobile': isMobile, 'light-theme': !isDark }">
+    <div
+      class="group pointer-events-auto absolute z-[2001] block overflow-hidden bg-transparent transition-[width,height,top,left] duration-300"
+      :class="[
+        isMobile ? 'rounded-0 border-none' : 'rounded-xl shadow-[0_12px_48px_rgba(0,0,0,0.6)] border border-white/10'
+      ]"
+      :style="containerStyle"
+    >
       <!-- Glassmorphism Background -->
-      <div class="window-bg-backdrop"></div>
+      <div
+        class="absolute inset-0 z-0 backdrop-blur-[20px]"
+        :class="!isDark ? 'bg-white/90' : 'bg-[rgba(20,20,23,0.85)]'"
+      ></div>
 
-      <div class="window-header" @mousedown="startDrag">
-        <span class="window-title">{{ diskStore.videoPreviewRow?.name || '视频预览' }}</span>
-        <div class="close-btn" @click.stop="close">
-          <icon-mdi-close class="text-18px" />
+      <div
+        class="absolute left-0 right-0 top-0 z-30 h-16 flex items-center justify-between from-black/70 to-transparent bg-gradient-to-b px-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        :class="[isMobile ? 'cursor-default pointer-events-none' : 'cursor-move select-none']"
+        @mousedown="startDrag"
+      >
+        <span
+          class="max-w-[80%] overflow-hidden text-ellipsis whitespace-nowrap text-[15px] text-white/90 font-500 drop-shadow-md"
+        >
+          {{ diskStore.videoPreviewRow?.name || '视频预览' }}
+        </span>
+        <div
+          class="h-8 w-8 flex cursor-pointer items-center justify-center rounded-full bg-white/10 text-white/80 transition-all duration-200 hover:(rotate-90 bg-white/20 text-white)"
+          :class="{ 'pointer-events-auto': isMobile }"
+          @click.stop="close"
+        >
+          <icon-mdi-close class="text-[18px]" />
         </div>
       </div>
-      <div class="window-content">
-        <div ref="artRef" class="artplayer-app"></div>
+      <div class="absolute inset-0 z-10 h-full w-full bg-black">
+        <div ref="artRef" class="h-full w-full"></div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.video-preview-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 2000;
-  pointer-events: none;
-}
-
-.modal-mask {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  pointer-events: auto;
-  transition: opacity 0.3s;
-}
-
-.video-window {
-  position: absolute;
-  background: transparent;
-  border-radius: 12px;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  pointer-events: auto;
-  z-index: 2001;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition:
-    width 0.3s,
-    height 0.3s,
-    top 0.3s,
-    left 0.3s;
-}
-
-.window-bg-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(20, 20, 23, 0.85);
-  backdrop-filter: blur(20px);
-  z-index: 0;
-}
-
-.light-theme .window-bg-backdrop {
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.window-header {
-  position: relative;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  cursor: move;
-  user-select: none;
-  z-index: 10;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.light-theme .window-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.window-title {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 15px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 80%;
-}
-
-.light-theme .window-title {
-  color: #333;
-}
-
-.close-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: all 0.2s;
-  color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.close-btn:hover {
-  background: rgba(239, 68, 68, 0.8);
-  color: white;
-  transform: rotate(90deg);
-}
-
-.light-theme .close-btn {
-  color: #666;
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.light-theme .close-btn:hover {
-  background: rgba(239, 68, 68, 0.8);
-  color: white;
-}
-
-.window-content {
-  flex: 1;
-  position: relative;
-  width: 100%;
-  height: 100%;
-  z-index: 10;
-  background: #000;
-}
-
-.artplayer-app {
-  width: 100%;
-  height: 100%;
-}
-
-/* Mobile Styles */
-.is-mobile {
-  border-radius: 0;
-  border: none;
-}
-
-.is-mobile .window-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
-  border-bottom: none;
-  cursor: default;
-  pointer-events: none; /* Allow clicks to pass through to player mostly */
-  z-index: 20;
-}
-
-.is-mobile .window-title {
-  display: none; /* Clean look on mobile */
-}
-
-.is-mobile .close-btn {
-  pointer-events: auto;
-  margin-left: auto; /* Align right */
-  margin-top: 8px;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.is-mobile .window-content {
-  height: 100%;
-}
-</style>

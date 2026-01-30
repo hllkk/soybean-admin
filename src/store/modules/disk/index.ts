@@ -220,6 +220,16 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     const params = await getFileListParams();
     const { data, error } = await fetchGetFileList(params);
     if (error) {
+      // 如果当前在子目录且请求失败（通常是因为目录不存在），则返回根目录
+      if (path.value) {
+        window.$message?.error('目录不存在或无法访问，已返回根目录');
+        path.value = '';
+        pathList.value = [];
+        // 使用 replace 避免增加历史记录
+        router.replace({ query: { ...route.query, path: undefined } });
+        // 重新获取根目录列表
+        getFileList();
+      }
       return;
     }
     if (data) {
