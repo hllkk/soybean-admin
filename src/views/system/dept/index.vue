@@ -192,7 +192,7 @@ function addInRow(row: Api.System.Dept) {
         </TableHeaderOperation>
       </template>
       <NDataTable
-        v-model:expanded-row-keys="expandedRowKeys"
+        v-model:expanded-row-keys="expandedRowKeys as string[]"
         :columns="columns"
         :data="data"
         size="small"
