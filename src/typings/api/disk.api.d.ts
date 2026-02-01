@@ -128,5 +128,13 @@ declare namespace Api {
       allowDownload: boolean;
       downloadUrl: string;
     }
+
+    interface PreviewTextFileRequest {
+      shareId?: string;
+      fileId?: string;
+      fileName?: string;
+      path?: string;
+      userId?: CommonType.IdType;
+    }
   }
 }

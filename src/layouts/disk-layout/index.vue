@@ -91,10 +91,8 @@ const siderCollapsedWidth = computed(() => themeStore.sider.diskCollapsedWidth);
     <ImageViewer />
     <AudioPreview />
     <VideoPreview />
-    <!--
-    <TextPreview v-model:visible="textPreviewVisible" :file="textPreviewRow" />
-    <IframePreview v-model:visible="iframePreviewVisible" :file="iframePreviewRow" />
--->
+    <TextPreview />
+    <IframePreview />
   </AdminLayout>
 </template>
 

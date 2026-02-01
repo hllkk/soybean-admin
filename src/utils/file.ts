@@ -5,7 +5,7 @@ export const formatFileSize = (size: number) => {
   return `${(size / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 };
 
-export const formatDate = (timestamp?: number | string) => {
+export const formatDate = (timestamp?: number | string | Date | null) => {
   if (!timestamp) return '未知';
   return new Date(timestamp).toLocaleString();
 };
@@ -74,8 +74,15 @@ export const suffix = {
     'yaml',
     'properties',
     'gitignore',
-    'ts'
+    'ts',
+    'go',
+    'md'
   ],
   compressedFile: ['zip', 'tar', '7z', 'rar', 'jar', 'tar.gz', 'tgz', 'tar.bz2'],
   iframePreviewFile: ['pdf', 'csv', 'drawio', 'mind', 'glb', 'gltf', 'dwg', 'excalidraw', 'stl', '3mf', 'amf', 'obj']
+};
+
+export const formatTime = (timestamp?: number | string | Date | null) => {
+  if (!timestamp) return '未知';
+  return new Date(timestamp).toLocaleTimeString();
 };
