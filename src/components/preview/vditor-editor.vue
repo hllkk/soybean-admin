@@ -13,7 +13,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
-  (e: 'save'): void;
 }>();
 
 const themeStore = useThemeStore();

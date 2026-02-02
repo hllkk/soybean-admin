@@ -65,3 +65,11 @@ export function fetchIsAllowPackageDownload(params: { fileIds: CommonType.IdType
     data: params
   });
 }
+
+export function fetchUpdateFileContent(params: { fileId: string; content: string }) {
+  return request({
+    url: 'file-meta/updateContent',
+    method: 'post',
+    data: params
+  });
+}

@@ -1,11 +1,15 @@
 <script lang="tsx" setup>
 import { computed, h, ref, watch } from 'vue';
+import { useThrottleFn } from '@vueuse/core';
 import { storeToRefs } from 'pinia';
+import { useDialog } from 'naive-ui';
 import type { TreeOption } from 'naive-ui';
 import * as monaco from 'monaco-editor';
+import { fetchGetFileList, fetchUpdateFileContent } from '@/service/api/disk/list';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
 import { useSvgIcon } from '@/hooks/common/icon';
+import { getServiceBaseURL } from '@/utils/service';
 import { formatFileSize, formatTime } from '@/utils/file';
 import VditorEditor from '@/components/preview/vditor-editor.vue';
 import MonacoEditor from '@/components/preview/monaco-editor.vue';
@@ -27,6 +31,7 @@ interface TabItem {
 
 interface TabNode extends TreeOption {
   file?: Api.Disk.FileItem;
+  fullPath?: string;
 }
 
 interface Props {
@@ -35,11 +40,11 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const dialog = useDialog();
 const diskStore = useDiskStore();
 const authStore = useAuthStore();
 const { SvgIconVNode } = useSvgIcon();
-const { fileList, textPreviewVisible, textPreviewRow } = storeToRefs(diskStore);
-const { token } = storeToRefs(authStore);
+const { textPreviewVisible, textPreviewRow } = storeToRefs(diskStore);
 
 const isFullscreen = ref(false);
 const showHistoryDrawer = ref(false);
@@ -52,7 +57,9 @@ const currentContent = ref('');
 const cursorLine = ref(1);
 const cursorColumn = ref(1);
 const lastSaved = ref<Date | null>(null);
-const collapsed = ref(true);
+const collapsed = ref(false);
+const treeData = ref<TabNode[]>([]);
+const abortControllerMap = new Map<string, AbortController>();
 
 const visible = computed({
   get: () => textPreviewVisible.value,
@@ -62,7 +69,9 @@ const visible = computed({
 });
 const currentFile = computed(() => textPreviewRow.value);
 const dialogWidth = computed(() => {
-  return isFullscreen.value ? `w-${window.innerWidth - 40}px` : 'w-[900px}';
+  return isFullscreen.value
+    ? '!w-full !h-[100vh] !max-w-full !max-h-full !rounded-0'
+    : 'w-[900px] max-w-[95vw] h-[80vh]';
 });
 
 const currentTab = computed(() => {
@@ -77,6 +86,20 @@ const isModified = computed(() => {
   return currentTab.value?.isModified ?? false;
 });
 
+// 监听 tab 内容变化，更新 isModified 状态
+watch(
+  () => tabs.value,
+  newTabs => {
+    newTabs.forEach(tab => {
+      // 只有当 content 和 originalContent 都存在时才比较
+      if (tab.originalContent !== undefined && tab.content !== undefined) {
+        tab.isModified = tab.content !== tab.originalContent;
+      }
+    });
+  },
+  { deep: true }
+);
+
 const isShare = computed(() => Boolean(props.shareId));
 const hasHistoryVersion = computed(() => {
   return currentTab.value?.hasHistoryVersion ?? false;
@@ -89,14 +112,21 @@ const currentLanguage = computed(() => {
   return lang?.id || 'plaintext';
 });
 
-function handleClose() {
-  textPreviewVisible.value = false;
-}
+async function saveTab(tab: TabItem) {
+  if (!tab.isModified) return;
 
-function handleAfterLeave() {
-  tabs.value = [];
-  activeTab.value = '';
-  currentContent.value = '';
+  try {
+    await fetchUpdateFileContent({
+      fileId: tab.fileId,
+      content: tab.content
+    });
+    tab.originalContent = tab.content;
+    tab.isModified = false;
+    window.$message?.success(`文件 ${tab.title} 保存成功`);
+  } catch (error) {
+    window.$message?.error(`文件 ${tab.title} 保存失败: ${error}`);
+    throw error;
+  }
 }
 
 async function handleSave() {
@@ -105,16 +135,54 @@ async function handleSave() {
     return;
   }
   saving.value = true;
-  // try {
-  //   await diskStore.saveFile({
-  //     fileId: tab.fileId,
-  //     content: tab.content
-  //   });
-  //   tab.isModified = false;
-  //   saving.value = false;
-  // } catch (error) {
-  //   saving.value = false;
-  // }
+  try {
+    await saveTab(tab);
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function handleClose() {
+  const modifiedTabs = tabs.value.filter(tab => tab.isModified);
+  if (modifiedTabs.length > 0) {
+    return new Promise(resolve => {
+      dialog.warning({
+        title: '警告',
+        content: '检测到未保存的内容，是否在离开前保存修改？',
+        positiveText: '保存并关闭',
+        negativeText: '放弃修改',
+        onPositiveClick: async () => {
+          try {
+            for (const tab of modifiedTabs) {
+              // eslint-disable-next-line no-await-in-loop
+              await saveTab(tab);
+            }
+            textPreviewVisible.value = false;
+            resolve(true);
+          } catch (error) {
+            // eslint-disable-next-line no-console
+            console.log(error);
+            resolve(false);
+          }
+        },
+        onNegativeClick: () => {
+          textPreviewVisible.value = false;
+          resolve(true);
+        },
+        onClose: () => {
+          resolve(false);
+        }
+      });
+    });
+  }
+  textPreviewVisible.value = false;
+  return true;
+}
+
+function handleAfterLeave() {
+  tabs.value = [];
+  activeTab.value = '';
+  currentContent.value = '';
 }
 
 function toggleMarkdownMode() {
@@ -212,77 +280,94 @@ const getLanguageBySuffix = (suffix: string): string => {
 // };
 
 async function loadFileContent(file: Api.Disk.FileItem, tab: TabItem) {
+  // 取消该文件之前的请求
+  if (abortControllerMap.has(tab.path)) {
+    abortControllerMap.get(tab.path)?.abort();
+    abortControllerMap.delete(tab.path);
+  }
+
+  const abortController = new AbortController();
+  abortControllerMap.set(tab.path, abortController);
+
   try {
-    const headers = new Headers();
-    headers.append('token', token.value);
+    const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
+    const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
 
-    // let metaUrl = '';
-    let contentUrl = '';
-    const baseUrl = import.meta.env.VITE_APP_BASE_API;
+    let url = '';
+    const params: Record<string, string> = {};
 
-    // 1. 构建请求参数
     if (props.shareId) {
-      // 共享文件
-      // metaUrl = `${baseUrl}/preview/text?fileId=${file.id}&shareId=${props.shareId}`;
-      contentUrl = `${baseUrl}/preview/text/content?fileId=${file.id}&shareId=${props.shareId}`;
-    } else if (file.id) {
-      // 普通文件
-      // metaUrl = `${baseUrl}/preview/text?fileId=${file.id}`;
-      contentUrl = `${baseUrl}/preview/text/content?fileId=${file.id}`;
+      url = `${baseURL}/preview/shared/text/stream`;
+      params.shareId = props.shareId;
+      params.fileId = file.id;
     } else {
-      // 通过路径获取
-      const path = file.filePath || '';
-      // metaUrl = `${baseUrl}/preview/text?path=${encodeURIComponent(path)}`;
-      contentUrl = `${baseUrl}/preview/text/content?path=${encodeURIComponent(path)}`;
+      url = `${baseURL}/preview/text/stream`;
+      params.fileId = file.id;
     }
 
-    // 2. 获取元数据 (模拟)
-    // 注意：实际后端可能不需要这一步，或者元数据在 content 响应头中
-    // 按照用户需求，先请求元数据
-    // const metaRes = await fetch(metaUrl, { headers });
-    // if (metaRes.ok) {
-    //   const meta = await metaRes.json();
-    //   // 更新 tab 信息...
-    // }
+    const queryString = new URLSearchParams(params).toString();
+    const fullUrl = `${url}?${queryString}&t=${new Date().getTime()}`;
 
-    // 3. 流式读取内容
-    const response = await fetch(contentUrl, { headers });
-    if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
+    const headers = new Headers();
+    if (authStore.token) {
+      headers.append('Authorization', `Bearer ${authStore.token}`);
+    }
+
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      headers,
+      signal: abortController.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
     const reader = response.body?.getReader();
-    if (!reader) throw new Error('ReadableStream not supported');
+    if (!reader) return;
 
     const decoder = new TextDecoder('utf-8');
-    tab.content = ''; // 清空内容
+
+    // 节流更新内容，避免频繁渲染导致卡顿
+    const updateContent = useThrottleFn((text: string) => {
+      tab.content = text;
+      // 可以在这里更新 originalContent 如果需要
+    }, 150);
+
+    let result = '';
 
     while (true) {
       // eslint-disable-next-line no-await-in-loop
       const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      tab.content += chunk;
-
-      // 实时更新当前显示内容
-      if (activeTab.value === tab.path) {
-        currentContent.value = tab.content;
+      if (done) {
+        // 确保最后一次更新
+        tab.content = result;
+        tab.originalContent = result;
+        break;
       }
+      result += decoder.decode(value, { stream: true });
+      updateContent(result);
     }
-
-    tab.originalContent = tab.content;
   } catch (error) {
-    window.$message?.error(`加载文件${file.name}失败: ${error}`);
+    window.$message?.error?.(`加载文件失败: ${error}`);
+  } finally {
+    abortControllerMap.delete(tab.path);
   }
 }
 
-async function initFile(file: Api.Disk.FileItem) {
-  const path = file.filePath || `/${file.name}`;
+async function initFile(file: Api.Disk.FileItem, fullPath?: string) {
+  let path = fullPath || file.filePath || `/${file.name}`;
+  if (!path.startsWith('/')) {
+    path = `/${path}`;
+  }
   // 检查是否已打开
   const existingTab = tabs.value.find(tab => tab.path === path);
   if (existingTab) {
     activeTab.value = existingTab.path;
     return;
   }
+
+  // 调用后端接口，
 
   // 创建新标签
   const suffix = file.extendName?.toLowerCase() || '';
@@ -298,69 +383,107 @@ async function initFile(file: Api.Disk.FileItem) {
   tabs.value.push(newTab);
   activeTab.value = path;
 
-  // 加载文件内容
-  await loadFileContent(file, newTab);
+  // 获取响应式对象，确保更新内容时触发视图更新
+  const reactiveTab = tabs.value.find(t => t.path === path);
+  if (reactiveTab) {
+    // 加载文件内容
+    await loadFileContent(file, reactiveTab);
+  }
 }
 
-// 目录树数据
-const directoryTree = computed<TabNode[]>(() => {
-  // 从 fileList 构建目录树
-  const buildTree = (files: Api.Disk.FileItem[]): TabNode[] => {
-    return files
-      .filter(f => !f.isDir && isTextFile(f))
-      .map(f => ({
+// 获取文件列表
+async function fetchFiles(directory: string): Promise<TabNode[]> {
+  const params = {
+    userId: authStore.userInfo.userId,
+    currentDirectory: encodeURIComponent(directory),
+    queryType: 'all' as const,
+    page: 1,
+    size: 1000
+  };
+  const { data, error } = await fetchGetFileList(params);
+  if (error || !data) return [];
+
+  return data.list
+    .filter(f => f.isDir || isTextFile(f))
+    .map(f => {
+      let fullPath = directory === '/' ? `/${f.name}` : `${directory}/${f.name}`;
+      fullPath = fullPath.replace(/\/\//g, '/');
+      return {
         key: f.id,
         label: f.name,
-        isLeaf: true,
-        file: f
-      }));
-  };
+        isLeaf: !f.isDir,
+        file: f,
+        fullPath
+      };
+    });
+}
 
-  return buildTree(fileList.value);
-});
+// 懒加载目录
+const handleLoad = async (node: TabNode) => {
+  if (!node.fullPath || node.isLeaf) return;
+  const children = await fetchFiles(node.fullPath);
+  node.children = children;
+};
+
+// 初始化树数据
+async function initTreeData(file: Api.Disk.FileItem) {
+  let path = file.filePath || `/${file.name}`;
+  if (!path.startsWith('/')) path = `/${path}`;
+
+  const lastSlashIndex = path.lastIndexOf('/');
+  const parentDir = lastSlashIndex <= 0 ? '/' : path.substring(0, lastSlashIndex);
+
+  treeData.value = await fetchFiles(parentDir);
+
+  // 选中当前文件
+  treeSelectedKeys.value = [file.id];
+}
 
 const getFileIconClass = (filename: string) => {
   const extension = filename.split('.').pop()?.toLowerCase() || '';
   const iconMap: Record<string, string> = {
-    js: 'mdi-language-javascript #F7DF1E',
-    ts: 'mdi-language-typescript #3178C6',
-    vue: 'mdi-vuejs #4FC08D',
-    html: 'mdi-language-html5 #E34F26',
-    css: 'mdi-language-css3 #1572B6',
-    scss: 'mdi-sass #CC6699',
-    less: 'mdi-sass #1D365D',
-    json: 'mdi-code-json',
-    md: 'mdi-language-markdown',
-    txt: 'mdi-file-document-outline',
-    xml: 'mdi-xml #F29D00',
-    yaml: 'mdi-code-json #CB171E',
-    yml: 'mdi-code-json #CB171E',
-    sql: 'mdi-database #CC0000',
-    sh: 'mdi-bash #4EAA25',
-    bash: 'mdi-bash #4EAA25',
-    zsh: 'mdi-bash #4EAA25',
-    py: 'mdi-language-python #3776AB',
-    java: 'mdi-language-java #007396',
-    go: 'mdi-language-go #00ADD8',
-    rs: 'mdi-language-rust',
-    c: 'mdi-language-c #A8B9CC',
-    cpp: 'mdi-language-cpp #00599C',
-    dockerfile: 'mdi-docker #2496ED'
+    js: 'disk-file_js',
+    ts: 'disk-file_js',
+    vue: 'disk-file_html',
+    html: 'disk-file_html',
+    css: 'disk-file_css',
+    scss: 'disk-file_css',
+    less: 'disk-file_css',
+    json: 'disk-file_json',
+    md: 'disk-file_md',
+    txt: 'disk-file_txt',
+    xml: 'disk-file_other',
+    yaml: 'disk-file_yaml',
+    yml: 'disk-file_yaml',
+    sql: 'disk-file_other',
+    sh: 'disk-file_other',
+    bash: 'disk-file_other',
+    zsh: 'disk-file_other',
+    py: 'disk-file_python',
+    java: 'disk-file_other',
+    go: 'disk-file_other',
+    rs: 'disk-file_other',
+    c: 'disk-file_other',
+    cpp: 'disk-file_other',
+    dockerfile: 'disk-file_other'
   };
-  return iconMap[extension] || 'mdi-file-outline #808080';
+  return iconMap[extension] || 'disk-file_other';
 };
 
 const renderTreeIcon = ({ option }: { option: TabNode }) => {
   if (option.file) {
-    const iconClass = getFileIconClass(option.file.name);
-    const [iconType, iconStyle] = iconClass.split(' ');
-    const renderIcon = SvgIconVNode({ icon: iconType, fontSize: 18, color: iconStyle });
+    if (option.file.isDir) {
+      const renderIcon = SvgIconVNode({ localIcon: 'disk-file_dir', fontSize: 18 });
+      return renderIcon ? renderIcon() : undefined;
+    }
+    const localIcon = getFileIconClass(option.file.name);
+    const renderIcon = SvgIconVNode({ localIcon, fontSize: 18 });
     return renderIcon ? renderIcon() : undefined;
   }
   return <icon-mdi-file-outline class="text-lg" />;
 };
 
-const handleCloseTab = (path: string) => {
+const closeTabLogic = (path: string) => {
   const index = tabs.value.findIndex(t => t.path === path);
   if (index > -1) {
     tabs.value.splice(index, 1);
@@ -368,6 +491,34 @@ const handleCloseTab = (path: string) => {
       activeTab.value = tabs.value[Math.max(0, index - 1)]?.path || '';
     }
   }
+};
+
+const handleCloseTab = (path: string) => {
+  const tab = tabs.value.find(t => t.path === path);
+  if (!tab) return;
+
+  if (tab.isModified) {
+    dialog.warning({
+      title: '警告',
+      content: `文件 "${tab.title}" 有未保存的修改，是否保存？`,
+      positiveText: '保存',
+      negativeText: '放弃修改',
+      onPositiveClick: async () => {
+        try {
+          await saveTab(tab);
+          closeTabLogic(path);
+        } finally {
+          //
+        }
+      },
+      onNegativeClick: () => {
+        closeTabLogic(path);
+      }
+    });
+    return;
+  }
+
+  closeTabLogic(path);
 };
 
 const renderTreeLabel = ({ option }: { option: TabNode }) => {
@@ -378,8 +529,8 @@ const renderTreeLabel = ({ option }: { option: TabNode }) => {
 const handleTreeSelect = (keys: Array<string | number>, options: Array<TabNode | null>) => {
   treeSelectedKeys.value = keys;
   const node = options[0];
-  if (node?.file) {
-    initFile(node.file);
+  if (node?.file && !node.file.isDir) {
+    initFile(node.file, node.fullPath);
   }
 };
 
@@ -406,6 +557,7 @@ function handleTabChange(path: string) {
 watch(currentFile, file => {
   if (file && visible.value) {
     initFile(file);
+    initTreeData(file);
   }
 });
 
@@ -413,15 +565,9 @@ watch(currentFile, file => {
 watch(visible, show => {
   if (show && currentFile.value) {
     initFile(currentFile.value);
+    initTreeData(currentFile.value);
   }
 });
-// onMounted(() => {
-//   document.addEventListener('keydown', handleKeyDown);
-// });
-
-// onUnmounted(() => {
-//   document.removeEventListener('keydown', handleKeyDown);
-// });
 </script>
 
 <template>
@@ -431,9 +577,9 @@ watch(visible, show => {
     :closable="true"
     preset="card"
     :mask-closable="false"
-    class="text-preview-modal max-w-[95vh]"
+    class="text-preview-modal"
     :class="dialogWidth"
-    @close="handleClose"
+    :on-close="handleClose"
     @after-leave="handleAfterLeave"
   >
     <!-- 头部工具栏 -->
@@ -451,14 +597,14 @@ watch(visible, show => {
           <!-- 保存按钮 -->
           <NButton v-if="isModified" type="primary" size="small" :loading="saving" @click="handleSave">保存</NButton>
           <!-- Markdown 预览切换 -->
-          <NButton v-if="isMarkdown" size="small" circle @click="toggleMarkdownMode">
+          <NButton v-if="isMarkdown" quaternary size="small" @click="toggleMarkdownMode">
             <template #icon>
               <icon-ic-baseline-remove-red-eye v-if="!markdownMode" />
               <icon-mdi-invoice-text-edit-outline v-else />
             </template>
           </NButton>
           <!-- 全屏 -->
-          <NButton size="small" circle @click="toggleFullscreen">
+          <NButton quaternary size="small" @click="toggleFullscreen">
             <template #icon>
               <icon-gridicons-fullscreen-exit v-if="isFullscreen" />
               <icon-gridicons-fullscreen v-else />
@@ -483,10 +629,11 @@ watch(visible, show => {
       >
         <NTree
           v-model:selected-keys="treeSelectedKeys"
-          :data="directoryTree"
+          :data="treeData"
           block-line
           expand-on-click
           selectable
+          :on-load="handleLoad"
           :render-label="renderTreeLabel"
           :render-prefix="renderTreeIcon"
           @update:selected-keys="handleTreeSelect"
@@ -549,15 +696,21 @@ watch(visible, show => {
   </NModal>
 </template>
 
-<style scoped>
-.text-preview-modal :deep(.n-card__content) {
+<style scoped lang="scss">
+.text-preview-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-preview-modal .n-card__content {
   padding: 0;
   display: flex;
   flex-direction: column;
-  height: calc(100% - 60px);
+  flex: 1;
+  overflow: hidden;
 }
 
-.text-preview-modal :deep(.n-tabs-nav) {
+.text-preview-modal .n-tabs-nav {
   padding: 0 12px;
 }
 </style>
