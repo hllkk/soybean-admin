@@ -67,7 +67,6 @@ onMounted(() => {
       'insert-before',
       'insert-after',
       '|',
-      'upload',
       'record',
       'table',
       '|',
@@ -120,5 +119,6 @@ onUnmounted(() => {
 <style scoped>
 :deep(.vditor) {
   border: none;
+  height: 100% !important;
 }
 </style>

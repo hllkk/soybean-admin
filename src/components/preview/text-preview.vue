@@ -1,5 +1,5 @@
 <script lang="tsx" setup>
-import { computed, h, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, h, ref, watch } from 'vue';
 import { useThrottleFn } from '@vueuse/core';
 import { storeToRefs } from 'pinia';
 import { useDialog } from 'naive-ui';
@@ -11,8 +11,9 @@ import { useAuthStore } from '@/store/modules/auth';
 import { useSvgIcon } from '@/hooks/common/icon';
 import { getServiceBaseURL } from '@/utils/service';
 import { formatFileSize, formatTime } from '@/utils/file';
-import VditorEditor from '@/components/preview/vditor-editor.vue';
-import MonacoEditor from '@/components/preview/monaco-editor.vue';
+
+const VditorEditor = defineAsyncComponent(() => import('@/components/preview/vditor-editor.vue'));
+const MonacoEditor = defineAsyncComponent(() => import('@/components/preview/monaco-editor.vue'));
 
 defineOptions({
   name: 'TextPreview'
@@ -367,6 +368,12 @@ async function initFile(file: Api.Disk.FileItem, fullPath?: string) {
     return;
   }
 
+  // 检查文件大小限制 (例如 2MB)
+  if (file.size && file.size > 2 * 1024 * 1024) {
+    window.$message?.warning(`文件 ${file.name} 过大，暂不支持预览`);
+    return;
+  }
+
   // 调用后端接口，
 
   // 创建新标签
@@ -667,8 +674,15 @@ watch(visible, show => {
             </NTabs>
           </div>
           <!-- 这里放置内容预览组件，暂时留空或根据逻辑补充 -->
-          <div class="flex-1 overflow-auto p-4" :class="{ '!p-0 !overflow-hidden': isMarkdown && markdownMode }">
-            <VditorEditor v-if="isMarkdown && markdownMode" v-model="currentTab.content" class="h-full" />
+          <div
+            class="relative min-h-0 flex-1 overflow-auto p-4"
+            :class="{ '!p-0 !overflow-hidden': isMarkdown && markdownMode }"
+          >
+            <VditorEditor
+              v-if="isMarkdown && markdownMode"
+              v-model="currentTab.content"
+              class="absolute inset-0 size-full"
+            />
             <MonacoEditor v-else v-model="currentTab.content" :language="currentTab.language" class="h-full" />
           </div>
         </div>
