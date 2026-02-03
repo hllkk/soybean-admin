@@ -61,6 +61,8 @@ declare namespace Api {
       video?: VideoInfo;
       /** 是否有封面 */
       mediaCover?: boolean;
+      /** 是否显示封面 */
+      showCover?: boolean;
     }
 
     interface GetFileListRequest {

@@ -265,21 +265,6 @@ const getLanguageBySuffix = (suffix: string): string => {
   return langMap[suffix] || 'plaintext';
 };
 
-// 检查历史版本
-// const checkHistoryVersion = async (fileId: string, tab: TabItem) => {
-//   try {
-//     const response = await fetch(`/api/file-history/list?fileId=${fileId}`, {
-//       headers: {
-//         Authorization: `Bearer ${token.value}`
-//       }
-//     });
-//     const data = await response.json();
-//     tab.hasHistoryVersion = data.count > 0;
-//   } catch (error) {
-//     console.error('检查历史版本失败:', error);
-//   }
-// };
-
 async function loadFileContent(file: Api.Disk.FileItem, tab: TabItem) {
   // 取消该文件之前的请求
   if (abortControllerMap.has(tab.path)) {

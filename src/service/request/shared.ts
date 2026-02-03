@@ -12,17 +12,18 @@ export function getAuthorization() {
 
 /** refresh token */
 async function handleRefreshToken() {
-  const { resetStore } = useAuthStore();
+  const authStore = useAuthStore();
 
   const rToken = localStg.get('refreshToken') || '';
   const { error, data } = await fetchRefreshToken(rToken);
   if (!error) {
     localStg.set('token', data.token);
     localStg.set('refreshToken', data.refreshToken);
+    authStore.token = data.token;
     return true;
   }
 
-  resetStore();
+  authStore.resetStore();
 
   return false;
 }

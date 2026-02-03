@@ -121,28 +121,6 @@ const imageHeightStyle = computed(() => {
       local-icon="disk-file_dir"
       class="h-full w-auto object-cover transition-all duration-300"
     />
-    <!-- 图片缩略图 -->
-    <div v-else-if="item.contentType && item.contentType.startsWith('image')" class="h-full">
-      <NImage
-        v-if="diskStore.fileShowMode === 'grid'"
-        lazy
-        preview-disabled
-        object-fit="contain"
-        :style="imageHeightStyle"
-        class="h-full w-auto transition-all duration-300"
-        :src="imageUrl + item.id"
-      >
-        <template #error>
-          <SvgIcon local-icon="disk-file_image" class="h-full w-auto transition-all duration-300" />
-        </template>
-      </NImage>
-      <NAvatar
-        v-if="diskStore.fileShowMode !== 'grid'"
-        object-fit="cover"
-        :src="imageUrl + item.id"
-        class="h-full"
-      ></NAvatar>
-    </div>
     <!-- 音频缩略图 -->
     <div v-else-if="item.contentType && item.contentType.includes('audio')" class="h-full">
       <div v-if="item.music !== null && item.mediaCover">
@@ -187,6 +165,29 @@ const imageHeightStyle = computed(() => {
         </template>
       </NImage>
       <NAvatar v-if="diskStore.fileShowMode !== 'grid'" :src="audioCoverUrl + item.id" class="h-full"></NAvatar>
+    </div>
+    <!-- 图片缩略图 -->
+    <div v-else-if="(item.contentType && item.contentType.startsWith('image')) || item.showCover" class="h-full">
+      <NImage
+        v-if="diskStore.fileShowMode === 'grid'"
+        lazy
+        preview-disabled
+        object-fit="contain"
+        :style="imageHeightStyle"
+        class="h-full w-auto transition-all duration-300"
+        :class="item.showCover ? 'cover' : ''"
+        :src="imageUrl + item.id"
+      >
+        <template #error>
+          <SvgIcon local-icon="disk-file_image" class="h-full w-auto transition-all duration-300" />
+        </template>
+      </NImage>
+      <NAvatar
+        v-if="diskStore.fileShowMode !== 'grid'"
+        object-fit="cover"
+        :src="imageUrl + item.id"
+        class="h-full"
+      ></NAvatar>
     </div>
     <!-- 其他文件图标 -->
     <SvgIcon v-else :local-icon="getFileImg" class="h-full w-auto object-cover transition-all duration-300" />
