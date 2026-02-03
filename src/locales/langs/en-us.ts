@@ -18,6 +18,7 @@ const local: App.I18n.Schema = {
     cancel: 'Cancel',
     close: 'Close',
     check: 'Check',
+    selectAll: 'Select All',
     expandColumn: 'Expand Column',
     columnSetting: 'Column Setting',
     config: 'Config',
@@ -647,7 +648,12 @@ const local: App.I18n.Schema = {
     unpin: 'Unpin'
   },
   datatable: {
-    itemCount: 'Total {total} items'
+    itemCount: 'Total {total} items',
+    fixed: {
+      left: 'Left Fixed',
+      right: 'Right Fixed',
+      unFixed: 'Unfixed'
+    }
   }
 };
 

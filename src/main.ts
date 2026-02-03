@@ -11,7 +11,7 @@ import {
 } from './plugins';
 import { setupStore } from './store';
 import { setupRouter } from './router';
-import { setupI18n } from './locales';
+import { getLocale, setupI18n } from './locales';
 import App from './App.vue';
 
 async function setupApp() {
@@ -36,6 +36,10 @@ async function setupApp() {
   setupUploader(app);
 
   setupAppVersionNotification();
+
+  setupVueRootValidator(app, {
+    lang: getLocale() === 'zh-CN' ? 'zh' : 'en'
+  });
 
   app.mount('#app');
 }

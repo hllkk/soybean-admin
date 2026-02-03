@@ -367,6 +367,7 @@ declare namespace App {
         close: string;
         save: string;
         check: string;
+        selectAll: string;
         expandColumn: string;
         enable: string;
         disable: string;
@@ -798,6 +799,11 @@ declare namespace App {
       };
       datatable: {
         itemCount: string;
+        fixed: {
+          left: string;
+          right: string;
+          unFixed: string;
+        };
       };
     };
 
