@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import './plugins/assets';
+import { setupVueRootValidator } from 'vite-plugin-vue-transition-root-validator/client';
 import {
   setupAppVersionNotification,
   setupCaptcha,
