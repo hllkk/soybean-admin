@@ -87,6 +87,8 @@ function getType(suffix: string) {
     case 'office':
     case 'csv':
       return 'office';
+    case 'xls':
+      return 'office';
     case 'dwg':
       return 'cad';
     default:
@@ -148,6 +150,14 @@ watch(iframePreviewVisible, visible => {
           @close="close"
         />
 
+        <!-- OnlyOffice Viewer -->
+        <OnlyOfficePreview
+          v-else-if="previewType === 'office'"
+          :file-url="fileUrl"
+          :file-name="iframePreviewRow?.name"
+          @close="close"
+        />
+
         <!-- 通用 Iframe 预览 -->
         <!--
  <iframe
@@ -183,7 +193,7 @@ watch(iframePreviewVisible, visible => {
           class="h-full flex flex-col select-none items-center justify-center text-gray-500 dark:text-gray-400"
         >
           <icon-mdi-file-question class="mb-4 text-6xl" />
-          <p>不支持该文件类型预览</p>
+          <p>{{ iframePreviewRow }} 文件类型暂不支持预览</p>
         </div>
       </div>
     </div>

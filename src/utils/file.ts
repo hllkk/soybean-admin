@@ -79,7 +79,22 @@ export const suffix = {
     'md'
   ],
   compressedFile: ['zip', 'tar', '7z', 'rar', 'jar', 'tar.gz', 'tgz', 'tar.bz2'],
-  iframePreviewFile: ['pdf', 'csv', 'drawio', 'mind', 'glb', 'gltf', 'dwg', 'excalidraw', 'stl', '3mf', 'amf', 'obj']
+  iframePreviewFile: [
+    'pdf',
+    'csv',
+    'drawio',
+    'mind',
+    'glb',
+    'gltf',
+    'dwg',
+    'excalidraw',
+    'stl',
+    '3mf',
+    'amf',
+    'obj',
+    'xls',
+    'xlsx'
+  ]
 };
 
 export const formatTime = (timestamp?: number | string | Date | null) => {
