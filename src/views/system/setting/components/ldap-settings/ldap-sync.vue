@@ -90,8 +90,8 @@ const handleSyncClick = async () => {
     </NForm>
     <div class="flex flex-row space-x-2">
       <NButton type="primary" :loading="syncLoading" @click="handleSyncClick">
-        <icon-ooui:success v-if="syncStatus == 1" class="text-18px text-success" />
-        <icon-ooui:error v-if="syncStatus == 2" class="text-18px text-error" />
+        <icon-ooui-success v-if="syncStatus == 1" class="text-18px text-success" />
+        <icon-ooui-error v-if="syncStatus == 2" class="text-18px text-error" />
         立即同步
       </NButton>
       <span :class="syncStatus == 1 ? 'text-success' : 'text-error'">

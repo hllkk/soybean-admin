@@ -100,8 +100,8 @@ const handleTestClick = async () => {
           <NFormItem label-placement="left" label="用户名" path="testUser">
             <NInput :model="model.testUser" class="mr-2 w-50%" clearable :placeholder="model.attributes?.username" />
             <NButton :loading="testLoading" @click="handleTestClick">
-              <icon-ooui:success v-if="testStatus == 1" class="text-18px text-success" />
-              <icon-ooui:error v-if="testStatus == 2" class="text-18px text-error" />
+              <icon-ooui-success v-if="testStatus == 1" class="text-18px text-success" />
+              <icon-ooui-error v-if="testStatus == 2" class="text-18px text-error" />
               测试连接
             </NButton>
           </NFormItem>

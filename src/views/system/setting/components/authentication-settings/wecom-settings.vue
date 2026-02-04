@@ -46,8 +46,8 @@ const changeStatus = () => {
         <NButton text type="info" icon-placement="right" @click="changeStatus">
           可信域名校验
           <template #icon>
-            <icon-material-symbols:keyboard-arrow-down v-if="showValidateInfo" />
-            <icon-material-symbols:keyboard-arrow-up v-else />
+            <icon-material-symbols-keyboard-arrow-down v-if="showValidateInfo" />
+            <icon-material-symbols-keyboard-arrow-up v-else />
           </template>
         </NButton>
       </NFormItem>
@@ -55,7 +55,7 @@ const changeStatus = () => {
         <NFlex vertical>
           <NAlert type="warning" :bordered="false">
             <template #icon>
-              <icon-material-symbols:lightbulb-outline-rounded />
+              <icon-material-symbols-lightbulb-outline-rounded />
             </template>
             1. 用于企业微信自建应用“网页授权及JS-SDK”中可信域名校验。
             <br />

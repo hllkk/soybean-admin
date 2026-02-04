@@ -89,8 +89,8 @@ const sendTestMail = async () => {
       <NFormItem label="收件地址" path="testMail">
         <NInput v-model:value="testMail" clearable placeholder="test@example.com" class="mr-2" />
         <NButton :loading="testLoading" @click="sendTestMail">
-          <icon-ooui:success v-if="testStatus == 1" class="text-18px text-success" />
-          <icon-ooui:error v-if="testStatus == 2" class="text-18px text-error" />
+          <icon-ooui-success v-if="testStatus == 1" class="text-18px text-success" />
+          <icon-ooui-error v-if="testStatus == 2" class="text-18px text-error" />
           发送测试邮件
         </NButton>
       </NFormItem>
