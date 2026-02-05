@@ -42,7 +42,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   const routeHome = ref(import.meta.env.VITE_ROUTE_HOME);
 
   /** 当前的模块 */
-  const currentModule = ref('');
+  const currentModule = ref<UnionKey.MenuModule>();
 
   /**
    * Set route home
@@ -53,7 +53,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     routeHome.value = routeKey;
   }
 
-  function setCurrentModule(module: string) {
+  function setCurrentModule(module: UnionKey.MenuModule) {
     if (currentModule.value === module) {
       return;
     }

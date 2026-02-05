@@ -57,13 +57,14 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
   /** 获取当前模块的标签页 */
   const currentModuleTabs = computed(() => {
     const module = routeStore.currentModule;
+    if (!module) return [];
     return moduleTabs.value.get(module) || [];
   });
 
   /** Get all tabs (返回当前模块的所有标签页，包括首页) */
   const allTabs = computed(() => {
     const moduleTabsList = currentModuleTabs.value;
-    
+
     // Since homeTab is now synced with currentModule, we can just use it directly
     return getAllTabs(moduleTabsList, homeTab.value);
   });

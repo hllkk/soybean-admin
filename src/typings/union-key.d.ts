@@ -15,7 +15,7 @@ declare namespace UnionKey {
   type ThemeScheme = 'light' | 'dark' | 'auto';
 
   /** The menu module */
-  type MenuModule = 'admin' | 'disk';
+  type MenuModule = 'admin' | 'disk' | undefined;
 
   /** Device type */
   type DeviceType = 'pc' | 'android' | 'ios' | 'xcx';

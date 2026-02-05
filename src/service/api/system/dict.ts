@@ -3,7 +3,7 @@ import { request } from '@/service/request';
 /** 获取字典选择框列表 */
 export function fetchGetDictTypeOption() {
   return request<Api.System.DictType[]>({
-    url: '/dict/type/option',
+    url: '/dict/type/list',
     method: 'get'
   });
 }

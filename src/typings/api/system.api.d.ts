@@ -308,6 +308,8 @@ declare namespace Api {
       dictType: string;
       /** 备注 */
       remark: string;
+      /** 字典数据 */
+      dictData: DictData[];
     }>;
 
     /** 字典数据 */
