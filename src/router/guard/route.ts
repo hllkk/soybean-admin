@@ -19,28 +19,9 @@ import { getRouteName } from '@/router/elegant/transform';
  */
 export function createRouteGuard(router: Router) {
   router.beforeEach(async (to, from, next) => {
-    const location = await initRoute(to);
-
-    if (location) {
-      next(location);
-      return;
-    }
-
-    const authStore = useAuthStore();
     const appStore = useAppStore();
-
-    const rootRoute: RouteKey = 'root';
-    const loginRoute: RouteKey = 'login';
     const initSystemRoute: RouteKey = 'init';
-    const noAuthorizationRoute: RouteKey = '403';
-
-    const isLogin = Boolean(localStg.get('token'));
-    const needLogin = !to.meta.constant;
-    const routeRoles = to.meta.roles || [];
     const needInit = await appStore.checkInit();
-
-    const hasRole = authStore.userInfo.roles.some(role => routeRoles.includes(role));
-    const hasAuth = authStore.isStaticSuper || !routeRoles.length || hasRole;
 
     // if the system is not initialized, then switch to the init route
     if (to.name !== initSystemRoute && needInit) {
@@ -55,11 +36,31 @@ export function createRouteGuard(router: Router) {
         return;
       }
       // if the system is initialized, then switch to the Login page
+      const loginRoute: RouteKey = 'login';
       window.$message?.destroyAll();
       window.$message?.info('系统已初始化，无需重复初始化');
       next({ name: loginRoute });
       return;
     }
+
+    const location = await initRoute(to);
+
+    if (location) {
+      next(location);
+      return;
+    }
+
+    const authStore = useAuthStore();
+    const rootRoute: RouteKey = 'root';
+    const loginRoute: RouteKey = 'login';
+    const noAuthorizationRoute: RouteKey = '403';
+
+    const isLogin = Boolean(localStg.get('token'));
+    const needLogin = !to.meta.constant;
+    const routeRoles = to.meta.roles || [];
+
+    const hasRole = authStore.userInfo.roles.some(role => routeRoles.includes(role));
+    const hasAuth = authStore.isStaticSuper || !routeRoles.length || hasRole;
 
     // if it is login route when logged in, then switch to the root page
     if (to.name === loginRoute && isLogin) {
@@ -141,7 +142,7 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
 
   if (!routeStore.isInitAuthRoute) {
     // initialize the auth route
-    await routeStore.initAuthRoute();
+    await routeStore.initAuthRoute(to.path);
 
     // the route is captured by the "not-found" route because the auth route is not initialized
     // after the auth route is initialized, redirect to the original route

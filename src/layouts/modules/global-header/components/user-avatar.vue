@@ -23,7 +23,7 @@ function loginOrRegister() {
   toLogin();
 }
 
-type DropdownKey = 'logout' | 'admin' | 'disk' | 'switch-role' | 'personal-center';
+type DropdownKey = 'logout' | 'admin' | 'disk' | 'switch-role' | 'user-center';
 
 type DropdownOption =
   | {
@@ -40,7 +40,7 @@ const options = computed(() => {
   const opts: DropdownOption[] = [
     {
       label: $t('common.userCenter'),
-      key: 'personal-center',
+      key: 'user-center',
       icon: SvgIconVNode({ icon: 'ph:user-circle', fontSize: 18 })
     },
     {
@@ -99,7 +99,7 @@ function logout() {
   });
 }
 
-function handleDropdown(key: DropdownKey) {
+async function handleDropdown(key: DropdownKey) {
   switch (key) {
     case 'logout':
       logout();
@@ -117,12 +117,18 @@ function handleDropdown(key: DropdownKey) {
         }
       });
       break;
-    case 'personal-center':
-      if (routeStore.currentModule === 'disk') {
-        routerPushByKey('personal-center');
-      } else {
-        routerPushByKey('admin-center');
-      }
+    case 'user-center':
+      routerPushByKey('user-center');
+      break;
+    case 'admin':
+      routeStore.setCurrentModule('admin');
+      await routeStore.initAuthRoute();
+      routerPushByKey('admin');
+      break;
+    case 'disk':
+      routeStore.setCurrentModule('disk');
+      await routeStore.initAuthRoute();
+      routerPushByKey('disk');
       break;
     default:
       routerPushByKey(key);

@@ -1,4 +1,4 @@
-import { computed, nextTick, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, ref, shallowRef } from 'vue';
 import type { RouteRecordRaw } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
@@ -13,7 +13,6 @@ import { useAuthStore } from '../auth';
 import { useTabStore } from '../tab';
 import {
   filterAuthRoutesByRoles,
-  filterMenusByModule,
   getBreadcrumbsByRoute,
   getCacheRouteNames,
   getGlobalMenusByAuthRoutes,
@@ -42,8 +41,8 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   /** Home route key */
   const routeHome = ref(import.meta.env.VITE_ROUTE_HOME);
 
-  /** Current module */
-  const currentModule = ref<UnionKey.MenuModule>('admin');
+  /** 当前的模块 */
+  const currentModule = ref('');
 
   /**
    * Set route home
@@ -54,28 +53,12 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     routeHome.value = routeKey;
   }
 
-  /**
-   * Set current module
-   *
-   * @param module Module
-   */
-  function setCurrentModule(module: UnionKey.MenuModule) {
+  function setCurrentModule(module: string) {
+    if (currentModule.value === module) {
+      return;
+    }
     currentModule.value = module;
   }
-
-  // Watch current module to update route home
-  watch(
-    currentModule,
-    async module => {
-      const homeRouteKey = module === 'disk' ? 'disk' : 'admin';
-      setRouteHome(homeRouteKey);
-
-      if (isInitAuthRoute.value && authRouteMode.value === 'dynamic') {
-        await initDynamicAuthRoute();
-      }
-    },
-    { immediate: true }
-  );
 
   /** constant routes */
   const constantRoutes = shallowRef<ElegantConstRoute[]>([]);
@@ -107,16 +90,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
   /** Global menus */
   const menus = ref<App.Global.Menu[]>([]);
-
-  /** 根据当前模块过滤后的菜单 */
-  const moduleMenus = computed(() => {
-    // 合并常量路由和权限路由
-    const allRoutes = [...constantRoutes.value, ...authRoutes.value];
-    // 使用修改后的filterMenusByModule函数，传入所有路由
-    return filterMenusByModule(menus.value, currentModule.value, allRoutes);
-  });
-
-  const searchMenus = computed(() => transformMenuToSearchMenus(moduleMenus.value));
+  const searchMenus = computed(() => transformMenuToSearchMenus(menus.value));
 
   /** Get global menus */
   function getGlobalMenus(routes: ElegantConstRoute[]) {
@@ -211,7 +185,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   }
 
   /** Init auth route */
-  async function initAuthRoute() {
+  async function initAuthRoute(targetPath?: string) {
     // check if user info is initialized
     if (!authStore.userInfo.userId) {
       await authStore.initUserInfo();
@@ -220,7 +194,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     if (authRouteMode.value === 'static') {
       initStaticAuthRoute();
     } else {
-      await initDynamicAuthRoute();
+      await initDynamicAuthRoute(targetPath);
     }
 
     tabStore.initHomeTab();
@@ -244,8 +218,19 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   }
 
   /** Init dynamic auth route */
-  async function initDynamicAuthRoute() {
-    const { data, error } = await fetchGetUserRoutes(currentModule.value);
+  async function initDynamicAuthRoute(targetPath?: string) {
+    // 根据当前 URL 判断模块
+    let module = currentModule.value;
+    if (!module) {
+      const path = targetPath || window.location.pathname;
+      module = 'admin';
+      if (path.startsWith('/disk')) {
+        module = 'disk';
+      }
+      setCurrentModule(module);
+    }
+
+    const { data, error } = await fetchGetUserRoutes(module);
 
     if (!error) {
       const { routes, home } = data;
@@ -364,9 +349,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   return {
     resetStore,
     routeHome,
-    currentModule,
     menus,
-    moduleMenus,
     searchMenus,
     updateGlobalMenusByLocale,
     cacheRoutes,
@@ -382,6 +365,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     getSelectedMenuKeyPath,
     onRouteSwitchWhenLoggedIn,
     onRouteSwitchWhenNotLoggedIn,
+    currentModule,
     setCurrentModule
   };
 });
