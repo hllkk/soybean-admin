@@ -7,7 +7,8 @@ export function setupElegantRouter() {
     layouts: {
       base: 'src/layouts/base-layout/index.vue',
       blank: 'src/layouts/blank-layout/index.vue',
-      disk: 'src/layouts/disk-layout/index.vue'
+      disk: 'src/layouts/disk-layout/index.vue',
+      auto: 'src/layouts/auto-layout/index.vue'
     },
     routePathTransformer(routeName, routePath) {
       const key = routeName as RouteKey;
@@ -39,7 +40,7 @@ export function setupElegantRouter() {
         meta.constant = true;
       }
 
-      const adminRoutes: RouteKey[] = ['admin', 'admin-center', 'log', 'system', 'about'];
+      const adminRoutes: RouteKey[] = ['admin', 'user-center', 'log', 'system', 'about'];
 
       if (adminRoutes.some(route => key === route || key.startsWith(`${route}_`))) {
         meta.roles = ['SuperAdmin', 'admin'];

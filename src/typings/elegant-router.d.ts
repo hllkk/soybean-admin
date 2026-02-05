@@ -9,7 +9,7 @@ declare module "@elegant-router/types" {
   /**
    * route layout
    */
-  export type RouteLayout = "base" | "blank" | "disk";
+  export type RouteLayout = "base" | "blank" | "disk" | "auto";
 
   /**
    * route map
@@ -22,7 +22,6 @@ declare module "@elegant-router/types" {
     "500": "/500";
     "about": "/about";
     "admin": "/admin";
-    "admin-center": "/admin-center";
     "disk": "/disk";
     "iframe-page": "/iframe-page/:url";
     "init": "/init";
@@ -30,7 +29,6 @@ declare module "@elegant-router/types" {
     "log_login": "/log/login";
     "log_operate": "/log/operate";
     "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
-    "personal-center": "/personal-center";
     "share": "/s/:id";
     "system": "/system";
     "system_dept": "/system/dept";
@@ -41,6 +39,7 @@ declare module "@elegant-router/types" {
     "system_role": "/system/role";
     "system_setting": "/system/setting";
     "system_user": "/system/user";
+    "user-center": "/user-center";
   };
 
   /**
@@ -77,15 +76,14 @@ declare module "@elegant-router/types" {
     | "500"
     | "about"
     | "admin"
-    | "admin-center"
     | "disk"
     | "iframe-page"
     | "init"
     | "log"
     | "login"
-    | "personal-center"
     | "share"
     | "system"
+    | "user-center"
   >;
 
   /**
@@ -105,11 +103,10 @@ declare module "@elegant-router/types" {
     | "403"
     | "404"
     | "500"
-    | "admin-center"
     | "iframe-page"
     | "init"
     | "login"
-    | "personal-center"
+    | "user-center"
     | "about"
     | "admin"
     | "disk"

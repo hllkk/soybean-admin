@@ -9,22 +9,23 @@ import type { LastLevelRouteKey, RouteLayout } from "@elegant-router/types";
 import BaseLayout from "@/layouts/base-layout/index.vue";
 import BlankLayout from "@/layouts/blank-layout/index.vue";
 import DiskLayout from "@/layouts/disk-layout/index.vue";
+import AutoLayout from "@/layouts/auto-layout/index.vue";
 
 export const layouts: Record<RouteLayout, RouteComponent | (() => Promise<RouteComponent>)> = {
   base: BaseLayout,
   blank: BlankLayout,
   disk: DiskLayout,
+  auto: AutoLayout,
 };
 
 export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<RouteComponent>)> = {
   403: () => import("@/views/_builtin/403/index.vue"),
   404: () => import("@/views/_builtin/404/index.vue"),
   500: () => import("@/views/_builtin/500/index.vue"),
-  "admin-center": () => import("@/views/_builtin/admin-center/index.vue"),
   "iframe-page": () => import("@/views/_builtin/iframe-page/[url].vue"),
   init: () => import("@/views/_builtin/init/index.vue"),
   login: () => import("@/views/_builtin/login/index.vue"),
-  "personal-center": () => import("@/views/_builtin/personal-center/index.vue"),
+  "user-center": () => import("@/views/_builtin/user-center/index.vue"),
   about: () => import("@/views/about/index.vue"),
   admin: () => import("@/views/admin/index.vue"),
   disk: () => import("@/views/disk/index.vue"),

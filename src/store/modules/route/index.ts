@@ -66,9 +66,13 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   // Watch current module to update route home
   watch(
     currentModule,
-    module => {
+    async module => {
       const homeRouteKey = module === 'disk' ? 'disk' : 'admin';
       setRouteHome(homeRouteKey);
+
+      if (isInitAuthRoute.value && authRouteMode.value === 'dynamic') {
+        await initDynamicAuthRoute();
+      }
     },
     { immediate: true }
   );
@@ -241,7 +245,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
   /** Init dynamic auth route */
   async function initDynamicAuthRoute() {
-    const { data, error } = await fetchGetUserRoutes();
+    const { data, error } = await fetchGetUserRoutes(currentModule.value);
 
     if (!error) {
       const { routes, home } = data;
