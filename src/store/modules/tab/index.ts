@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useEventListener } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import type { RouteKey } from '@elegant-router/types';
@@ -42,8 +42,17 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
 
   /** Init home tab */
   function initHomeTab() {
-    homeTab.value = getDefaultHomeTab(router, routeStore.routeHome);
+    const homeRouteName = routeStore.currentModule === 'disk' ? 'disk' : 'admin';
+    homeTab.value = getDefaultHomeTab(router, homeRouteName);
   }
+
+  // Watch current module to update home tab
+  watch(
+    () => routeStore.currentModule,
+    () => {
+      initHomeTab();
+    }
+  );
 
   /** 获取当前模块的标签页 */
   const currentModuleTabs = computed(() => {
@@ -54,26 +63,9 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
   /** Get all tabs (返回当前模块的所有标签页，包括首页) */
   const allTabs = computed(() => {
     const moduleTabsList = currentModuleTabs.value;
-    if (!homeTab.value) {
-      return getAllTabs(moduleTabsList);
-    }
-
-    // Get home route module
-    const routes = router.getRoutes();
-    const homeRoute = routes.find(route => route.name === homeTab.value?.routeKey);
-    const homeModule = (homeRoute?.meta?.module as UnionKey.MenuModule) || 'admin';
-
-    // Only add home tab if it belongs to current module
-    let currentHomeTab: App.Global.Tab | undefined;
-    if (homeModule === routeStore.currentModule) {
-      currentHomeTab = {
-        ...homeTab.value,
-        // 将首页标签的模块设置为当前模块
-        module: routeStore.currentModule
-      };
-    }
-
-    return getAllTabs(moduleTabsList, currentHomeTab);
+    
+    // Since homeTab is now synced with currentModule, we can just use it directly
+    return getAllTabs(moduleTabsList, homeTab.value);
   });
 
   /** Active tab id */
@@ -118,7 +110,13 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
         // 查找对应的路由以获取模块信息
         const route = router.getRoutes().find(r => r.name === tab.routeKey);
         if (route) {
-          const module = (route.meta.module as UnionKey.MenuModule) || 'admin';
+          const allowedModules = (route.meta?.modules as UnionKey.MenuModule[]) || [];
+          let module = tab.module;
+
+          if (!module || !allowedModules.includes(module)) {
+            module = allowedModules[0] || 'admin';
+          }
+
           const moduleTabsList = moduleTabs.value.get(module) || [];
           moduleTabsList.push(tab);
           moduleTabs.value.set(module, moduleTabsList);
@@ -144,7 +142,12 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    */
   function addTab(route: App.Global.TabRoute, active = true) {
     const tab = getTabByRoute(route);
-    const module = (route.meta.module as UnionKey.MenuModule) || 'admin';
+    const allowedModules = (route.meta?.modules as UnionKey.MenuModule[]) || [];
+    let module = routeStore.currentModule;
+
+    if (!allowedModules.includes(module)) {
+      module = allowedModules[0] || 'admin';
+    }
 
     // 检查是否是首页标签
     const isHomeTab = homeTab.value && (tab.id === homeTab.value.id || tab.routePath === homeTab.value.routePath);

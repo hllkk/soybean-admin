@@ -33,8 +33,8 @@ export function filterMenusByModule(
   return menus.filter(menu => {
     // 对于顶层菜单，我们需要找到其对应的路由来判断模块
     const route = findRouteByMenuKey(menu.routeKey, allRoutes);
-    if (route && route.meta?.module) {
-      return route.meta.module === module;
+    if (route && route.meta?.modules) {
+      return route.meta.modules.includes(module);
     }
     // 如果菜单有子菜单，递归过滤
     if (menu.children && menu.children.length > 0) {

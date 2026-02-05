@@ -54,7 +54,7 @@ const getMeunTree = async () => {
       menuId: 0,
       menuName: $t('page.system.menu.rootName'),
       icon: 'famicons-home-outline',
-      children: handleTree(data, { idField: 'menuId', filterFn: item => item.module === activeTab.value })
+      children: handleTree(data, { idField: 'menuId', filterFn: item => item.modules?.includes(activeTab.value) })
     }
   ] as Api.System.Menu[];
 

@@ -274,7 +274,7 @@ declare namespace Api {
       /** 父菜单名称 */
       parentName: string;
       /** 模块标识（admin系统管理 disk网盘管理） */
-      module?: string;
+      modules?: string[];
       /** 子菜单 */
       children: MenuList;
       label?: string;

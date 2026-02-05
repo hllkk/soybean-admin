@@ -1,4 +1,4 @@
-import { computed, nextTick, ref, shallowRef } from 'vue';
+import { computed, nextTick, ref, shallowRef, watch } from 'vue';
 import type { RouteRecordRaw } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
@@ -62,6 +62,16 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   function setCurrentModule(module: UnionKey.MenuModule) {
     currentModule.value = module;
   }
+
+  // Watch current module to update route home
+  watch(
+    currentModule,
+    module => {
+      const homeRouteKey = module === 'disk' ? 'disk' : 'admin';
+      setRouteHome(homeRouteKey);
+    },
+    { immediate: true }
+  );
 
   /** constant routes */
   const constantRoutes = shallowRef<ElegantConstRoute[]>([]);
