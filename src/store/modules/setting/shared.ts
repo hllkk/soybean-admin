@@ -24,7 +24,6 @@ export const ldapDefaultData: Api.System.LdapSettings = {
 
 export const generalDefaultData: Api.System.GeneralSettings = {
   systemName: 'OPS 管理系统',
-  diskName: 'OPS 网盘',
   watermark: false,
   userDefaultPassword: undefined,
   userDefaultRole: undefined,
@@ -38,6 +37,12 @@ export const authenticationDefaultData: Api.System.AuthenticationSettings = {
     enableWecom: true,
     validateDomainFileName: '',
     validateDomainFileContent: ''
+  },
+  wechat: {
+    enableWechat: false
+  },
+  gitee: {
+    enableGitee: false
   }
 };
 
@@ -61,6 +66,24 @@ export const channelsDefaultData: Api.System.ChannelsSettings = {
     MAIL_FROM_NAME: null,
     VALIDATE_CERTS: true,
     USE_CREDENTIALS: true
+  }
+};
+
+export const diskDefaultData: Api.System.DiskSettings = {
+  diskName: 'OPS 网盘',
+  maxUploadSize: 1024,
+  allowedExtensions: [],
+  onlyOffice: {
+    enable: false,
+    serverUrl: '',
+    verifyToken: false,
+    tokenSecret: ''
+  },
+  videoTranscode: {
+    enable: false,
+    ffmpegPath: '/usr/bin/ffmpeg',
+    threads: 2,
+    preset: 'medium'
   }
 };
 

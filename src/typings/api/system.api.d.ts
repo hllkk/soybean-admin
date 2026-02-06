@@ -436,12 +436,11 @@ declare namespace Api {
     /** notice list */
     type NoticeList = Api.Common.PaginatingQueryRecord<Notice>;
 
-    type SettingsClickStatus = 'general' | 'authentication' | 'security' | 'ldap' | 'channels';
+    type SettingsClickStatus = 'general' | 'authentication' | 'security' | 'disk' | 'ldap' | 'channels';
 
     /** 通用设置 */
     type GeneralSettings = {
       systemName: string;
-      diskName: string;
       userDefaultPassword?: string;
       userDefaultRole?: CommonType.IdType | null;
       watermark?: boolean;
@@ -542,6 +541,31 @@ declare namespace Api {
       email: MailSettings;
     };
 
+    /** OnlyOffice配置 */
+    type OnlyOfficeSettings = {
+      enable?: boolean;
+      serverUrl?: string;
+      verifyToken?: boolean;
+      tokenSecret?: string;
+    };
+
+    /** 视频转码配置 */
+    type VideoTranscodeSettings = {
+      enable?: boolean;
+      ffmpegPath?: string;
+      threads?: number;
+      preset?: string;
+    };
+
+    /** 网盘设置 */
+    type DiskSettings = {
+      diskName: string;
+      maxUploadSize?: number;
+      allowedExtensions?: string[];
+      onlyOffice?: OnlyOfficeSettings;
+      videoTranscode?: VideoTranscodeSettings;
+    };
+
     /** 系统设置 */
     type SystemSettings = {
       id?: CommonType.IdType;
@@ -552,6 +576,7 @@ declare namespace Api {
       ldap?: LdapSettings;
       security?: SecuritySettings;
       channels?: ChannelsSettings;
+      disk?: DiskSettings;
     };
   }
 }

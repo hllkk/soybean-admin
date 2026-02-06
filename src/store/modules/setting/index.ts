@@ -6,6 +6,7 @@ import { SetupStoreId } from '@/enum';
 import {
   authenticationDefaultData,
   channelsDefaultData,
+  diskDefaultData,
   generalDefaultData,
   ldapDefaultData,
   securityDefaultData,
@@ -22,6 +23,7 @@ export const useSettingStore = defineStore(SetupStoreId.Setting, () => {
   const security = useSettingModule(securityDefaultData);
   const ldap = useSettingModule(ldapDefaultData);
   const channels = useSettingModule(channelsDefaultData);
+  const disk = useSettingModule(diskDefaultData);
 
   // 创建计算属性以便在组件中直接访问数据
   const generalSettings = computed(() => general.data.value);
@@ -29,6 +31,7 @@ export const useSettingStore = defineStore(SetupStoreId.Setting, () => {
   const securitySettings = computed(() => security.data.value);
   const ldapSettings = computed(() => ldap.data.value);
   const channelsSettings = computed(() => channels.data.value);
+  const diskSettings = computed(() => disk.data.value);
 
   // 从后端获取系统设置
   async function getSystemSettings() {
@@ -43,6 +46,7 @@ export const useSettingStore = defineStore(SetupStoreId.Setting, () => {
         if (data.security) security.update(data.security);
         if (data.ldap) ldap.update(data.ldap);
         if (data.channels) channels.update(data.channels);
+        if (data.disk) disk.update(data.disk);
       }
     } finally {
       endLoading();
@@ -60,6 +64,7 @@ export const useSettingStore = defineStore(SetupStoreId.Setting, () => {
       if (settings.security) security.update(settings.security);
       if (settings.ldap) ldap.update(settings.ldap);
       if (settings.channels) channels.update(settings.channels);
+      if (settings.disk) disk.update(settings.disk);
     }
 
     return { error };
@@ -108,12 +113,14 @@ export const useSettingStore = defineStore(SetupStoreId.Setting, () => {
     security: security.data,
     ldap: ldap.data,
     channels: channels.data,
+    disk: disk.data,
     // 为了组件兼容性，提供带Settings后缀的计算属性
     generalSettings,
     authenticationSettings,
     securitySettings,
     ldapSettings,
     channelsSettings,
+    diskSettings,
     // 加载状态
     settingLoading,
     // 操作方法

@@ -45,6 +45,11 @@ const tabOptions: tabOptionsType[] = [
     description: '系统安全配置，增强系统防护'
   },
   {
+    key: 'disk',
+    title: '网盘配置',
+    description: '网盘配置，个性化网盘配置'
+  },
+  {
     key: 'ldap',
     title: 'LDAP配置',
     description: 'LDAP配置，对接LDAP服务器'

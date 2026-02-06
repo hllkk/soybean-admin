@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, toRefs, watch } from 'vue';
+import { computed, toRefs } from 'vue';
 import { useAppStore } from '@/store/modules/app';
 import WecomSettings from './wecom-settings.vue';
 import WechatSettings from './wechat-settings.vue';
@@ -14,23 +14,6 @@ const props = defineProps<{
 }>();
 
 const { model } = toRefs(props);
-
-// 确保wecom对象存在
-watch(
-  () => model.value,
-  () => {
-    if (!model.value.wecom) {
-      model.value.wecom = {};
-    }
-    if (!model.value.wechat) {
-      model.value.wechat = {};
-    }
-    if (!model.value.gitee) {
-      model.value.gitee = {};
-    }
-  },
-  { immediate: true }
-);
 
 const appStore = useAppStore();
 

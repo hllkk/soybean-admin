@@ -9,6 +9,7 @@ import AuthenticationSettings from './components/authentication-settings/authent
 import SecuritySettings from './components/security-settings/security-settings.vue';
 import LdapSettings from './components/ldap-settings/ldap-settings.vue';
 import ChannelsSettings from './components/channels-settings/channels-settings.vue';
+import DiskSettings from './components/disk-settings/disk-settings.vue';
 
 defineOptions({
   name: 'SystemSetting'
@@ -28,6 +29,7 @@ const authenticationSettings = computed(() => settingStore.authenticationSetting
 const securitySettings = computed(() => settingStore.securitySettings);
 const ldapSettings = computed(() => settingStore.ldapSettings);
 const channelsSettings = computed(() => settingStore.channelsSettings);
+const diskSettings = computed(() => settingStore.diskSettings);
 
 const isMobile = computed(() => appStore.isMobile);
 
@@ -42,6 +44,9 @@ function changeStatus(status: Api.System.SettingsClickStatus) {
       break;
     case 'security':
       title.value = '安全配置';
+      break;
+    case 'disk':
+      title.value = '网盘配置';
       break;
     case 'ldap':
       title.value = 'LDAP配置';
@@ -68,6 +73,9 @@ async function handleSave() {
         break;
       case 'security':
         result = { security: securitySettings.value };
+        break;
+      case 'disk':
+        result = { disk: diskSettings.value };
         break;
       case 'ldap':
         result = { ldap: ldapSettings.value };
@@ -129,6 +137,7 @@ onMounted(async () => {
         <GeneralSettings v-show="clickStatus === 'general'" v-model:model="generalSettings" />
         <AuthenticationSettings v-show="clickStatus === 'authentication'" v-model:model="authenticationSettings" />
         <SecuritySettings v-show="clickStatus === 'security'" v-model:model="securitySettings" />
+        <DiskSettings v-show="clickStatus === 'disk'" v-model:model="diskSettings" />
         <LdapSettings v-show="clickStatus === 'ldap'" v-model:model="ldapSettings" />
         <ChannelsSettings v-show="clickStatus === 'channels'" v-model:model="channelsSettings" />
       </NCard>

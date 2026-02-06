@@ -154,7 +154,7 @@ watch(iframePreviewVisible, visible => {
         <OnlyOfficePreview
           v-else-if="previewType === 'office'"
           :file-url="fileUrl"
-          :file-name="iframePreviewRow?.name"
+          :file="iframePreviewRow!"
           @close="close"
         />
 

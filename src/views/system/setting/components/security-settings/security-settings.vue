@@ -13,22 +13,24 @@ const props = defineProps<{
 
 const { model } = toRefs(props);
 
-const checkMessage = ref();
+const blackListMessage = ref('');
+const whiteListMessage = ref('');
 const whiteListStatus = ref<FormValidationStatus | undefined>();
 const blackListStatus = ref<FormValidationStatus | undefined>();
-const whiteListData = ref();
-const blackListData = ref();
+const whiteListData = ref('');
+const blackListData = ref('');
+
 const options = [
   {
     label: '黑名单',
     key: 1
   },
-
   {
     label: '白名单',
     key: 2
   }
 ];
+
 const ipMode = computed(() => {
   return model.value.ip_check_mode === 1 ? '黑名单' : '白名单';
 });
@@ -37,23 +39,20 @@ const inputDisable = computed(() => {
   return model.value.ip_check_mode === 1;
 });
 
-const checkIplist = (data: Array<string>) => {
-  let res = true;
+const validateIpList = (list: string[], messageRef: typeof blackListMessage) => {
   const newList: string[] = [];
-  data.every(item => {
+  for (const item of list) {
     if (!REG_IPV4.test(item) && !REG_IPV4_MASK.test(item) && !REG_IPV4_RANGE.test(item)) {
-      res = false;
-      checkMessage.value = `格式错误 - ${item}`;
-      return res;
-    } else if (newList.includes(item)) {
-      res = false;
-      checkMessage.value = `重复配置 - ${item}`;
-      return res;
+      messageRef.value = `格式错误 - ${item}`;
+      return false;
+    }
+    if (newList.includes(item)) {
+      messageRef.value = `重复配置 - ${item}`;
+      return false;
     }
     newList.push(item);
-    return true;
-  });
-  return res;
+  }
+  return true;
 };
 
 const handleSelect = (key: number) => {
@@ -62,37 +61,41 @@ const handleSelect = (key: number) => {
 
 function handleBlackListBlur() {
   if (blackListData.value) {
-    const ipList = (blackListData.value as string).split(',');
-    const checkRes = checkIplist(ipList);
-    if (checkRes) {
-      checkMessage.value = '';
+    const ipList = blackListData.value
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+    if (validateIpList(ipList, blackListMessage)) {
+      blackListMessage.value = '';
       model.value.ip_black_list = ipList;
-      blackListStatus.value = 'success';
+      blackListStatus.value = undefined;
     } else {
       blackListStatus.value = 'error';
     }
   } else {
     model.value.ip_black_list = [];
-    checkMessage.value = '';
-    blackListStatus.value = 'success';
+    blackListMessage.value = '';
+    blackListStatus.value = undefined;
   }
 }
 
 function handleWhiteListBlur() {
   if (whiteListData.value) {
-    const ipList = (whiteListData.value as string).split(',');
-    const checkRes = checkIplist(ipList);
-    if (checkRes) {
-      checkMessage.value = '';
+    const ipList = whiteListData.value
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+    if (validateIpList(ipList, whiteListMessage)) {
+      whiteListMessage.value = '';
       model.value.ip_white_list = ipList;
-      whiteListStatus.value = 'success';
+      whiteListStatus.value = undefined;
     } else {
       whiteListStatus.value = 'error';
     }
   } else {
     model.value.ip_white_list = [];
-    checkMessage.value = '';
-    whiteListStatus.value = 'success';
+    whiteListMessage.value = '';
+    whiteListStatus.value = undefined;
   }
 }
 
@@ -102,9 +105,13 @@ watch(
   newVal => {
     if (newVal.ip_black_list && newVal.ip_black_list.length > 0) {
       blackListData.value = newVal.ip_black_list.join(',');
+    } else {
+      blackListData.value = '';
     }
     if (newVal.ip_white_list && newVal.ip_white_list.length > 0) {
       whiteListData.value = newVal.ip_white_list.join(',');
+    } else {
+      whiteListData.value = '';
     }
   },
   { immediate: true }
@@ -115,7 +122,7 @@ watch(
   <div class="flex flex-col space-y-8">
     <div class="flex flex-col space-y-2">
       <div class="flex-1 flex-row">
-        <span class="mr-2 text-base">开启MFA登录</span>
+        <span class="mr-2 text-base">开启IP校验</span>
         <NSwitch v-model:value="model.ip_check">
           <template #checked>{{ $t('common.enable') }}</template>
           <template #unchecked>{{ $t('common.disable') }}</template>
@@ -137,7 +144,7 @@ watch(
       <div class="flex-1 flex-row">
         <span class="mr-2 text-base">IP黑名单列表</span>
         <span v-show="model.ip_check_mode === 1" class="ml-2 text-error">
-          {{ checkMessage }}
+          {{ blackListMessage }}
         </span>
       </div>
       <NInput
@@ -154,7 +161,7 @@ watch(
     <div class="flex flex-col space-y-2">
       <div class="flex-1 flex-row">
         <span class="mr-2 text-base">IP白名单列表</span>
-        <span v-show="model.ip_check_mode === 2" class="ml-2 text-error">{{ checkMessage }}</span>
+        <span v-show="model.ip_check_mode === 2" class="ml-2 text-error">{{ whiteListMessage }}</span>
       </div>
       <NInput
         v-model:value="whiteListData"
