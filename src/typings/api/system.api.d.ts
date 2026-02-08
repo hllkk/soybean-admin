@@ -441,6 +441,7 @@ declare namespace Api {
     /** 通用设置 */
     type GeneralSettings = {
       systemName: string;
+      loginPageName: string;
       userDefaultPassword?: string;
       userDefaultRole?: CommonType.IdType | null;
       watermark?: boolean;
@@ -545,8 +546,8 @@ declare namespace Api {
     type OnlyOfficeSettings = {
       enable?: boolean;
       serverUrl?: string;
-      verifyToken?: boolean;
       tokenSecret?: string;
+      callbackUrl?: string;
     };
 
     /** 视频转码配置 */

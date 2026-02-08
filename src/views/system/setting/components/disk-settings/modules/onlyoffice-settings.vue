@@ -26,45 +26,37 @@ watch(
 </script>
 
 <template>
-  <NForm :model="model" label-placement="left" :label-width="120" label-align="right">
-    <div class="mb-6 flex flex-col space-y-2">
-      <div class="flex-1 flex-row">
-        <span class="mr-2 text-base">开启 OnlyOffice</span>
-        <NSwitch v-model:value="model.enable">
-          <template #checked>{{ $t('common.enable') }}</template>
-          <template #unchecked>{{ $t('common.disable') }}</template>
-        </NSwitch>
-      </div>
-      <NText depth="3" class="text-sm">开启后支持在线预览和编辑 Office 文档</NText>
-    </div>
-
+  <NForm :model="model" label-placement="left" :label-width="150" label-align="right">
+    <NFormItem label="开启 OnlyOffice" path="enable">
+      <NSwitch v-model:value="model.enable">
+        <template #checked>{{ $t('common.enable') }}</template>
+        <template #unchecked>{{ $t('common.disable') }}</template>
+      </NSwitch>
+      <NText depth="3" class="ml-10px text-sm">禁用后offcie文件无法在线预览</NText>
+    </NFormItem>
     <template v-if="model.enable">
-      <NFormItem label="服务器地址" path="serverUrl">
-        <div class="w-320px flex flex-col space-y-2">
-          <NInput v-model:value="model.serverUrl" placeholder="http://onlyoffice.example.com/" />
-          <NText depth="3" class="text-sm">OnlyOffice Document Server 的访问地址</NText>
+      <NFormItem label="OnlyOffice地址" path="url">
+        <div class="w-420px">
+          <NInput v-model:value="model.serverUrl" clearable placeholder="请输入OnlyOffice的URL" />
+          <NText depth="3" class="ml-3px text-sm">例如: https://your-jmalcloud-server.com/office</NText>
         </div>
       </NFormItem>
-
-      <NFormItem label="开启 Token 校验" path="verifyToken">
-        <div class="w-320px flex flex-col space-y-2">
-          <NSwitch v-model:value="model.verifyToken">
-            <template #checked>{{ $t('common.enable') }}</template>
-            <template #unchecked>{{ $t('common.disable') }}</template>
-          </NSwitch>
-          <NText depth="3" class="text-sm">开启 JWT Token 校验以增强安全性</NText>
-        </div>
-      </NFormItem>
-
-      <NFormItem v-if="model.verifyToken" label="Token 密钥" path="tokenSecret">
-        <div class="w-320px flex flex-col space-y-2">
+      <NFormItem label="密钥" path="secret">
+        <div class="w-420px">
           <NInput
             v-model:value="model.tokenSecret"
-            type="password"
+            clearable
+            placeholder="OnlyOffice JWT(留空为不适用密钥)"
             show-password-on="click"
-            placeholder="请输入 Token 密钥"
+            type="password"
           />
-          <NText depth="3" class="text-sm">与 Document Server 配置文件中保持一致的 secret</NText>
+          <NText depth="3" class="ml-3px text-sm">建议使用密钥,防止office服务被白嫖</NText>
+        </div>
+      </NFormItem>
+      <NFormItem label="回调服务地址" path="callbackUrl">
+        <div class="w-420px">
+          <NInput v-model:value="model.callbackUrl" clearable placeholder="后端API地址" />
+          <NText depth="3" class="ml-3px text-sm">例如: http://your-domain-or-ip:8088/api</NText>
         </div>
       </NFormItem>
     </template>

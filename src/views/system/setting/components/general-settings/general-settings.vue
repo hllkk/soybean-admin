@@ -42,13 +42,19 @@ const verifyCodeTypeOptions: SelectOption[] = [
   <div class="flex flex-col items-start space-y-4">
     <NForm ref="formRef" :model="model" label-placement="left" :label-width="100" label-align="right">
       <NFormItem label="后台管理名称" path="systemName">
-        <div class="w-240px flex flex-col space-y-2">
+        <div class="w-240px flex flex-col space-y-1">
           <NInput v-model:value="model.systemName" clearable />
           <NText depth="3" class="text-sm">后台管理菜单标题,修改后失去国际化</NText>
         </div>
       </NFormItem>
+      <NFormItem label="登录页面名称" path="loginPageName">
+        <div class="w-240px flex flex-col space-y-1">
+          <NInput v-model:value="model.loginPageName" clearable />
+          <NText depth="3" class="text-sm">登录页面标题,修改后失去国际化</NText>
+        </div>
+      </NFormItem>
       <NFormItem label="用户默认密码" path="userDefaultPassword">
-        <div class="w-240px flex flex-col space-y-2">
+        <div class="w-240px flex flex-col space-y-1">
           <NInput
             v-model:value="model.userDefaultPassword"
             clearable

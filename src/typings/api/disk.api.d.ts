@@ -138,5 +138,50 @@ declare namespace Api {
       path?: string;
       userId?: CommonType.IdType;
     }
+
+    interface OnlyOfficeBackendConfig {
+      documentServer: string;
+      tokenEnabled: boolean;
+      secret: string;
+      callbackServer: string;
+    }
+
+    /** OnlyOffice 配置 */
+    interface OnlyOfficeConfig {
+      document: {
+        fileType: string;
+        key: string;
+        title: string;
+        url: string;
+        info?: {
+          author?: string;
+          created?: string;
+          owner?: string;
+        };
+        permissions?: {
+          comment?: boolean;
+          copy?: boolean;
+          download?: boolean;
+          edit?: boolean;
+          print?: boolean;
+          review?: boolean;
+          chat?: boolean;
+        };
+      };
+      editorConfig: {
+        callbackUrl: string;
+        lang: string;
+        mode: string;
+        user: {
+          id: string;
+          name: string;
+        };
+        customization?: {
+          forcesave?: boolean;
+        };
+      };
+      token: string;
+      serverUrl: string;
+    }
   }
 }

@@ -23,7 +23,8 @@ export const ldapDefaultData: Api.System.LdapSettings = {
 };
 
 export const generalDefaultData: Api.System.GeneralSettings = {
-  systemName: 'OPS 管理系统',
+  systemName: 'OpsMaster 管理系统',
+  loginPageName: 'OpsMaster 登录',
   watermark: false,
   userDefaultPassword: undefined,
   userDefaultRole: undefined,
@@ -76,8 +77,8 @@ export const diskDefaultData: Api.System.DiskSettings = {
   onlyOffice: {
     enable: false,
     serverUrl: '',
-    verifyToken: false,
-    tokenSecret: ''
+    tokenSecret: '',
+    callbackUrl: ''
   },
   videoTranscode: {
     enable: false,

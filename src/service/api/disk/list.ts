@@ -73,3 +73,11 @@ export function fetchUpdateFileContent(params: { fileId: string; content: string
     data: params
   });
 }
+
+/** 获取OnlyOffice配置 */
+export function fetchGetOnlyOfficeConfig() {
+  return request<Api.Disk.OnlyOfficeBackendConfig>({
+    url: `/office/config`,
+    method: 'get'
+  });
+}

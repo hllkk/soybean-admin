@@ -151,12 +151,7 @@ watch(iframePreviewVisible, visible => {
         />
 
         <!-- OnlyOffice Viewer -->
-        <OnlyOfficePreview
-          v-else-if="previewType === 'office'"
-          :file-url="fileUrl"
-          :file="iframePreviewRow!"
-          @close="close"
-        />
+        <OnlyOfficePreview v-else-if="previewType === 'office'" :file="iframePreviewRow!" @close="close" />
 
         <!-- 通用 Iframe 预览 -->
         <!--

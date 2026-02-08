@@ -17,24 +17,24 @@ function isFilePath(str: string) {
 //   return `${window.location.origin}/webDAV/${username}`;
 // }
 
-// // office api url
-// function officeApiUrl(documentServer: string) {
-//   let serverUrl = documentServer || `${window.location.origin}/office`;
-//   if (!serverUrl.endsWith('/')) {
-//     serverUrl += `${serverUrl}/`;
-//   }
-//   return `${serverUrl}web-apps/apps/api/documents/api.js`;
-// }
+// office api url
+export function getDocumentApiUrl(documentServer: string) {
+  let serverUrl = documentServer || `${window.location.origin}/office`;
+  if (!serverUrl.endsWith('/')) {
+    serverUrl = `${serverUrl}/`;
+  }
+  return `${serverUrl}web-apps/apps/api/documents/api.js`;
+}
 
-// // office 回调基础url(末尾不带斜杠，不包含参数)
-// function officeCallbackBaseUrl(callbackServer: string) {
-//   return (callbackServer || '').replace(/\/$/, '') || 'https://jump.chinargb.com.cn:3000/dev-api';
-// }
+// office 回调基础url(末尾不带斜杠，不包含参数)
+export function getOfficeCallbackBaseUrl(callbackServer: string) {
+  return (callbackServer || '').replace(/\/$/, '') || 'http://172.21.10.30:9527/dev-api';
+}
 
-// // office 回调url
-// function officeCallBackUrl(callbackServer: string, token: string, userName: string, fileId: string) {
-//   return `${officeCallbackBaseUrl(callbackServer)}/office/callback?token=${token}&userName=${userName}&fileId=${fileId}`;
-// }
+// office 回调url
+export function officeCallBackUrl(callbackServer: string, token: string, userName: string, fileId: string) {
+  return `${getOfficeCallbackBaseUrl(callbackServer)}/office/callback?token=${token}&userName=${userName}&fileId=${fileId}`;
+}
 
 // 预览文件的url
 export function previewUrl(
@@ -46,7 +46,7 @@ export function previewUrl(
 ) {
   const authStore = useAuthStore();
   const baseUrl = serverUrl || import.meta.env.VITE_APP_BASE_API;
-  let fileUrl = `${baseUrl}/file/${file.userId}${encodeURIComponent(file.filePath ? `${file.filePath}/` : '')}${encodeURIComponent(file.name)}`;
+  let fileUrl = `${baseUrl}/file/${file.userId}${encodeURIComponent(file.filePath && file.filePath !== '/' ? `${file.filePath}/` : '/')}${encodeURIComponent(file.name)}`;
   fileUrl = fileUrl.replaceAll(/%5C|%2F/g, '/');
 
   if (file.userId !== authStore.userInfo.userId && token && !shareToken) {
