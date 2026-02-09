@@ -140,14 +140,14 @@ function handleCreateFolder() {
 }
 
 /** 确认创建 */
-function handleConfirmCreate(inputName: string) {
+async function handleConfirmCreate(inputName: string) {
   if (!inputName.trim()) {
     window.$message?.destroyAll();
     window.$message?.error('名称不能为空');
     return;
   }
 
-  const newItem = diskStore.confirmCreateItem(inputName.trim());
+  const newItem = await diskStore.confirmCreateItem(inputName.trim());
   if (newItem) {
     window.$message?.destroyAll();
     window.$message?.success(`已创建${newItem.isDir ? '文件夹' : '文件'}：${newItem.name}`);

@@ -2,11 +2,11 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
-import { fetchGetFileList, fetchRenameFile } from '@/service/api/disk/list';
+import { fetchCreateFile, fetchCreateFolder, fetchGetFileList, fetchRenameFile } from '@/service/api/disk/list';
 import { suffix } from '@/utils/file';
 import { SetupStoreId } from '@/enum';
 import { useAuthStore } from '../auth';
-import { generateUniqueName, packageDownload, parseFileName, singleDownload } from './shared';
+import { packageDownload, parseFileName, singleDownload } from './shared';
 
 export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const fileShowMode = ref<UnionKey.FileListMode>('grid');
@@ -89,45 +89,86 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     setRenamingItem(null);
   }
 
-  function confirmCreateItem(inputName: string): Api.Disk.FileItem | null {
+  async function confirmCreateItem(inputName: string): Promise<Api.Disk.FileItem | null> {
     if (!creatingItem.value) return null;
 
-    if (creatingItem.value.isDir) {
-      const finalName = generateUniqueName(fileList.value, inputName.trim(), true);
-      const newItem: Api.Disk.FileItem = {
-        id: Date.now().toString(),
-        name: finalName,
-        isDir: true,
-        size: 0,
-        extendName: '',
-        updateTime: new Date().toISOString()
-      };
-      addFile(newItem);
-      setSelectedFileId(newItem.id);
-      setCreatingItem(null);
-      return newItem;
+    let folderPath = basePath.value;
+    if (folderPath && folderPath.endsWith('/')) {
+      folderPath = folderPath.slice(0, -1);
+    }
+    const currentPathVal = path.value || '';
+    if (currentPathVal) {
+      folderPath += currentPathVal;
     }
 
-    const { name: baseName, extension } = parseFileName(inputName);
-    let finalExtension = extension;
-
-    if (!finalExtension && creatingItem.value.extendName) {
-      finalExtension = creatingItem.value.extendName;
+    // 确保以 / 开头
+    if (!folderPath.startsWith('/')) {
+      folderPath = `/${folderPath}`;
     }
 
-    const finalName = generateUniqueName(fileList.value, baseName, false, finalExtension);
-    const newItem: Api.Disk.FileItem = {
-      id: Date.now().toString(),
-      name: finalName,
-      isDir: false,
-      size: 0,
-      extendName: finalExtension || '',
-      updateTime: new Date().toISOString()
-    };
-    addFile(newItem);
-    setSelectedFileId(newItem.id);
-    setCreatingItem(null);
-    return newItem;
+    try {
+      let result: Api.Disk.FileItem | null = null;
+
+      if (creatingItem.value.isDir) {
+        const finalName = inputName.trim();
+        const { data, error } = await fetchCreateFolder({
+          fileName: finalName,
+          folderPath,
+          userId: authStore.userInfo.userId,
+          isFolder: true
+        });
+
+        if (error) {
+          window.$message?.error(`创建文件夹失败: ${error.message || '未知错误'}`);
+          return null;
+        }
+        if (data) {
+          // 映射后端返回的字段
+          result = {
+            ...data,
+            id: String(data.id),
+            isDir: (data as any).isFolder ?? data.isDir
+          };
+        }
+      } else {
+        const { name: baseName, extension } = parseFileName(inputName);
+        let finalExtension = extension;
+
+        if (!finalExtension && creatingItem.value.extendName) {
+          finalExtension = creatingItem.value.extendName;
+        }
+
+        const finalName = finalExtension ? `${baseName}.${finalExtension}` : baseName;
+        const { data, error } = await fetchCreateFile({
+          fileName: finalName,
+          folderPath,
+          userId: authStore.userInfo.userId
+        });
+
+        if (error) {
+          window.$message?.error(`创建文件失败: ${error.message || '未知错误'}`);
+          return null;
+        }
+        if (data) {
+          result = {
+            ...data,
+            id: String(data.id),
+            isDir: (data as any).isFolder ?? data.isDir
+          };
+        }
+      }
+
+      if (result) {
+        addFile(result);
+        setSelectedFileId(result.id);
+        setCreatingItem(null);
+        return result;
+      }
+    } catch (e: any) {
+      window.$message?.error(`创建失败: ${e.message || e}`);
+    }
+
+    return null;
   }
 
   function cancelCreateItem() {

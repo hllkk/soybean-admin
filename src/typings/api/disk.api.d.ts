@@ -148,6 +148,28 @@ declare namespace Api {
       fileId?: string;
     }
 
+    interface CreateFileRequest {
+      fileName: string;
+      folderPath?: string;
+      userId?: CommonType.IdType;
+    }
+
+    interface CreateFolderRequest {
+      isFolder?: boolean;
+      folderPath?: string;
+      fileName: string;
+      folder?: string;
+      currentDirectory?: string;
+      userId?: CommonType.IdType;
+      overwrite?: boolean;
+    }
+
+    interface RenameFileRequest {
+      fileId: string;
+      newName: string;
+      userId?: CommonType.IdType;
+    }
+
     interface CreateShareRequest {
       fileId: number;
       isPrivate: boolean;

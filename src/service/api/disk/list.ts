@@ -42,9 +42,17 @@ export function fetchMergeFile(params: Api.Disk.FileMergeRequest) {
   });
 }
 
-export function fetchNewFolder(params: any) {
-  return request({
-    url: 'file-meta/newFolder',
+export function fetchCreateFile(params: Api.Disk.CreateFileRequest) {
+  return request<Api.Disk.FileItem>({
+    url: 'file-meta/create',
+    method: 'post',
+    data: params
+  });
+}
+
+export function fetchCreateFolder(params: Api.Disk.CreateFolderRequest) {
+  return request<Api.Disk.FileItem>({
+    url: 'file-meta/createFolder',
     method: 'post',
     data: params
   });
