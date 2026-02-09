@@ -171,13 +171,13 @@ function handleRename() {
 }
 
 /** 确认重命名 */
-function handleConfirmRename(newName: string) {
+async function handleConfirmRename(newName: string) {
   if (!newName.trim()) {
     window.$message?.destroyAll();
     window.$message?.error('名称不能为空');
     return;
   }
-  const renamedItem = diskStore.confirmRenameItem(newName.trim());
+  const renamedItem = await diskStore.confirmRenameItem(newName.trim());
   if (renamedItem) {
     window.$message?.destroyAll();
     window.$message?.success(`已重命名为：${renamedItem.name}`);
@@ -706,6 +706,7 @@ onMounted(() => {
           v-model:visible="shareDialogVisible"
           :file-name="selectedFiles[0]?.name || ''"
           :file-ids="diskStore.selectedFileIds"
+          :file-item="selectedFiles[0] || null"
         />
         <!--文件属性模态框-->
         <DiskPropertyModel v-model:visible="propertiesDialogVisible" :item="contextMenuState.targetFile" />

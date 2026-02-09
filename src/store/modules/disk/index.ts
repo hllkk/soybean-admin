@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
-import { fetchGetFileList } from '@/service/api/disk/list';
+import { fetchGetFileList, fetchRenameFile } from '@/service/api/disk/list';
 import { suffix } from '@/utils/file';
 import { SetupStoreId } from '@/enum';
 import { useAuthStore } from '../auth';
@@ -134,33 +134,47 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     setCreatingItem(null);
   }
 
-  function confirmRenameItem(inputName: string): Api.Disk.FileItem | null {
+  async function confirmRenameItem(inputName: string): Promise<Api.Disk.FileItem | null> {
     if (!renamingItem.value) return null;
 
     const fileIndex = fileList.value.findIndex(f => f.id === renamingItem.value!.id);
     if (fileIndex === -1) return null;
 
     const file = fileList.value[fileIndex];
+    let finalName = inputName.trim();
 
-    if (file.isDir) {
-      const finalName = generateUniqueName(fileList.value, inputName.trim(), true, '', renamingItem.value.id);
+    if (!file.isDir) {
+      const { name: baseName, extension } = parseFileName(inputName);
+      let finalExtension = extension;
+
+      if (!finalExtension && file.extendName) {
+        finalExtension = file.extendName;
+      }
+
+      if (finalExtension) {
+        finalName = `${baseName}.${finalExtension}`;
+      } else {
+        finalName = baseName;
+      }
+    }
+
+    try {
+      await fetchRenameFile({
+        fileId: file.id,
+        newName: finalName
+      });
+
       file.name = finalName;
+      if (!file.isDir) {
+        const { extension } = parseFileName(finalName);
+        file.extendName = extension || '';
+      }
       setRenamingItem(null);
       return file;
+    } catch (error) {
+      window.$message?.error(`重命名失败: ${error}`);
+      return null;
     }
-
-    const { name: baseName, extension } = parseFileName(inputName);
-    let finalExtension = extension;
-
-    if (!finalExtension && file.extendName) {
-      finalExtension = file.extendName;
-    }
-
-    const finalName = generateUniqueName(fileList.value, baseName, false, finalExtension, renamingItem.value.id);
-    file.name = finalName;
-    file.extendName = finalExtension || '';
-    setRenamingItem(null);
-    return file;
   }
 
   function setQueryType(type: SimpleUploader.Uploader.FileListQueryType) {
@@ -178,6 +192,13 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
 
   function setSelectedFileIds(ids: CommonType.IdType[]) {
     selectedFileIds.value = ids;
+  }
+
+  function updateFileShareStatus(fileId: CommonType.IdType, isShare: boolean) {
+    const target = fileList.value.find(item => String(item.id) === String(fileId));
+    if (target) {
+      target.isShare = isShare;
+    }
   }
 
   function getQueryPath() {
@@ -375,6 +396,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     cancelRenameItem,
     setSelectedFileIds,
     clearSelectedFiles,
+    updateFileShareStatus,
     getUploadParams,
     getFileList,
     queryType,

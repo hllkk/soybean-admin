@@ -98,6 +98,11 @@ function getFullFileName(item: Api.Disk.FileItem): string {
   if (!item.extendName) {
     return item.name;
   }
+  const normalizedName = item.name.toLowerCase();
+  const normalizedExt = item.extendName.toLowerCase();
+  if (normalizedName.endsWith(`.${normalizedExt}`)) {
+    return item.name;
+  }
   return `${item.name}.${item.extendName}`;
 }
 
@@ -122,6 +127,21 @@ const displayData = computed(() => {
 
 function handleCheck(keys: CommonType.IdType[]) {
   diskStore.setSelectedFileIds(keys);
+}
+
+function handleShare(row: Api.Disk.FileItem, e: MouseEvent) {
+  e.stopPropagation();
+  diskStore.handleShareFile(row);
+}
+
+function handleDownload(row: Api.Disk.FileItem, e: MouseEvent) {
+  e.stopPropagation();
+  diskStore.handleDownloadFile(row);
+}
+
+function handleDelete(row: Api.Disk.FileItem, e: MouseEvent) {
+  e.stopPropagation();
+  diskStore.handleDeleteFile(row);
 }
 
 const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
@@ -197,13 +217,23 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
               class={`flex flex-shrink-0 items-center transition-opacity duration-300 -mr-2 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
             >
               <NButtonGroup>
-                <NButton text size="small" class="text-4 text-primary">
+                <NButton text size="small" class="text-4 text-primary" onClick={(e: MouseEvent) => handleShare(row, e)}>
                   <icon-ci-share-android />
                 </NButton>
-                <NButton text size="small" class="pl-2 text-4 text-primary">
+                <NButton
+                  text
+                  size="small"
+                  class="pl-2 text-4 text-primary"
+                  onClick={(e: MouseEvent) => handleDownload(row, e)}
+                >
                   <icon-ci-download />
                 </NButton>
-                <NButton text size="small" class="pl-2 text-4 text-primary">
+                <NButton
+                  text
+                  size="small"
+                  class="pl-2 text-4 text-primary"
+                  onClick={(e: MouseEvent) => handleDelete(row, e)}
+                >
                   <icon-iconamoon-trash />
                 </NButton>
               </NButtonGroup>
@@ -335,7 +365,7 @@ const rowProps = (row: Api.Disk.FileItem) => {
     onmouseleave: () => handleRowMouseLeave(),
     class: hoveredRowId.value === row.id ? 'hovered-row' : '',
     onclick: () => {
-      if (!props.isBatchMode) {
+      if (!props.isBatchMode && !(props.renamingItem && row.id === props.renamingItem.id)) {
         diskStore.handleSelectFile(row);
       }
     }

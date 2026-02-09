@@ -74,6 +74,54 @@ export function fetchUpdateFileContent(params: { fileId: string; content: string
   });
 }
 
+export function fetchCreateShare(params: Api.Disk.CreateShareRequest) {
+  return request<Api.Disk.ShareInfo>({
+    url: 'share/create',
+    method: 'post',
+    data: params
+  });
+}
+
+export function fetchUpdateShare(params: Api.Disk.UpdateShareRequest & { shareId: number }) {
+  return request<Api.Disk.ShareInfo>({
+    url: 'share/update',
+    method: 'post',
+    data: params
+  });
+}
+
+export function fetchCancelShare(params: Api.Disk.CancelShareRequest) {
+  return request<boolean>({
+    url: 'share/cancel',
+    method: 'post',
+    data: params
+  });
+}
+
+export function fetchRenameFile(params: Api.Disk.RenameFileRequest) {
+  return request({
+    url: 'file-meta/rename',
+    method: 'post',
+    data: params
+  });
+}
+
+export function fetchGetShareInfo(params: Api.Disk.GetShareInfoRequest) {
+  return request<Api.Disk.ShareInfo>({
+    url: 'share/info',
+    method: 'post',
+    data: params
+  });
+}
+
+export function fetchCheckSubShareConflict(params: Api.Disk.CheckShareConflictRequest) {
+  return request<Api.Disk.ShareConflictResponse>({
+    url: 'share/conflict',
+    method: 'post',
+    data: params
+  });
+}
+
 /** 获取OnlyOffice配置 */
 export function fetchGetOnlyOfficeConfig() {
   return request<Api.Disk.OnlyOfficeBackendConfig>({

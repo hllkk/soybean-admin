@@ -47,6 +47,11 @@ function getFullFileName(item: Api.Disk.FileItem): string {
   if (!item.extendName) {
     return item.name;
   }
+  const normalizedName = item.name.toLowerCase();
+  const normalizedExt = item.extendName.toLowerCase();
+  if (normalizedName.endsWith(`.${normalizedExt}`)) {
+    return item.name;
+  }
   return `${item.name}.${item.extendName}`;
 }
 
@@ -95,11 +100,11 @@ function handleToggleSelection(fileId: CommonType.IdType) {
 }
 
 function handleShare(file: Api.Disk.FileItem) {
-  window.$message?.info(`分享文件: ${file.name}`);
+  diskStore.handleShareFile(file);
 }
 
 function handleDownload(file: Api.Disk.FileItem) {
-  window.$message?.info(`下载文件: ${file.name}`);
+  diskStore.handleDownloadFile(file);
 }
 
 watch(
@@ -183,7 +188,7 @@ watch(
             : ''
         "
         @contextmenu="(e: MouseEvent) => emit('contextMenu', e, item)"
-        @click="!isBatchMode && diskStore.handleSelectFile(item)"
+        @click="!isBatchMode && !isRenaming(item.id) && diskStore.handleSelectFile(item)"
       >
         <!-- 正在重命名的项目 -->
         <template v-if="isRenaming(item.id)">

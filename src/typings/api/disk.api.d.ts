@@ -65,6 +65,29 @@ declare namespace Api {
       showCover?: boolean;
     }
 
+    type OperationPermission = 'DOWNLOAD' | 'UPLOAD' | 'DELETE' | 'PUT';
+
+    interface ShareInfo {
+      shareId: number;
+      shortId: string;
+      link: string;
+      qrCode: string;
+      extractionCode: string;
+      expireDate?: string | null;
+      isPrivate: boolean;
+    }
+
+    interface ShareConflictItem {
+      fileId: number;
+      filePath: string;
+      shareId: number;
+    }
+
+    interface ShareConflictResponse {
+      count: number;
+      items: ShareConflictItem[];
+    }
+
     interface GetFileListRequest {
       userId: string;
       currentDirectory: string;
@@ -106,6 +129,12 @@ declare namespace Api {
       override?: boolean;
     }
 
+    interface RenameFileRequest {
+      fileId: string;
+      newName: string;
+      userId?: CommonType.IdType;
+    }
+
     interface FileMergeRequest {
       fileName: string;
       relativePath?: string;
@@ -117,6 +146,35 @@ declare namespace Api {
       isFolder?: boolean;
       lastModified?: number;
       fileId?: string;
+    }
+
+    interface CreateShareRequest {
+      fileId: number;
+      isPrivate: boolean;
+      validity: string;
+      customDays?: number;
+      extractionCode?: string;
+      autoFillExtractCode: boolean;
+      operationPermissionList: OperationPermission[];
+    }
+
+    interface UpdateShareRequest {
+      isPrivate?: boolean;
+      expireAt?: number;
+      extractionCode?: string;
+      operationPermissionList?: OperationPermission[];
+    }
+
+    interface CancelShareRequest {
+      shareId: number;
+    }
+
+    interface CheckShareConflictRequest {
+      folderId: number;
+    }
+
+    interface GetShareInfoRequest {
+      fileId: number;
     }
 
     interface IsAllowDownloadResponse {
