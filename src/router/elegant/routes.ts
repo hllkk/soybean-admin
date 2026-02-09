@@ -276,6 +276,15 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'trash',
+    path: '/trash',
+    component: 'layout.base$view.trash',
+    meta: {
+      title: 'trash',
+      i18nKey: 'route.trash'
+    }
+  },
+  {
     name: 'user-center',
     path: '/user-center',
     component: 'layout.base$view.user-center',

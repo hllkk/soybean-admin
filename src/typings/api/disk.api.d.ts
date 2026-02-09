@@ -129,6 +129,11 @@ declare namespace Api {
       override?: boolean;
     }
 
+    type DeleteFileResponse = {
+      success: boolean;
+      message: string;
+    };
+
     interface RenameFileRequest {
       fileId: string;
       newName: string;

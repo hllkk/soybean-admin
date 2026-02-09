@@ -2,7 +2,13 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
-import { fetchCreateFile, fetchCreateFolder, fetchGetFileList, fetchRenameFile } from '@/service/api/disk/list';
+import {
+  fetchCreateFile,
+  fetchCreateFolder,
+  fetchGetFileList,
+  fetchGetTrashList,
+  fetchRenameFile
+} from '@/service/api/disk/list';
 import { suffix } from '@/utils/file';
 import { SetupStoreId } from '@/enum';
 import { useAuthStore } from '../auth';
@@ -280,7 +286,13 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
       pageIndex.value = 1;
     }
     const params = await getFileListParams();
-    const { data, error } = await fetchGetFileList(params);
+    let result;
+    if (queryType.value === 'trash') {
+      result = await fetchGetTrashList(params);
+    } else {
+      result = await fetchGetFileList(params);
+    }
+    const { data, error } = result;
     if (error) {
       // 如果当前在子目录且请求失败（通常是因为目录不存在），则返回根目录
       if (path.value) {

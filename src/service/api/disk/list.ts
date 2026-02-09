@@ -137,3 +137,43 @@ export function fetchGetOnlyOfficeConfig() {
     method: 'get'
   });
 }
+
+export function fetchDeleteFile(params: { fileIds?: CommonType.IdType[]; trashIds?: number[] }, sweep: boolean) {
+  return request<Api.Disk.DeleteFileResponse>({
+    url: 'file-meta/delete',
+    method: 'delete',
+    params: { sweep },
+    data: params
+  });
+}
+
+export function fetchEmptyTrash() {
+  return request<Api.Disk.DeleteFileResponse>({
+    url: 'file-meta/trash/empty',
+    method: 'delete'
+  });
+}
+
+export function fetchRestoreTrash(params: { trashIds: number[] }) {
+  return request({
+    url: 'file-meta/trash/restore',
+    method: 'post',
+    data: params
+  });
+}
+
+export function fetchDeleteTrash(params: { trashIds: number[] }) {
+  return request<Api.Disk.DeleteFileResponse>({
+    url: 'file-meta/trash/delete',
+    method: 'post',
+    data: params
+  });
+}
+
+export function fetchGetTrashList(params: Api.Disk.GetFileListRequest) {
+  return request<Api.Disk.FileListPagedResponse>({
+    url: 'file-meta/trash/list',
+    method: 'get',
+    params
+  });
+}

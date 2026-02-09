@@ -147,7 +147,6 @@ async function loadFile() {
       title: props.file.name,
       url: currentFileUrl.value
     },
-    documentType: 'word',
     editorConfig: {
       mode: 'edit',
       lang: 'zh-CN',

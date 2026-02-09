@@ -8,7 +8,7 @@ interface Props {
   x?: number;
   y?: number;
   selectedFiles?: Api.Disk.FileItem[];
-  contextType?: 'file' | 'folder' | 'empty' | 'multiple';
+  contextType?: 'file' | 'folder' | 'empty' | 'multiple' | 'trash' | 'trash-multiple';
   targetFile?: Api.Disk.FileItem | null;
 }
 
@@ -49,7 +49,8 @@ const iconCache = {
   addFile: markRaw(SvgIconVNode({ localIcon: 'disk-create_file', fontSize: 20 })!),
   addFolder: markRaw(SvgIconVNode({ localIcon: 'disk-create_folder', fontSize: 23 })!),
   filePaste: markRaw(SvgIconVNode({ localIcon: 'disk-file_paste', fontSize: 22 })!),
-  fileRefresh: markRaw(SvgIconVNode({ localIcon: 'disk-file_refresh', fontSize: 18 })!)
+  fileRefresh: markRaw(SvgIconVNode({ localIcon: 'disk-file_refresh', fontSize: 18 })!),
+  restore: markRaw(SvgIconVNode({ icon: 'material-symbols:restore-from-trash', fontSize: 20 })!)
 };
 
 // 静态菜单选项（不包含动态内容）
@@ -182,6 +183,22 @@ const staticMenuOptions = markRaw({
       label: '刷新',
       icon: iconCache.fileRefresh
     }
+  ],
+  trash: [
+    {
+      key: 'restore',
+      label: '还原',
+      icon: iconCache.restore
+    },
+    { type: 'divider' },
+    {
+      key: 'delete-trash',
+      label: '彻底删除',
+      icon: iconCache.fileDelete,
+      props: {
+        style: 'color: red;'
+      }
+    }
   ]
 });
 
@@ -217,6 +234,27 @@ const menuOptions = computed(() => {
       {
         key: 'delete',
         label: `删除 (${count}项)`,
+        icon: iconCache.delete,
+        props: {
+          style: 'color: #e74c3c;'
+        }
+      }
+    ];
+  }
+
+  // 对于 trash-multiple 类型
+  if (contextType === 'trash-multiple') {
+    const count = selectedFiles.length;
+    return [
+      {
+        key: 'restore',
+        label: `还原 (${count}项)`,
+        icon: iconCache.restore
+      },
+      { type: 'divider' },
+      {
+        key: 'delete-trash',
+        label: `彻底删除 (${count}项)`,
         icon: iconCache.delete,
         props: {
           style: 'color: #e74c3c;'

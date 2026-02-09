@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useDebounceFn, useResizeObserver } from '@vueuse/core';
 import type { MenuOption } from 'naive-ui';
+import { fetchDeleteFile } from '@/service/api/disk/list';
 import { useAppStore } from '@/store/modules/app';
 import { useDiskStore } from '@/store/modules/disk';
 import { useSvgIcon } from '@/hooks/common/icon';
@@ -12,6 +13,14 @@ import FileContextMenu from './modules/file-context-menu.vue';
 import DiskShareModal from './modules/disk-share-modal.vue';
 import DiskPropertyModel from './modules/disk-property-model.vue';
 import FileEmpty from './modules/file-empty.vue';
+
+type ContextMenuStateType = {
+  show: boolean;
+  x: number;
+  y: number;
+  contextType: 'file' | 'folder' | 'empty' | 'multiple';
+  targetFile?: Api.Disk.FileItem;
+};
 
 const appStore = useAppStore();
 const diskStore = useDiskStore();
@@ -251,40 +260,78 @@ function handleShowProperties() {
 }
 
 /** 处理文件删除 */
-function handleDelete(fileId?: string) {
+function handleDelete(fileId?: CommonType.IdType) {
+  const ids: CommonType.IdType[] = [];
   if (fileId) {
-    window.$dialog?.warning({
-      title: '删除',
-      content: `确定删除所选的${selectedFiles.value.length}个文件吗？`,
-      contentClass: 'bg-yellow-100 text-yellow-800 rounded-4 px-4 py-2',
-      action: () => (
-        <div class="w-full flex justify-between">
-          <NButton type="error" round size="small">
+    ids.push(fileId);
+  } else {
+    ids.push(...diskStore.selectedFileIds);
+  }
+
+  if (ids.length === 0) {
+    window.$message?.error('请选择要删除的文件');
+    return;
+  }
+
+  // Filter out temporary IDs
+  const validIds = ids.filter(id => typeof id === 'string' && !id.startsWith('creating-')).map(id => Number(id));
+
+  if (validIds.length === 0) {
+    return;
+  }
+  window.$dialog?.warning({
+    title: '删除',
+    content: `确定删除所选的${validIds.length}个文件吗？`,
+    contentClass: 'bg-yellow-100 text-yellow-800 rounded-4 px-4 py-2',
+    action: () => (
+      <div class="w-full flex justify-between gap-8px">
+        <div>
+          <NButton type="error" round size="small" onClick={async () => handleConfirmDelete(validIds, true)}>
             彻底删除
           </NButton>
-          <div class="flex gap-8px">
-            <NButton type="warning" round size="small">
-              移至回收站
-            </NButton>
-            <NButton round size="small">
-              取消
-            </NButton>
-          </div>
         </div>
-      )
-    });
-  } else {
-    window.$message?.error('请选择要删除的文件');
-  }
+        <div class="flex gap-4px">
+          <NButton round size="small" onClick={() => window.$dialog?.destroyAll()}>
+            取消
+          </NButton>
+          <NButton type="warning" round size="small" onClick={async () => handleConfirmDelete(validIds, false)}>
+            移至回收站
+          </NButton>
+        </div>
+      </div>
+    )
+  });
 }
 
-type ContextMenuStateType = {
-  show: boolean;
-  x: number;
-  y: number;
-  contextType: 'file' | 'folder' | 'empty' | 'multiple';
-  targetFile?: Api.Disk.FileItem;
-};
+async function handleConfirmDelete(ids: CommonType.IdType[], sweep: boolean) {
+  const doDelete = async () => {
+    const { data, error } = await fetchDeleteFile({ fileIds: ids }, sweep);
+    if (error) return;
+
+    if (data) {
+      if (data.success) {
+        window.$message?.success(data.message || '删除成功');
+        diskStore.getFileList();
+        diskStore.clearSelectedFiles();
+      } else {
+        window.$message?.error(data.message || '删除失败');
+      }
+    }
+  };
+
+  if (sweep) {
+    window.$dialog?.destroyAll();
+    window.$dialog?.warning({
+      title: '彻底删除',
+      content: `确定彻底删除所选的${ids.length}个文件吗？删除后无法恢复！`,
+      positiveText: '确定',
+      negativeText: '取消',
+      onPositiveClick: doDelete
+    });
+  } else {
+    await doDelete();
+  }
+}
 
 /** 右键菜单状态 */
 const contextMenuState = ref<ContextMenuStateType>({
@@ -593,7 +640,7 @@ onMounted(() => {
                   </NButtonGroup>
                 </div>
                 <div class="flex gap-8px">
-                  <NButton v-show="isBatchMode" type="error" :disabled="selectedCount === 0">
+                  <NButton v-show="isBatchMode" type="error" :disabled="selectedCount === 0" @click="handleDelete()">
                     <template #icon>
                       <icon-material-symbols-delete-outline />
                     </template>

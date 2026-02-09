@@ -40,4 +40,5 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   system_role: () => import("@/views/system/role/index.vue"),
   system_setting: () => import("@/views/system/setting/index.vue"),
   system_user: () => import("@/views/system/user/index.vue"),
+  trash: () => import("@/views/trash/index.vue"),
 };

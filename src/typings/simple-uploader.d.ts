@@ -142,7 +142,7 @@ declare module 'vue-simple-uploader' {
 declare namespace SimpleUploader {
   namespace Uploader {
     type FileStatusText = 'success' | 'error' | 'uploading' | 'paused' | 'waiting';
-    type FileListQueryType = 'all' | 'image' | 'document' | 'video' | 'audio' | 'other';
+    type FileListQueryType = 'all' | 'image' | 'document' | 'video' | 'audio' | 'other' | 'trash';
     type FileType =
       | 'application/x-zip-compressed'
       | 'application/zip'

@@ -39,6 +39,7 @@ declare module "@elegant-router/types" {
     "system_role": "/system/role";
     "system_setting": "/system/setting";
     "system_user": "/system/user";
+    "trash": "/trash";
     "user-center": "/user-center";
   };
 
@@ -83,6 +84,7 @@ declare module "@elegant-router/types" {
     | "login"
     | "share"
     | "system"
+    | "trash"
     | "user-center"
   >;
 
@@ -121,6 +123,7 @@ declare module "@elegant-router/types" {
     | "system_role"
     | "system_setting"
     | "system_user"
+    | "trash"
   >;
 
   /**
