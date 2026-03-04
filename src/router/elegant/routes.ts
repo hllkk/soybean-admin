@@ -77,6 +77,15 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'favorite',
+    path: '/favorite',
+    component: 'layout.base$view.favorite',
+    meta: {
+      title: 'favorite',
+      i18nKey: 'route.favorite'
+    }
+  },
+  {
     name: 'iframe-page',
     path: '/iframe-page/:url',
     component: 'layout.base$view.iframe-page',
@@ -152,8 +161,17 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'recently',
+    path: '/recently',
+    component: 'layout.base$view.recently',
+    meta: {
+      title: 'recently',
+      i18nKey: 'route.recently'
+    }
+  },
+  {
     name: 'share',
-    path: '/s/:id',
+    path: '/share/:id',
     component: 'layout.blank$view.share',
     props: true,
     meta: {
@@ -162,6 +180,16 @@ export const generatedRoutes: GeneratedRoute[] = [
       module: 'disk',
       hideInMenu: true,
       constant: true
+    }
+  },
+  {
+    name: 'spread',
+    path: '/s/:id',
+    component: 'layout.base$view.spread',
+    props: true,
+    meta: {
+      title: 'spread',
+      i18nKey: 'route.spread'
     }
   },
   {

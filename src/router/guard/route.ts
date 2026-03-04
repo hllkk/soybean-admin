@@ -20,11 +20,15 @@ import { getRouteName } from '@/router/elegant/transform';
 export function createRouteGuard(router: Router) {
   router.beforeEach(async (to, from, next) => {
     const appStore = useAppStore();
+    const routeStore = useRouteStore();
     const initSystemRoute: RouteKey = 'init';
     const needInit = await appStore.checkInit();
 
     // if the system is not initialized, then switch to the init route
     if (to.name !== initSystemRoute && needInit) {
+      if (!routeStore.isInitConstantRoute) {
+        await routeStore.initConstantRoute();
+      }
       next({ name: initSystemRoute });
       return;
     }

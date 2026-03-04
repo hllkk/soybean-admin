@@ -261,7 +261,11 @@ const local: App.I18n.Schema = {
     log_login: 'Login Log',
     log_operate: 'Operation Log',
     about: 'About',
-    share: 'Share'
+    share: 'Share',
+    spread: 'Spread',
+    trash: 'Trash',
+    recently: 'Recently',
+    favorite: 'Favorite'
   },
   page: {
     login: {

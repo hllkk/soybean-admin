@@ -3,5 +3,5 @@
 </script>
 
 <template>
-  <div class="">分享</div>
+  <div class="">favorite</div>
 </template>

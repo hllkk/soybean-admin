@@ -20,7 +20,7 @@ export function setupElegantRouter() {
 
         return `/login/:module(${moduleReg})?`;
       }
-      if (key === 'share') {
+      if (key === 'spread') {
         return `/s/:id`;
       }
 
