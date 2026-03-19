@@ -56,7 +56,7 @@ async function loadCaptcha() {
       errorMsg.value = "获取验证码失败";
     }
   } catch {
-    console.error("获取验证码失败:", e);
+    console.error("获取验证码失败");
     errorMsg.value = "获取验证码失败";
   } finally {
     loading.value = false;
@@ -130,7 +130,7 @@ async function handleConfirm() {
       await refreshCaptcha();
     }
   } catch {
-    console.error("验证验证码失败:", e);
+    console.error("验证验证码失败");
     errorMsg.value = "验证失败，请重试";
     await refreshCaptcha();
   } finally {
