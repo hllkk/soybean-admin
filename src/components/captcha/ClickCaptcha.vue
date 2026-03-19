@@ -55,7 +55,7 @@ async function loadCaptcha() {
     } else {
       errorMsg.value = "获取验证码失败";
     }
-  } catch (e) {
+  } catch {
     console.error("获取验证码失败:", e);
     errorMsg.value = "获取验证码失败";
   } finally {
@@ -83,8 +83,7 @@ async function refreshCaptcha() {
     } else {
       await loadCaptcha();
     }
-  } catch (e) {
-    errorMsg.value = `刷新验证码失败: ${e}`;
+  } catch {
     await loadCaptcha();
   } finally {
     loading.value = false;
@@ -130,7 +129,7 @@ async function handleConfirm() {
       errorMsg.value = "验证失败，请重试";
       await refreshCaptcha();
     }
-  } catch (e) {
+  } catch {
     console.error("验证验证码失败:", e);
     errorMsg.value = "验证失败，请重试";
     await refreshCaptcha();
@@ -151,6 +150,10 @@ function handleCancel() {
 function clearClicks() {
   clickDots.value = [];
   clickIndex.value = 0;
+}
+
+function handleUpdateShow(value: boolean) {
+  emit("update:show", value);
 }
 
 // 监听 show 变化，显示时加载验证码
@@ -183,7 +186,7 @@ defineExpose({
     title="请完成安全验证"
     :bordered="false"
     class="w-400px"
-    @update:show="emit('update:show', $event)"
+    @update:show="handleUpdateShow"
   >
     <div class="flex flex-col items-center gap-4">
       <!-- 缩略图提示 -->
@@ -207,7 +210,7 @@ defineExpose({
             v-for="dot in clickDots"
             :key="dot.key"
             class="absolute w-24px h-24px -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary text-white flex-center text-12px font-bold"
-            :style="{ left: `${dot.x}px`, top: `${dot.y}px` }"
+            :style="{ left: dot.x + 'px', top: dot.y + 'px' }"
           >
             {{ dot.index }}
           </div>
