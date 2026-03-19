@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { loginModuleRecord } from '@/constants/app';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouterPush } from '@/hooks/common/router';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { $t } from '@/locales';
+import ClickCaptcha from '@/components/captcha/ClickCaptcha.vue';
 
 defineOptions({
   name: 'PwdLogin'
@@ -20,12 +21,11 @@ interface FormModel {
 }
 
 const model: FormModel = reactive({
-  userName: 'Soybean',
-  password: '123456'
+  userName: '',
+  password: ''
 });
 
 const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
-  // inside computed to make locale reactive, if not apply i18n, you can define it without computed
   const { formRules } = useFormRules();
 
   return {
@@ -34,9 +34,19 @@ const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
   };
 });
 
+// 验证码相关
+const showCaptcha = ref(false);
+const captchaRef = ref<InstanceType<typeof ClickCaptcha> | null>(null);
+
 async function handleSubmit() {
   await validate();
-  await authStore.login(model.userName, model.password);
+  // 显示验证码弹窗
+  showCaptcha.value = true;
+}
+
+function handleCaptchaSuccess(captchaToken: string) {
+  // 验证码验证成功，执行登录
+  authStore.login(model.userName, model.password, captchaToken);
 }
 
 type AccountKey = 'super' | 'admin' | 'user';
@@ -70,7 +80,10 @@ const accounts = computed<Account[]>(() => [
 ]);
 
 async function handleAccountLogin(account: Account) {
-  await authStore.login(account.userName, account.password);
+  model.userName = account.userName;
+  model.password = account.password;
+  await validate();
+  showCaptcha.value = true;
 }
 </script>
 
@@ -113,6 +126,13 @@ async function handleAccountLogin(account: Account) {
       </div>
     </NSpace>
   </NForm>
+
+  <!-- 点击验证码弹窗 -->
+  <ClickCaptcha
+    ref="captchaRef"
+    v-model:show="showCaptcha"
+    @success="handleCaptchaSuccess"
+  />
 </template>
 
 <style scoped></style>
