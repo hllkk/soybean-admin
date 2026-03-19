@@ -506,6 +506,11 @@ declare namespace App {
             superAdmin: string;
             admin: string;
             user: string;
+            thirdPartyLogin: string;
+            wecomLogin: string;
+            githubLogin: string;
+            giteeLogin: string;
+            featureNotImplemented: string;
           };
           codeLogin: {
             title: string;

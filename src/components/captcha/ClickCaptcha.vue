@@ -223,7 +223,7 @@ defineExpose({
             ref="imageRef"
             :src="imageSrc"
             alt="验证码"
-            class="w-300px h-200px cursor-pointer rounded border border-gray-200"
+            class="w-300px h-220px cursor-pointer rounded border border-gray-200"
             @click="handleImageClick"
           />
           <!-- 点击标记点 -->

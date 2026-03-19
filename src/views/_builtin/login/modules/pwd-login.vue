@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
-import { loginModuleRecord } from '@/constants/app';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
-import { useRouterPush } from '@/hooks/common/router';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
+import { localStg } from '@/utils/storage';
 import { $t } from '@/locales';
 import ClickCaptcha from '@/components/captcha/ClickCaptcha.vue';
 
@@ -12,7 +11,6 @@ defineOptions({
 });
 
 const authStore = useAuthStore();
-const { toggleLoginModule } = useRouterPush();
 const { formRef, validate } = useNaiveForm();
 
 interface FormModel {
@@ -23,6 +21,23 @@ interface FormModel {
 const model: FormModel = reactive({
   userName: '',
   password: ''
+});
+
+// 记住我功能
+const rememberMe = ref(false);
+const REMEMBER_ME_KEY = 'login_remember_me';
+const REMEMBERED_USER_KEY = 'remembered_user';
+
+// 页面加载时恢复记住的用户名
+onMounted(() => {
+  const remembered = localStg.get(REMEMBER_ME_KEY);
+  if (remembered) {
+    rememberMe.value = true;
+    const savedUser = localStg.get(REMEMBERED_USER_KEY);
+    if (savedUser) {
+      model.userName = savedUser;
+    }
+  }
 });
 
 const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
@@ -40,55 +55,30 @@ const captchaRef = ref<InstanceType<typeof ClickCaptcha> | null>(null);
 
 async function handleSubmit() {
   await validate();
-  // 显示验证码弹窗
   showCaptcha.value = true;
 }
 
 function handleCaptchaSuccess(captchaToken: string) {
-  // 验证码验证成功，执行登录
+  // 保存记住我状态
+  if (rememberMe.value) {
+    localStg.set(REMEMBER_ME_KEY, true);
+    localStg.set(REMEMBERED_USER_KEY, model.userName);
+  } else {
+    localStg.remove(REMEMBER_ME_KEY);
+    localStg.remove(REMEMBERED_USER_KEY);
+  }
   authStore.login(model.userName, model.password, captchaToken);
 }
 
-type AccountKey = 'super' | 'admin' | 'user';
-
-interface Account {
-  key: AccountKey;
-  label: string;
-  userName: string;
-  password: string;
+// 第三方登录处理
+function handleThirdPartyLogin(_type: 'wecom' | 'github' | 'gitee') {
+  window.$notification?.destroyAll();
+  window.$notification?.warning({
+    title: $t('common.warning'),
+    content: $t('page.login.pwdLogin.featureNotImplemented'),
+    duration: 3000
+  });
 }
-
-const accounts = computed<Account[]>(() => [
-  {
-    key: 'super',
-    label: $t('page.login.pwdLogin.superAdmin'),
-    userName: 'Super',
-    password: '123456'
-  },
-  {
-    key: 'admin',
-    label: $t('page.login.pwdLogin.admin'),
-    userName: 'Admin',
-    password: '123456'
-  },
-  {
-    key: 'user',
-    label: $t('page.login.pwdLogin.user'),
-    userName: 'User',
-    password: '123456'
-  }
-]);
-
-async function handleAccountLogin(account: Account) {
-  model.userName = account.userName;
-  model.password = account.password;
-  await validate();
-  showCaptcha.value = true;
-}
-
-// 预计算国际化标签
-const codeLoginLabel = computed(() => $t(loginModuleRecord['code-login']));
-const registerLabel = computed(() => $t(loginModuleRecord.register));
 </script>
 
 <template>
@@ -107,27 +97,46 @@ const registerLabel = computed(() => $t(loginModuleRecord.register));
       </NFormItem>
       <NSpace vertical :size="24">
         <div class="flex-y-center justify-between">
-          <NCheckbox>{{ $t('page.login.pwdLogin.rememberMe') }}</NCheckbox>
-          <NButton quaternary @click="toggleLoginModule('reset-pwd')">
-            {{ $t('page.login.pwdLogin.forgetPassword') }}
-          </NButton>
+          <NCheckbox v-model:checked="rememberMe">{{ $t('page.login.pwdLogin.rememberMe') }}</NCheckbox>
         </div>
         <NButton type="primary" size="large" round block :loading="authStore.loginLoading" @click="handleSubmit">
           {{ $t('common.confirm') }}
         </NButton>
-        <div class="flex-y-center justify-between gap-12px">
-          <NButton class="flex-1" block @click="toggleLoginModule('code-login')">
-            {{ codeLoginLabel }}
-          </NButton>
-          <NButton class="flex-1" block @click="toggleLoginModule('register')">
-            {{ registerLabel }}
-          </NButton>
-        </div>
-        <NDivider class="text-14px text-#666 !m-0">{{ $t('page.login.pwdLogin.otherAccountLogin') }}</NDivider>
-        <div class="flex-center gap-12px">
-          <NButton v-for="item in accounts" :key="item.key" type="primary" @click="handleAccountLogin(item)">
-            {{ item.label }}
-          </NButton>
+        <NDivider class="text-14px text-#666 !m-0">{{ $t('page.login.pwdLogin.thirdPartyLogin') }}</NDivider>
+        <div class="flex-center gap-24px">
+          <!-- 企业微信登录 -->
+          <NTooltip trigger="hover">
+            <template #trigger>
+              <NButton quaternary circle size="large" class="third-party-btn wecom" @click="handleThirdPartyLogin('wecom')">
+                <template #icon>
+                  <icon-tdesign-logo-wecom class="size-5" />
+                </template>
+              </NButton>
+            </template>
+            {{ $t('page.login.pwdLogin.wecomLogin') }}
+          </NTooltip>
+          <!-- GitHub 登录 -->
+          <NTooltip trigger="hover">
+            <template #trigger>
+              <NButton quaternary circle size="large" class="third-party-btn github" @click="handleThirdPartyLogin('github')">
+                <template #icon>
+                  <icon-radix-icons-github-logo class="size-5" />
+                </template>
+              </NButton>
+            </template>
+            {{ $t('page.login.pwdLogin.githubLogin') }}
+          </NTooltip>
+          <!-- Gitee 登录 -->
+          <NTooltip trigger="hover">
+            <template #trigger>
+              <NButton quaternary circle size="large" class="third-party-btn gitee" @click="handleThirdPartyLogin('gitee')">
+                <template #icon>
+                  <icon-simple-icons-gitee class="size-5" />
+                </template>
+              </NButton>
+            </template>
+            {{ $t('page.login.pwdLogin.giteeLogin') }}
+          </NTooltip>
         </div>
       </NSpace>
     </NForm>
@@ -141,4 +150,67 @@ const registerLabel = computed(() => $t(loginModuleRecord.register));
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+/* 第三方登录按钮基础样式 */
+.third-party-btn {
+  transition: all 0.2s ease;
+}
+
+.third-party-btn:hover {
+  transform: scale(1.1);
+}
+
+/* 企业微信 - 蓝色品牌色 #2B7EF9 */
+.third-party-btn.wecom {
+  color: #2B7EF9;
+}
+
+.third-party-btn.wecom:hover {
+  background-color: rgba(43, 126, 249, 0.1);
+}
+
+/* 暗黑模式下的企业微信颜色 */
+:root.dark .third-party-btn.wecom {
+  color: #5B9DFA;
+}
+
+:root.dark .third-party-btn.wecom:hover {
+  background-color: rgba(91, 157, 250, 0.15);
+}
+
+/* GitHub - 深灰/黑色 */
+.third-party-btn.github {
+  color: #24292F;
+}
+
+.third-party-btn.github:hover {
+  background-color: rgba(36, 41, 47, 0.1);
+}
+
+/* 暗黑模式下的 GitHub 颜色 */
+:root.dark .third-party-btn.github {
+  color: #E6EDF3;
+}
+
+:root.dark .third-party-btn.github:hover {
+  background-color: rgba(230, 237, 243, 0.1);
+}
+
+/* Gitee - 红色品牌色 #C71D23 */
+.third-party-btn.gitee {
+  color: #C71D23;
+}
+
+.third-party-btn.gitee:hover {
+  background-color: rgba(199, 29, 35, 0.1);
+}
+
+/* 暗黑模式下的 Gitee 颜色 */
+:root.dark .third-party-btn.gitee {
+  color: #E85D62;
+}
+
+:root.dark .third-party-btn.gitee:hover {
+  background-color: rgba(232, 93, 98, 0.15);
+}
+</style>
