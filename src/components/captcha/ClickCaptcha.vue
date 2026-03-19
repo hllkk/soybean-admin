@@ -47,16 +47,30 @@ async function loadCaptcha() {
   clickIndex.value = 0;
 
   try {
-    const { data, error } = await fetchCaptcha();
-    if (!error && data) {
-      captchaKey.value = data.captchaKey;
-      imageBase64.value = data.image;
-      thumbBase64.value = data.thumb;
-    } else {
-      errorMsg.value = "获取验证码失败";
+    const result = await fetchCaptcha();
+    console.log("Captcha API result:", result);
+    
+    if (result.error) {
+      errorMsg.value = "获取验证码失败: " + (result.error.message || "未知错误");
+      console.error("Captcha API error:", result.error);
+      return;
     }
-  } catch {
-    console.error("获取验证码失败");
+    
+    if (!result.data) {
+      errorMsg.value = "获取验证码失败: 返回数据为空";
+      console.error("Captcha API returned empty data");
+      return;
+    }
+    
+    captchaKey.value = result.data.captchaKey || "";
+    imageBase64.value = result.data.image || "";
+    thumbBase64.value = result.data.thumb || "";
+    
+    if (!captchaKey.value) {
+      errorMsg.value = "获取验证码失败: 数据格式错误";
+    }
+  } catch (e) {
+    console.error("获取验证码失败:", e);
     errorMsg.value = "获取验证码失败";
   } finally {
     loading.value = false;
@@ -75,14 +89,16 @@ async function refreshCaptcha() {
   clickIndex.value = 0;
 
   try {
-    const { data, error } = await fetchCaptchaRefresh(captchaKey.value);
-    if (!error && data) {
-      captchaKey.value = data.captchaKey;
-      imageBase64.value = data.image;
-      thumbBase64.value = data.thumb;
-    } else {
+    const result = await fetchCaptchaRefresh(captchaKey.value);
+    
+    if (result.error || !result.data) {
       await loadCaptcha();
+      return;
     }
+    
+    captchaKey.value = result.data.captchaKey || "";
+    imageBase64.value = result.data.image || "";
+    thumbBase64.value = result.data.thumb || "";
   } catch {
     await loadCaptcha();
   } finally {
@@ -117,20 +133,25 @@ async function handleConfirm() {
   errorMsg.value = "";
 
   try {
-    const { data, error } = await fetchCaptchaVerify({
+    const result = await fetchCaptchaVerify({
       captchaKey: captchaKey.value,
       clickDots: clickDots.value
     });
 
-    if (!error && data) {
-      emit("success", data.captchaToken);
+    if (result.error) {
+      errorMsg.value = "验证失败，请重试";
+      await refreshCaptcha();
+      return;
+    }
+
+    if (result.data && result.data.captchaToken) {
+      emit("success", result.data.captchaToken);
       handleClose();
     } else {
       errorMsg.value = "验证失败，请重试";
       await refreshCaptcha();
     }
   } catch {
-    console.error("验证验证码失败");
     errorMsg.value = "验证失败，请重试";
     await refreshCaptcha();
   } finally {
