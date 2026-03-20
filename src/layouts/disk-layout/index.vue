@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch, defineAsyncComponent } from 'vue';
+import { useRoute } from 'vue-router';
 import { AdminLayout, LAYOUT_SCROLL_EL_ID } from '@sa/materials';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
+import { useRouteStore } from '@/store/modules/route';
 import GlobalSider from '../modules/global-sider/index.vue';
 import GlobalContent from '../modules/global-content/index.vue';
 import DiskHeader from './components/disk-header.vue';
@@ -12,15 +14,31 @@ defineOptions({
   name: 'DiskLayout'
 });
 
+const route = useRoute();
 const appStore = useAppStore();
 const themeStore = useThemeStore();
-provideMixMenuContext();
+const routeStore = useRouteStore();
 
-// Disk 布局固定使用 vertical-mix 模式
+// 监听路由变化设置模块（disk 布局固定为 disk 模块）
+watch(
+  () => route.path,
+  () => {
+    routeStore.setCurrentModule('disk');
+  },
+  { immediate: true }
+);
+
+// 提供 mix 菜单上下文
+const { secondLevelMenus } = provideMixMenuContext();
+
+// 固定使用 VerticalMixMenu
+const VerticalMixMenu = defineAsyncComponent(() => import('../modules/global-menu/modules/vertical-mix-menu.vue'));
+
+// Disk 布局使用 vertical-mix 模式的尺寸计算
 const siderWidth = computed(() => {
   const { mixWidth, mixCollapsedWidth, mixChildMenuWidth } = themeStore.sider;
   const isCollapsed = appStore.siderCollapse;
-  return isCollapsed ? mixCollapsedWidth : mixWidth + (appStore.mixSiderFixed ? mixChildMenuWidth : 0);
+  return isCollapsed ? mixCollapsedWidth : mixWidth + (appStore.mixSiderFixed && secondLevelMenus.value.length ? mixChildMenuWidth : 0);
 });
 
 const siderCollapsedWidth = computed(() => {
@@ -51,6 +69,7 @@ const siderCollapsedWidth = computed(() => {
     <template #sider>
       <GlobalSider />
     </template>
+    <VerticalMixMenu />
     <GlobalContent />
   </AdminLayout>
 </template>

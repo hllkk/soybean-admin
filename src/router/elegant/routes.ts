@@ -49,10 +49,7 @@ export const generatedRoutes: GeneratedRoute[] = [
       icon: 'mdi:monitor-dashboard',
       order: 1,
       fixedIndexInTab: 0,
-      disk: {
-        icon: 'mdi:harddisk',
-        order: 2
-      }
+      module: 'admin'
     }
   },
   {
@@ -63,7 +60,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'disk',
       i18nKey: 'route.disk',
       icon: 'mdi:harddisk',
-      order: 2
+      order: 2,
+      module: 'disk'
     }
   },
   {

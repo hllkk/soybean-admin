@@ -1,18 +1,20 @@
 import type { RouteMeta } from 'vue-router';
 import ElegantVueRouter from '@elegant-router/vue/vite';
 import type { RouteKey } from '@elegant-router/types';
+import type { RouteModule } from '../../src/typings/router.d.ts';
 
-/** 需要额外配置的路由 meta */
-const routeMetaConfig: Record<string, Partial<RouteMeta>> = {
+const routeMetaConfig: Record<string, Partial<RouteMeta> & { module?: RouteModule }> = {
   admin: {
-  disk: {
-    icon: "mdi:harddisk",
-    order: 2
-  },
     icon: 'mdi:monitor-dashboard',
     order: 1,
-    fixedIndexInTab: 0
-  }
+    fixedIndexInTab: 0,
+    module: 'admin'
+  },
+  disk: {
+    icon: 'mdi:harddisk',
+    order: 2,
+    module: 'disk'
+  },
 };
 
 export function setupElegantRouter() {
@@ -30,7 +32,7 @@ export function setupElegantRouter() {
 
         const moduleReg = modules.join('|');
 
-        return `/login/:module(${moduleReg})?`;
+        return '/login/:module(' + moduleReg + ')?';
       }
 
       return routePath;
@@ -42,14 +44,13 @@ export function setupElegantRouter() {
 
       const meta: Partial<RouteMeta> = {
         title: key,
-        i18nKey: `route.${key}` as App.I18n.I18nKey
+        i18nKey: 'route.' + key as App.I18n.I18nKey
       };
 
       if (constantRoutes.includes(key)) {
         meta.constant = true;
       }
 
-      // 合并额外配置
       const extraConfig = routeMetaConfig[key];
       if (extraConfig) {
         Object.assign(meta, extraConfig);

@@ -227,7 +227,7 @@ const local: App.I18n.Schema = {
     500: '服务器错误',
     'iframe-page': '外链页面',
     admin: '管理首页',
-    disk: '磁盘管理'
+    disk: '磁盘管理',
   },
   page: {
     login: {

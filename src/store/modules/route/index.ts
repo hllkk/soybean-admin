@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
 import type { CustomRoute, ElegantConstRoute, LastLevelRouteKey, RouteKey, RouteMap } from '@elegant-router/types';
+import type { RouteModule } from '@/typings/router.d.ts';
 import { router } from '@/router';
 import { fetchGetConstantRoutes, fetchGetUserRoutes, fetchIsRouteExist } from '@/service/api';
 import { SetupStoreId } from '@/enum';
@@ -13,6 +14,7 @@ import { useAuthStore } from '../auth';
 import { useTabStore } from '../tab';
 import {
   filterAuthRoutesByRoles,
+  filterRoutesByModule,
   getBreadcrumbsByRoute,
   getCacheRouteNames,
   getGlobalMenusByAuthRoutes,
@@ -80,11 +82,26 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
   /** Global menus */
   const menus = ref<App.Global.Menu[]>([]);
+
+  /** Current module for route isolation */
+  const currentModule = ref<RouteModule>('admin');
+
+  /** Set current module */
+  function setCurrentModule(module: RouteModule) {
+    if (currentModule.value === module) return;
+    currentModule.value = module;
+    // 只有在路由初始化后才重新生成菜单
+    if (constantRoutes.value.length > 0 || authRoutes.value.length > 0) {
+      const allRoutes = [...constantRoutes.value, ...authRoutes.value];
+      const sortRoutes = sortRoutesByOrder(allRoutes);
+      menus.value = getGlobalMenusByAuthRoutes(filterRoutesByModule(sortRoutes, module));
+    }
+  }
   const searchMenus = computed(() => transformMenuToSearchMenus(menus.value));
 
   /** Get global menus */
   function getGlobalMenus(routes: ElegantConstRoute[]) {
-    menus.value = getGlobalMenusByAuthRoutes(routes);
+    menus.value = getGlobalMenusByAuthRoutes(filterRoutesByModule(routes, currentModule.value));
   }
 
   /** Update global menus by locale */
@@ -343,6 +360,8 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     getIsAuthRouteExist,
     getSelectedMenuKeyPath,
     onRouteSwitchWhenLoggedIn,
-    onRouteSwitchWhenNotLoggedIn
+    onRouteSwitchWhenNotLoggedIn,
+    currentModule,
+    setCurrentModule
   };
 });

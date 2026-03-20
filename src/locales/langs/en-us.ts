@@ -231,7 +231,7 @@ const local: App.I18n.Schema = {
     500: 'Server Error',
     'iframe-page': 'Iframe',
     admin: 'Admin',
-    disk: 'Disk'
+    disk: 'Disk',
   },
   page: {
     login: {

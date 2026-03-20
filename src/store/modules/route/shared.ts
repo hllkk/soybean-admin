@@ -1,4 +1,5 @@
 import type { RouteLocationNormalizedLoaded, RouteRecordRaw, _RouteRecordBase } from 'vue-router';
+import type { RouteModule } from '@/typings/router.d.ts';
 import type { ElegantConstRoute, LastLevelRouteKey, RouteKey, RouteMap } from '@elegant-router/types';
 import { useSvgIcon } from '@/hooks/common/icon';
 import { $t } from '@/locales';
@@ -332,4 +333,57 @@ export function transformMenuToSearchMenus(menus: App.Global.Menu[], treeMap: Ap
     }
     return acc;
   }, treeMap);
+}
+
+/**
+ * Filter routes by module
+ *
+ * @param routes Routes
+ * @param module Current module
+ */
+export function filterRoutesByModule(routes: ElegantConstRoute[], module: RouteModule) {
+  return routes.flatMap(route => filterRouteByModule(route, module));
+}
+
+/**
+ * Filter route by module
+ *
+ * @param route Route
+ * @param module Current module
+ */
+function filterRouteByModule(route: ElegantConstRoute, module: RouteModule): ElegantConstRoute[] {
+  const routeModule = route.meta?.module;
+
+  // If no module specified, include in all modules (like login, 404, etc.)
+  const isGlobalRoute = !routeModule;
+
+  // If route module matches current module
+  const isCurrentModule = routeModule === module;
+
+  const filterRoute = { ...route };
+
+  if (filterRoute.children?.length) {
+    filterRoute.children = filterRoute.children.flatMap(item => filterRouteByModule(item, module));
+  }
+
+  // Exclude the route if it has no children after filtering
+  if (filterRoute.children?.length === 0) {
+    return [];
+  }
+
+  return isGlobalRoute || isCurrentModule ? [filterRoute] : [];
+}
+
+/**
+ * Filter menus by module
+ *
+ * @param menus Menus
+ * @param module Current module
+ */
+export function filterMenusByModule(menus: App.Global.Menu[], _module: RouteModule): App.Global.Menu[] {
+  return menus.filter(_menu => {
+    // Keep menus that don't have module specified (global)
+    // Or keep menus that match current module
+    return true; // For now, return all menus, filtering is done at route level
+  });
 }
