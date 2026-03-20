@@ -225,7 +225,8 @@ const local: App.I18n.Schema = {
     404: '页面不存在',
     500: '服务器错误',
     'iframe-page': '外链页面',
-    home: '首页'
+    admin: '管理首页',
+    disk: '磁盘管理'
   },
   page: {
     login: {
@@ -279,7 +280,7 @@ const local: App.I18n.Schema = {
         title: '绑定微信'
       }
     },
-    home: {
+    admin: {
       branchDesc:
         '为了方便大家开发和更新合并，我们对main分支的代码进行了精简，只保留了首页菜单，其余内容已移至example分支进行维护。预览地址显示的内容即为example分支的内容。',
       greeting: '早安，{userName}, 今天又是充满活力的一天!',

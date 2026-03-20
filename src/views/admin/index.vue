@@ -16,7 +16,7 @@ const gap = computed(() => (appStore.isMobile ? 0 : 16));
 <template>
   <NSpace vertical :size="16">
     <NAlert :title="$t('common.tip')" type="warning">
-      {{ $t('page.home.branchDesc') }}
+      {{ $t('page.admin.branchDesc') }}
     </NAlert>
     <HeaderBanner />
     <CardData />

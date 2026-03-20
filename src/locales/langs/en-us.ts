@@ -229,7 +229,8 @@ const local: App.I18n.Schema = {
     404: 'Page Not Found',
     500: 'Server Error',
     'iframe-page': 'Iframe',
-    home: 'Home'
+    admin: 'Admin',
+    disk: 'Disk'
   },
   page: {
     login: {
@@ -283,7 +284,7 @@ const local: App.I18n.Schema = {
         title: 'Bind WeChat'
       }
     },
-    home: {
+    admin: {
       branchDesc:
         'For the convenience of everyone in developing and updating the merge, we have streamlined the code of the main branch, only retaining the homepage menu, and the rest of the content has been moved to the example branch for maintenance. The preview address displays the content of the example branch.',
       greeting: 'Good morning, {userName}, today is another day full of vitality!',

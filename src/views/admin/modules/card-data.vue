@@ -23,7 +23,7 @@ interface CardData {
 const cardData = computed<CardData[]>(() => [
   {
     key: 'visitCount',
-    title: $t('page.home.visitCount'),
+    title: $t('page.admin.visitCount'),
     value: 9725,
     unit: '',
     color: {
@@ -34,7 +34,7 @@ const cardData = computed<CardData[]>(() => [
   },
   {
     key: 'turnover',
-    title: $t('page.home.turnover'),
+    title: $t('page.admin.turnover'),
     value: 1026,
     unit: '$',
     color: {
@@ -45,7 +45,7 @@ const cardData = computed<CardData[]>(() => [
   },
   {
     key: 'downloadCount',
-    title: $t('page.home.downloadCount'),
+    title: $t('page.admin.downloadCount'),
     value: 970925,
     unit: '',
     color: {
@@ -56,7 +56,7 @@ const cardData = computed<CardData[]>(() => [
   },
   {
     key: 'dealCount',
-    title: $t('page.home.dealCount'),
+    title: $t('page.admin.dealCount'),
     value: 9527,
     unit: '',
     color: {

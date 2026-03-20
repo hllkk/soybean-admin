@@ -532,7 +532,7 @@ declare namespace App {
             title: string;
           };
         };
-        home: {
+        admin: {
           branchDesc: string;
           greeting: string;
           weatherDesc: string;

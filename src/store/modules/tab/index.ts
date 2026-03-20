@@ -60,11 +60,19 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
    * @param currentRoute Current route
    */
   function initTabStore(currentRoute: App.Global.TabRoute) {
-    const storageTabs = localStg.get('globalTabs');
+    const storageTabs = localStg.get("globalTabs");
 
     if (themeStore.tab.cache && storageTabs) {
-      const extractedTabs = extractTabsByAllRoutes(router, storageTabs);
-      tabs.value = updateTabsByI18nKey(extractedTabs);
+      // 检查是否有旧路由的 tabs，如果有则清空缓存
+      const hasOldTabs = storageTabs.some((tab: App.Global.Tab) => (tab.routeKey as string) === "home" || tab.id === "/home");
+      if (hasOldTabs) {
+        // 清空旧的 tab 缓存
+        localStg.remove("globalTabs");
+        tabs.value = [];
+      } else {
+        const extractedTabs = extractTabsByAllRoutes(router, storageTabs);
+        tabs.value = updateTabsByI18nKey(extractedTabs);
+      }
     }
 
     addTab(currentRoute);

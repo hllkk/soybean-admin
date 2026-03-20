@@ -40,14 +40,30 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
-    name: 'home',
-    path: '/home',
-    component: 'layout.base$view.home',
+    name: 'admin',
+    path: '/admin',
+    component: 'layout.base$view.admin',
     meta: {
-      title: 'home',
-      i18nKey: 'route.home',
+      title: 'admin',
+      i18nKey: 'route.admin',
       icon: 'mdi:monitor-dashboard',
-      order: 1
+      order: 1,
+      fixedIndexInTab: 0,
+      disk: {
+        icon: 'mdi:harddisk',
+        order: 2
+      }
+    }
+  },
+  {
+    name: 'disk',
+    path: '/disk',
+    component: 'layout.disk$view.disk',
+    meta: {
+      title: 'disk',
+      i18nKey: 'route.disk',
+      icon: 'mdi:harddisk',
+      order: 2
     }
   },
   {
