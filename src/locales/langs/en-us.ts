@@ -45,6 +45,7 @@ const local: App.I18n.Schema = {
     update: 'Update',
     updateSuccess: 'Update Success',
     userCenter: 'User Center',
+    switchRole: 'Switch Role',
     yesOrNo: {
       yes: 'Yes',
       no: 'No'

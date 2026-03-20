@@ -357,6 +357,7 @@ declare namespace App {
         update: string;
         updateSuccess: string;
         userCenter: string;
+        switchRole: string;
         yesOrNo: {
           yes: string;
           no: string;

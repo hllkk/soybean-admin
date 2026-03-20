@@ -11,14 +11,14 @@ defineOptions({
 });
 
 const authStore = useAuthStore();
-const { routerPushByKey, toLogin } = useRouterPush();
+const { toLogin } = useRouterPush();
 const { SvgIconVNode } = useSvgIcon();
 
 function loginOrRegister() {
   toLogin();
 }
 
-type DropdownKey = 'logout';
+type DropdownKey = 'userCenter' | 'switchRole' | 'logout';
 
 type DropdownOption =
   | {
@@ -33,6 +33,20 @@ type DropdownOption =
 
 const options = computed(() => {
   const opts: DropdownOption[] = [
+    {
+      label: $t('common.userCenter'),
+      key: 'userCenter',
+      icon: SvgIconVNode({ icon: 'ph:user-circle', fontSize: 18 })
+    },
+    {
+      label: $t('common.switchRole'),
+      key: 'switchRole',
+      icon: SvgIconVNode({ icon: 'ph:swap', fontSize: 18 })
+    },
+    {
+      type: 'divider',
+      key: 'divider'
+    },
     {
       label: $t('common.logout'),
       key: 'logout',
@@ -55,12 +69,23 @@ function logout() {
   });
 }
 
+function handleUserCenter() {
+  window.$message?.destroyAll();
+  window.$message?.info($t('common.userCenter') + ' - 功能开发中');
+}
+
+function handleSwitchRole() {
+  window.$message?.destroyAll();
+  window.$message?.warning($t('common.switchRole') + ' - 功能开发中');
+}
+
 function handleDropdown(key: DropdownKey) {
   if (key === 'logout') {
     logout();
-  } else {
-    // If your other options are jumps from other routes, they will be directly supported here
-    routerPushByKey(key);
+  } else if (key === 'userCenter') {
+    handleUserCenter();
+  } else if (key === 'switchRole') {
+    handleSwitchRole();
   }
 }
 </script>
