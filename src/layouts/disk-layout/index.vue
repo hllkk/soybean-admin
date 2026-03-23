@@ -19,7 +19,7 @@ const appStore = useAppStore();
 const themeStore = useThemeStore();
 const routeStore = useRouteStore();
 
-// 监听路由变化设置模块（disk 布局固定为 disk 模块）
+// 监听路由变化设置模块
 watch(
   () => route.path,
   () => {
@@ -31,20 +31,17 @@ watch(
 // 提供 mix 菜单上下文
 const { secondLevelMenus } = provideMixMenuContext();
 
-// 固定使用 VerticalMixMenu
+// 异步加载菜单组件 - 与 base-layout 一致
 const VerticalMixMenu = defineAsyncComponent(() => import('../modules/global-menu/modules/vertical-mix-menu.vue'));
 
-// Disk 布局使用 vertical-mix 模式的尺寸计算
+// sider 宽度计算 - 与 base-layout 中 vertical-mix 模式一致
 const siderWidth = computed(() => {
   const { mixWidth, mixCollapsedWidth, mixChildMenuWidth } = themeStore.sider;
   const isCollapsed = appStore.siderCollapse;
   return isCollapsed ? mixCollapsedWidth : mixWidth + (appStore.mixSiderFixed && secondLevelMenus.value.length ? mixChildMenuWidth : 0);
 });
 
-const siderCollapsedWidth = computed(() => {
-  const { mixCollapsedWidth } = themeStore.sider;
-  return mixCollapsedWidth;
-});
+const siderCollapsedWidth = computed(() => themeStore.sider.mixCollapsedWidth);
 </script>
 
 <template>
