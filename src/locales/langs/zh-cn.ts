@@ -228,6 +228,7 @@ const local: App.I18n.Schema = {
     'iframe-page': '外链页面',
     admin: '管理首页',
     disk: '磁盘管理',
+    init: '系统初始化',
   },
   page: {
     login: {

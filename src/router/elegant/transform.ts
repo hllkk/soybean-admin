@@ -169,6 +169,7 @@ const routeMap: RouteMap = {
   "admin": "/admin",
   "disk": "/disk",
   "iframe-page": "/iframe-page/:url",
+  "init": "/init",
   "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?"
 };
 

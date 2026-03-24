@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { localStg } from '@/utils/storage';
 import { $t } from '@/locales';
+import { fetchCheckDB } from '@/service/api/init';
 import ClickCaptcha from '@/components/captcha/ClickCaptcha.vue';
 
 defineOptions({
   name: 'PwdLogin'
 });
 
+const router = useRouter();
 const authStore = useAuthStore();
 const { formRef, validate } = useNaiveForm();
 
@@ -28,8 +31,11 @@ const rememberMe = ref(false);
 const REMEMBER_ME_KEY = 'login_remember_me';
 const REMEMBERED_USER_KEY = 'remembered_user';
 
+// 是否显示初始化按钮
+const showInitButton = ref(true);
+
 // 页面加载时恢复记住的用户名
-onMounted(() => {
+onMounted(async () => {
   const remembered = localStg.get(REMEMBER_ME_KEY);
   if (remembered) {
     rememberMe.value = true;
@@ -37,6 +43,12 @@ onMounted(() => {
     if (savedUser) {
       model.userName = savedUser;
     }
+  }
+
+  // 检查是否需要初始化（使用扁平响应模式）
+  const { data, error } = await fetchCheckDB();
+  if (!error && data?.needInit) {
+    showInitButton.value = true;
   }
 });
 
@@ -79,6 +91,11 @@ function handleThirdPartyLogin(_type: 'wecom' | 'github' | 'gitee') {
     duration: 3000
   });
 }
+
+// 前往初始化页面
+function goToInit() {
+  router.push('/init');
+}
 </script>
 
 <template>
@@ -101,6 +118,13 @@ function handleThirdPartyLogin(_type: 'wecom' | 'github' | 'gitee') {
         </div>
         <NButton type="primary" size="large" round block :loading="authStore.loginLoading" @click="handleSubmit">
           {{ $t('common.confirm') }}
+        </NButton>
+        <!-- 初始化按钮 -->
+        <NButton v-if="showInitButton" quaternary size="large" round block @click="goToInit">
+          <template #icon>
+            <SvgIcon icon="mdi:database-cog" class="text-18px" />
+          </template>
+          前往系统初始化
         </NButton>
         <NDivider class="text-14px text-#666 !m-0">{{ $t('page.login.pwdLogin.thirdPartyLogin') }}</NDivider>
         <div class="flex-center gap-24px">

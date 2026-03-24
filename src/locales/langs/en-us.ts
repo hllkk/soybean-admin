@@ -232,6 +232,7 @@ const local: App.I18n.Schema = {
     'iframe-page': 'Iframe',
     admin: 'Admin',
     disk: 'Disk',
+    init: 'System Init',
   },
   page: {
     login: {
