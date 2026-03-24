@@ -49,12 +49,10 @@ type DropdownOption =
 // 判断是否在 disk 页面
 const isDiskPage = computed(() => route.path.startsWith('/disk'));
 
-// 判断是否在 admin 页面
-const isAdminPage = computed(() => route.path.startsWith('/admin'));
+// 判断是否在 admin/manage 页面
+const isAdminPage = computed(() => route.path.startsWith('/admin') || route.path.startsWith('/manage'));
 
 // 判断用户是否有 admin 权限
-// 1. 超级管理员（角色代码 R_SUPER 或角色名称包含 SuperAdmin）
-// 2. 管理员角色（角色代码 R_ADMIN 或角色名称包含 Admin）
 const hasAdminPermission = computed(() => {
   // 方式1：检查 isStaticSuper（基于角色名称）
   if (authStore.isStaticSuper) return true;
@@ -73,23 +71,26 @@ const hasAdminPermission = computed(() => {
 const options = computed(() => {
   const opts: DropdownOption[] = [];
 
-  // 在 disk 页面，有 admin 权限时显示"去往管理中心"
-  if (isDiskPage.value && hasAdminPermission.value) {
-    opts.push({
-      label: '管理中心',
-      key: 'toAdmin',
-      icon: SvgIconVNode({ icon: 'mdi:monitor-dashboard', fontSize: 18 })
-    });
-    opts.push({ type: 'divider', key: 'divider-nav' });
-  }
-
-  // 在 admin 页面，显示"去往网盘"
-  if (isAdminPage.value) {
+  // 不在 disk 页面时，显示"我的网盘"
+  if (!isDiskPage.value) {
     opts.push({
       label: '我的网盘',
       key: 'toDisk',
       icon: SvgIconVNode({ icon: 'mdi:harddisk', fontSize: 18 })
     });
+  }
+
+  // 不在 admin/manage 页面，且有权限时，显示"管理中心"
+  if (!isAdminPage.value && hasAdminPermission.value) {
+    opts.push({
+      label: '管理中心',
+      key: 'toAdmin',
+      icon: SvgIconVNode({ icon: 'mdi:monitor-dashboard', fontSize: 18 })
+    });
+  }
+
+  // 如果有导航项，添加分隔线
+  if (opts.length > 0) {
     opts.push({ type: 'divider', key: 'divider-nav' });
   }
 

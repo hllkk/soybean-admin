@@ -15,6 +15,52 @@ const routeMetaConfig: Record<string, Partial<RouteMeta> & { module?: RouteModul
     order: 2,
     module: 'disk'
   },
+  manage: {
+    icon: 'mdi:cog',
+    order: 3,
+    module: 'admin'
+  },
+  // 系统管理子菜单 - 按顺序排列
+  manage_user: {
+    icon: 'mdi:account',
+    order: 1
+  },
+  manage_role: {
+    icon: 'mdi:account-group',
+    order: 2
+  },
+  manage_menu: {
+    icon: 'mdi:menu',
+    order: 3
+  },
+  manage_dept: {
+    icon: 'mdi:office-building',
+    order: 4
+  },
+  manage_post: {
+    icon: 'mdi:briefcase',
+    order: 5
+  },
+  manage_dict: {
+    icon: 'mdi:book-open-variant',
+    order: 6
+  },
+  manage_log: {
+    icon: 'mdi:text-box-outline',
+    order: 7
+  },
+  manage_log_operation: {
+    icon: 'mdi:text-box-search',
+    order: 1
+  },
+  manage_log_login: {
+    icon: 'mdi:login',
+    order: 2
+  },
+  manage_settings: {
+    icon: 'mdi:cog-outline',
+    order: 8
+  }
 };
 
 export function setupElegantRouter() {

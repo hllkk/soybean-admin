@@ -78,10 +78,11 @@ export function getGlobalMenusByAuthRoutes(routes: ElegantConstRoute[]) {
   const menus: App.Global.Menu[] = [];
 
   routes.forEach(route => {
-    if (!route.meta?.hideInMenu) {
+    // Hide routes that are marked as hideInMenu or are constant routes (like login, 404, etc.)
+    if (!route.meta?.hideInMenu && !route.meta?.constant) {
       const menu = getGlobalMenuByBaseRoute(route);
 
-      if (route.children?.some(child => !child.meta?.hideInMenu)) {
+      if (route.children?.some(child => !child.meta?.hideInMenu && !child.meta?.constant)) {
         menu.children = getGlobalMenusByAuthRoutes(route.children);
       }
 

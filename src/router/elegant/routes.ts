@@ -9,7 +9,7 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: '403',
     path: '/403',
-    component: 'layout.blank$view.403',
+    component: 'layout.base$view.403',
     meta: {
       title: '403',
       i18nKey: 'route.403',
@@ -20,7 +20,7 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: '404',
     path: '/404',
-    component: 'layout.blank$view.404',
+    component: 'layout.base$view.404',
     meta: {
       title: '404',
       i18nKey: 'route.404',
@@ -31,7 +31,7 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: '500',
     path: '/500',
-    component: 'layout.blank$view.500',
+    component: 'layout.base$view.500',
     meta: {
       title: '500',
       i18nKey: 'route.500',
@@ -73,14 +73,13 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'iframe-page',
       i18nKey: 'route.iframe-page',
       constant: true,
-      hideInMenu: true,
-      keepAlive: true
+      hideInMenu: true
     }
   },
   {
     name: 'init',
     path: '/init',
-    component: 'layout.blank$view.init',
+    component: 'layout.base$view.init',
     meta: {
       title: 'init',
       i18nKey: 'route.init',
@@ -91,7 +90,7 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'login',
     path: '/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?',
-    component: 'layout.blank$view.login',
+    component: 'layout.base$view.login',
     props: true,
     meta: {
       title: 'login',
@@ -99,5 +98,131 @@ export const generatedRoutes: GeneratedRoute[] = [
       constant: true,
       hideInMenu: true
     }
+  },
+  {
+    name: 'manage',
+    path: '/manage',
+    component: 'layout.base',
+    meta: {
+      title: 'manage',
+      i18nKey: 'route.manage',
+      icon: 'mdi:cog',
+      order: 3,
+      module: 'admin'
+    },
+    children: [
+      {
+        name: 'manage_dept',
+        path: '/manage/dept',
+        component: 'view.manage_dept',
+        meta: {
+          title: 'manage_dept',
+          i18nKey: 'route.manage_dept',
+          icon: 'mdi:office-building',
+          order: 4
+        }
+      },
+      {
+        name: 'manage_dict',
+        path: '/manage/dict',
+        component: 'view.manage_dict',
+        meta: {
+          title: 'manage_dict',
+          i18nKey: 'route.manage_dict',
+          icon: 'mdi:book-open-variant',
+          order: 6
+        }
+      },
+      {
+        name: 'manage_log',
+        path: '/manage/log',
+        component: 'view.manage_log',
+        meta: {
+          title: 'manage_log',
+          i18nKey: 'route.manage_log',
+          icon: 'mdi:text-box',
+          order: 7
+        },
+        children: [
+          {
+            name: 'manage_log_login',
+            path: '/manage/log/login',
+            component: 'view.manage_log_login',
+            meta: {
+              title: 'manage_log_login',
+              i18nKey: 'route.manage_log_login',
+              icon: 'mdi:login',
+              order: 2
+            }
+          },
+          {
+            name: 'manage_log_operation',
+            path: '/manage/log/operation',
+            component: 'view.manage_log_operation',
+            meta: {
+              title: 'manage_log_operation',
+              i18nKey: 'route.manage_log_operation',
+              icon: 'mdi:text-box-search',
+              order: 1
+            }
+          }
+        ]
+      },
+      {
+        name: 'manage_menu',
+        path: '/manage/menu',
+        component: 'view.manage_menu',
+        meta: {
+          title: 'manage_menu',
+          i18nKey: 'route.manage_menu',
+          icon: 'mdi:menu',
+          order: 3
+        }
+      },
+      {
+        name: 'manage_post',
+        path: '/manage/post',
+        component: 'view.manage_post',
+        meta: {
+          title: 'manage_post',
+          i18nKey: 'route.manage_post',
+          icon: 'mdi:briefcase',
+          order: 5
+        }
+      },
+      {
+        name: 'manage_role',
+        path: '/manage/role',
+        component: 'view.manage_role',
+        meta: {
+          title: 'manage_role',
+          i18nKey: 'route.manage_role',
+          icon: 'mdi:account-group',
+          order: 2
+        }
+      },
+      {
+        name: 'manage_settings',
+        path: '/manage/settings',
+        component: 'view.manage_settings',
+        meta: {
+          title: 'manage_settings',
+          i18nKey: 'route.manage_settings',
+          icon: 'mdi:cog-outline',
+          order: 8
+        }
+      },
+      {
+        name: 'manage_user',
+        path: '/manage/user',
+        component: 'view.manage_user',
+        meta: {
+          title: 'manage_user',
+          i18nKey: 'route.manage_user',
+          icon: 'mdi:account',
+          order: 1
+        }
+      }
+    ]
   }
 ];

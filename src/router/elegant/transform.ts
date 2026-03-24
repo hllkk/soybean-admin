@@ -170,7 +170,18 @@ const routeMap: RouteMap = {
   "disk": "/disk",
   "iframe-page": "/iframe-page/:url",
   "init": "/init",
-  "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?"
+  "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?",
+  "manage": "/manage",
+  "manage_dept": "/manage/dept",
+  "manage_dict": "/manage/dict",
+  "manage_log": "/manage/log",
+  "manage_log_login": "/manage/log/login",
+  "manage_log_operation": "/manage/log/operation",
+  "manage_menu": "/manage/menu",
+  "manage_post": "/manage/post",
+  "manage_role": "/manage/role",
+  "manage_settings": "/manage/settings",
+  "manage_user": "/manage/user"
 };
 
 /**
