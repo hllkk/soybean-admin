@@ -46,6 +46,11 @@ const local: App.I18n.Schema = {
     updateSuccess: 'Update Success',
     userCenter: 'User Center',
     switchRole: 'Switch Role',
+    export: 'Export',
+    selected: 'Selected',
+    anyRecords: 'Any Records',
+    clear: 'Clear',
+    noSelectRecord: 'No Select Record',
     yesOrNo: {
       yes: 'Yes',
       no: 'No'

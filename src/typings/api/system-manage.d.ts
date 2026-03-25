@@ -26,6 +26,17 @@ declare namespace Api {
       updatedAt?: string;
     }
 
+    // 用户搜索参数
+    interface UserSearchParams {
+      page: number;
+      pageSize: number;
+      userName?: string;
+      nickName?: string;
+      phone?: string;
+      status?: '' | '0' | '1';
+      deptId?: number | null;
+    }
+
     // 角色
     interface Role {
       id: number;

@@ -16,6 +16,7 @@ const customRoutes: CustomRoute[] = [];
  * key: 路由名称, value: layout 名称
  */
 const routeLayoutMap: Record<string, string> = {
+  login: "blank",
   disk: 'disk'
 };
 

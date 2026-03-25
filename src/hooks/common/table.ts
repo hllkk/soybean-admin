@@ -166,6 +166,7 @@ export function useNaivePaginatedTable<ResponseData, ApiData>(
 
   return {
     ...result,
+    scrollX,
     getDataByPage,
     pagination,
     mobilePagination

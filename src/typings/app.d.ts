@@ -343,6 +343,10 @@ declare namespace App {
         logout: string;
         logoutConfirm: string;
         lookForward: string;
+        selected: string;
+        anyRecords: string;
+        clear: string;
+        noSelectRecord: string;
         modify: string;
         modifySuccess: string;
         noData: string;
@@ -358,6 +362,7 @@ declare namespace App {
         updateSuccess: string;
         userCenter: string;
         switchRole: string;
+        export: string;
         yesOrNo: {
           yes: string;
           no: string;

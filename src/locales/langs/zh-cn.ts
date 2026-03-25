@@ -46,6 +46,11 @@ const local: App.I18n.Schema = {
     updateSuccess: '更新成功',
     userCenter: '个人中心',
     switchRole: '切换角色',
+    export: '导出',
+    selected: '已选择',
+    anyRecords: '项',
+    clear: '清空选择',
+    noSelectRecord: '未选择任何记录',
     yesOrNo: {
       yes: '是',
       no: '否'
