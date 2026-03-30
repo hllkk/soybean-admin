@@ -63,6 +63,7 @@ const local: App.I18n.Schema = {
     updateSuccess: 'Update Success',
     noChange: 'No actions were taken',
     userCenter: 'User Center',
+    switchRole: 'Switch Role',
     yesOrNo: {
       yes: 'Yes',
       no: 'No'
@@ -403,7 +404,11 @@ const local: App.I18n.Schema = {
         superAdmin: 'Super Admin',
         admin: 'Admin',
         user: 'User',
-        thirdPartyLogin: 'Third Party Login'
+        thirdPartyLogin: 'Third Party Login',
+        wecomLogin: 'WeCom Login',
+        githubLogin: 'GitHub Login',
+        giteeLogin: 'Gitee Login',
+        featureNotImplemented: 'This feature is not implemented yet'
       },
       codeLogin: {
         title: 'Verification Code Login',
@@ -451,6 +456,35 @@ const local: App.I18n.Schema = {
         desc3: 'Soybean is ready to do sufficient preparation for the release of soybean-admin!',
         desc4: 'Soybean is busy writing project documentation for soybean-admin!',
         desc5: 'Soybean just wrote some of the workbench pages casually, and it was enough to see!'
+      },
+      creativity: 'Creativity'
+    },
+    admin: {
+      branchDesc:
+        "For the convenience of everyone's development and update merging, we have streamlined the code of the main branch, keeping only the homepage menu, and moved the rest to the example branch for maintenance. The content displayed in the preview address is the content of the example branch.",
+      greeting: 'Good morning, {userName}, today is another day full of energy!',
+      weatherDesc: 'Today is cloudy to sunny, 20℃ - 25℃!',
+      projectCount: 'Project Count',
+      todo: 'Todo',
+      message: 'Message',
+      downloadCount: 'Download Count',
+      registerCount: 'Register Count',
+      schedule: 'Schedule',
+      study: 'Study',
+      work: 'Work',
+      rest: 'Rest',
+      entertainment: 'Entertainment',
+      visitCount: 'Visit Count',
+      turnover: 'Turnover',
+      dealCount: 'Deal Count',
+      projectNews: {
+        title: 'Project News',
+        moreNews: 'More News',
+        desc1: 'Soybean created the open source project soybean-admin on May 28, 2021!',
+        desc2: 'Yanbowe submitted a bug to soybean-admin, the multi-tab bar is not adaptive.',
+        desc3: 'Soybean is preparing for the release of soybean-admin!',
+        desc4: 'Soybean is busy writing project documentation for soybean-admin!',
+        desc5: 'Soybean just wrote some workbench pages, it looks okay!'
       },
       creativity: 'Creativity'
     },

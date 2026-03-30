@@ -5,7 +5,7 @@ import { request } from '../request';
  */
 export function fetchCheckDB() {
   return request<Api.Init.CheckDBResponse>({
-    url: '/api/v1/init/checkDB',
+    url: '/init/checkDB',
     method: 'get'
   });
 }
@@ -16,7 +16,7 @@ export function fetchCheckDB() {
  */
 export function fetchInitDB(data: Api.Init.InitDBRequest) {
   return request<boolean>({
-    url: '/api/v1/init/initDB',
+    url: '/init/initDB',
     method: 'post',
     data
   });

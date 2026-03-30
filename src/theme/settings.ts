@@ -64,6 +64,14 @@ export const themeSettings: App.Theme.ThemeSetting = {
     enableTime: false,
     timeFormat: 'YYYY-MM-DD HH:mm'
   },
+  table: {
+    bordered: false,
+    bottomBordered: false,
+    singleColumn: false,
+    singleLine: false,
+    size: "medium",
+    striped: false
+  },
   tokens: {
     light: {
       colors: {

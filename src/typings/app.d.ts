@@ -389,6 +389,7 @@ declare namespace App {
         saveSuccess: string;
         noChange: string;
         userCenter: string;
+        switchRole: string;
         yesOrNo: {
           yes: string;
           no: string;
@@ -569,6 +570,10 @@ declare namespace App {
             admin: string;
             user: string;
             thirdPartyLogin: string;
+            wecomLogin: string;
+            githubLogin: string;
+            giteeLogin: string;
+            featureNotImplemented: string;
           };
           codeLogin: {
             title: string;
@@ -591,6 +596,34 @@ declare namespace App {
           };
         };
         home: {
+          branchDesc: string;
+          greeting: string;
+          weatherDesc: string;
+          projectCount: string;
+          todo: string;
+          message: string;
+          downloadCount: string;
+          registerCount: string;
+          schedule: string;
+          study: string;
+          work: string;
+          rest: string;
+          entertainment: string;
+          visitCount: string;
+          turnover: string;
+          dealCount: string;
+          projectNews: {
+            title: string;
+            moreNews: string;
+            desc1: string;
+            desc2: string;
+            desc3: string;
+            desc4: string;
+            desc5: string;
+          };
+          creativity: string;
+        };
+        admin: {
           branchDesc: string;
           greeting: string;
           weatherDesc: string;

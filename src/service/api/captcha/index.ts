@@ -30,7 +30,7 @@ export interface VerifyCaptchaResponse {
 /** 获取验证码 */
 export function fetchCaptcha() {
   return request<CaptchaResponse>({
-    url: "/api/v1/auth/captcha",
+    url: "/auth/captcha",
     method: "post"
   });
 }
@@ -38,7 +38,7 @@ export function fetchCaptcha() {
 /** 刷新验证码 */
 export function fetchCaptchaRefresh(captchaKey: string) {
   return request<CaptchaResponse>({
-    url: "/api/v1/auth/captchaRefresh",
+    url: "/auth/captchaRefresh",
     method: "post",
     data: { captchaKey }
   });
@@ -47,7 +47,7 @@ export function fetchCaptchaRefresh(captchaKey: string) {
 /** 验证验证码 */
 export function fetchCaptchaVerify(data: VerifyCaptchaRequest) {
   return request<VerifyCaptchaResponse>({
-    url: "/api/v1/auth/captchaVerify",
+    url: "/auth/captchaVerify",
     method: "post",
     data
   });

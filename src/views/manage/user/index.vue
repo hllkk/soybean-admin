@@ -383,6 +383,7 @@ function handleResetSearch() {
   }
 
   :deep(.n-tree__empty) {
+    display: flex;
     height: 100%;
     justify-content: center;
   }
@@ -392,14 +393,14 @@ function handleResetSearch() {
   }
 
   :deep(.infinite-scroll) {
-    height: calc(100vh - 228px - var(--calc-footer-height, 0px)) !important;
-    max-height: calc(100vh - 228px - var(--calc-footer-height, 0px)) !important;
+    min-height: 200px;
+    max-height: calc(100vh - 228px - var(--calc-footer-height, 0px));
   }
 
   @media screen and (max-width: 1024px) {
     :deep(.infinite-scroll) {
-      height: calc(100vh - 227px - var(--calc-footer-height, 0px)) !important;
-      max-height: calc(100vh - 227px - var(--calc-footer-height, 0px)) !important;
+      min-height: 200px;
+      max-height: calc(100vh - 227px - var(--calc-footer-height, 0px));
     }
   }
 
@@ -435,6 +436,13 @@ function handleResetSearch() {
     max-height: calc(100vh - 473px - var(--calc-footer-height, 0px));
   }
 }
+
+:deep(.n-data-table__empty) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
 
 :deep(.n-card-header__main) {
   min-width: 69px !important;

@@ -40,6 +40,17 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'init',
+    path: '/init',
+    component: 'layout.blank$view.init',
+    meta: {
+      title: 'init',
+      i18nKey: 'route.init',
+      constant: true,
+      hideInMenu: true
+    }
+  },
+  {
     name: 'admin',
     path: '/admin',
     component: 'layout.base$view.admin',
@@ -72,17 +83,6 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'iframe-page',
       i18nKey: 'route.iframe-page',
-      constant: true,
-      hideInMenu: true
-    }
-  },
-  {
-    name: 'init',
-    path: '/init',
-    component: 'layout.base$view.init',
-    meta: {
-      title: 'init',
-      i18nKey: 'route.init',
       constant: true,
       hideInMenu: true
     }
