@@ -70,7 +70,7 @@ export function fetchGetUserInfo(userId?: CommonType.IdType) {
 /** 获取部门树列表 */
 export function fetchGetDeptTree() {
   return request<Api.Common.CommonTreeRecord>({
-    url: '/system/user/deptTree',
+    url: '/system/dept/tree',
     method: 'get'
   });
 }
