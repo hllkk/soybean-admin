@@ -1,362 +1,442 @@
-<script setup lang="ts">
-import { h, onMounted, ref, shallowRef, computed } from 'vue';
-import { NAvatar, NButton, NDivider, NEllipsis, NTag } from 'naive-ui';
-import { useBoolean } from '@sa/hooks';
-import { useNaivePaginatedTable, defaultTransform } from '@/hooks/common/table';
-import { useFormRules, useNaiveForm } from '@/hooks/common/form';
-import TableRowCheckAlert from '@/components/advanced/table-row-check-alert.vue';
-import TableHeaderOperation from '@/components/advanced/table-header-operation.vue';
+<script setup lang="tsx">
+import { computed, ref } from 'vue';
+import { NAvatar, NButton, NDivider, NEllipsis } from 'naive-ui';
+import { useBoolean, useLoading } from '@sa/hooks';
+import { jsonClone } from '@sa/utils';
+import { fetchBatchDeleteUser, fetchGetDeptTree, fetchGetUserList, fetchUpdateUserStatus } from '@/service/api/system';
+import { useAppStore } from '@/store/modules/app';
+import { defaultTransform, useNaivePaginatedTable, useTableOperate } from '@/hooks/common/table';
+import { useDict } from '@/hooks/business/dict';
+import { useAuth } from '@/hooks/business/auth';
+import { useDownload } from '@/hooks/business/download';
+import ButtonIcon from '@/components/custom/button-icon.vue';
+import { $t } from '@/locales';
+import StatusSwitch from '@/components/custom/status-switch.vue';
+import DictTag from '@/components/custom/dict-tag.vue';
+import UserOperateDrawer from './modules/user-operate-drawer.vue';
+import UserImportModal from './modules/user-import-modal.vue';
+import UserPasswordDrawer from './modules/user-password-drawer.vue';
+import UserSearch from './modules/user-search.vue';
 
 defineOptions({
-  name: 'UserManagePage'
+  name: 'UserList'
 });
 
-const { formRef, validate } = useNaiveForm();
-const { createRequiredRule, patternRules } = useFormRules();
+useDict('sys_user_sex');
+useDict('sys_normal_disable');
 
-const searchParams = ref<Api.SystemManage.UserSearchParams>({
-  page: 1,
+const { hasAuth } = useAuth();
+const appStore = useAppStore();
+const { download } = useDownload();
+
+const { bool: importVisible, setTrue: openImportModal } = useBoolean();
+const { bool: passwordVisible, setTrue: openPasswordDrawer } = useBoolean();
+
+const searchParams = ref<Api.System.UserSearchParams>({
+  pageNum: 1,
   pageSize: 10,
-  userName: '',
-  nickName: '',
-  phone: '',
-  status: ''
+  deptId: null,
+  userName: null,
+  nickName: null,
+  phonenumber: null,
+  status: null,
+  params: {}
 });
 
-const deptPattern = ref('');
-const expandedKeys = ref<number[]>([]);
-const selectedKeys = ref<number[]>([]);
-const deptData = shallowRef<Api.SystemManage.Dept[]>([]);
-const treeLoading = ref(false);
-
-const { columns, data, getData, loading, pagination, mobilePagination, scrollX } = useNaivePaginatedTable<
-  any,
-  Api.SystemManage.User
->({
-  api: async () => {
-    return { data: { records: [], total: 0, current: 1, size: 10 }, error: null };
-  },
-  transform: response => defaultTransform(response),
-  onPaginationParamsChange: params => {
-    searchParams.value.page = params.page ?? 1;
-    searchParams.value.pageSize = params.pageSize ?? 10;
-  },
-  columns: () => [
-    { type: 'selection', align: 'center', width: 48 },
-    {
-      key: 'userName',
-      title: '用户名',
-      align: 'left',
-      width: 200,
-      render: (row: Api.SystemManage.User) => {
-        return h('div', { class: 'flex items-center gap-2' }, [
-          h(NAvatar, { src: row.avatar, class: 'bg-primary', size: 36 }, () => (row.avatar ? undefined : row.nickName?.charAt(0) || 'U')),
-          h('div', { class: 'flex flex-col max-w-140px' }, [
-            h(NEllipsis, null, () => row.userName),
-            h(NEllipsis, { class: 'text-gray-400 text-12px' }, () => row.nickName)
-          ])
-        ]);
-      }
+const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination, scrollX } =
+  useNaivePaginatedTable({
+    api: () => fetchGetUserList(searchParams.value),
+    transform: response => defaultTransform(response),
+    onPaginationParamsChange: params => {
+      searchParams.value.pageNum = params.page;
+      searchParams.value.pageSize = params.pageSize;
     },
-    { key: 'deptName', title: '部门', align: 'center', width: 120, ellipsis: true },
-    { key: 'phone', title: '手机号', align: 'center', width: 130, ellipsis: true },
-    { key: 'email', title: '邮箱', align: 'center', width: 180, ellipsis: true },
-    {
-      key: 'status',
-      title: '状态',
-      align: 'center',
-      width: 80,
-      render: (row: Api.SystemManage.User) => {
-        const isNormal = row.status === '1';
-        return h(NTag, { type: isNormal ? 'success' : 'error', size: 'small' }, () => isNormal ? '正常' : '停用');
+    columns: () => [
+      {
+        type: 'selection',
+        align: 'center',
+        width: 48
+      },
+      {
+        key: 'userName',
+        title: $t('page.system.user.userName'),
+        align: 'left',
+        width: 220,
+        ellipsis: true,
+        render: row => {
+          return (
+            <div class="flex items-center justify-center gap-2">
+              <NAvatar src={row.avatar} class="bg-primary">
+                {row.avatar ? undefined : row.nickName.charAt(0)}
+              </NAvatar>
+              <div class="max-w-160px flex flex-col">
+                <NEllipsis>{row.userName}</NEllipsis>
+                <NEllipsis>{row.nickName}</NEllipsis>
+              </div>
+            </div>
+          );
+        }
+      },
+      {
+        key: 'sex',
+        title: $t('page.system.user.sex'),
+        align: 'center',
+        width: 80,
+        ellipsis: true,
+        render(row) {
+          return <DictTag value={row.sex} dictCode="sys_user_sex" />;
+        }
+      },
+      {
+        key: 'deptName',
+        title: $t('page.system.user.deptName'),
+        align: 'center',
+        width: 120,
+        ellipsis: true
+      },
+      {
+        key: 'email',
+        title: $t('page.system.user.email'),
+        align: 'center',
+        width: 120,
+        ellipsis: true
+      },
+      {
+        key: 'phonenumber',
+        title: $t('page.system.user.phonenumber'),
+        align: 'center',
+        width: 120,
+        ellipsis: true
+      },
+      {
+        key: 'status',
+        title: $t('page.system.user.status'),
+        align: 'center',
+        width: 80,
+        render(row) {
+          return (
+            <StatusSwitch
+              v-model:value={row.status}
+              disabled={row.userId === 1}
+              info={row.userName}
+              onSubmitted={(value, callback) => handleStatusChange(row, value, callback)}
+            />
+          );
+        }
+      },
+      {
+        key: 'createTime',
+        title: $t('page.system.user.createTime'),
+        align: 'center',
+        width: 120
+      },
+      {
+        key: 'operate',
+        title: $t('common.operate'),
+        align: 'center',
+        width: 150,
+        render: row => {
+          if (row.userId === 1) return null;
+
+          const editBtn = () => {
+            return (
+              <ButtonIcon
+                text
+                type="primary"
+                icon="material-symbols:drive-file-rename-outline-outline"
+                tooltipContent={$t('common.edit')}
+                onClick={() => edit(row.userId)}
+              />
+            );
+          };
+
+          const passwordBtn = () => {
+            return (
+              <ButtonIcon
+                text
+                type="primary"
+                icon="material-symbols:key-vertical-outline"
+                tooltipContent="重置密码"
+                onClick={() => handleResetPwd(row.userId)}
+              />
+            );
+          };
+
+          const deleteBtn = () => {
+            return (
+              <ButtonIcon
+                text
+                type="error"
+                icon="material-symbols:delete-outline"
+                tooltipContent={$t('common.delete')}
+                popconfirmContent={$t('common.confirmDelete')}
+                onPositiveClick={() => handleDelete(row.userId)}
+              />
+            );
+          };
+
+          const buttons = [];
+          if (hasAuth('system:user:edit')) buttons.push(editBtn());
+          if (hasAuth('system:user:resetPwd')) buttons.push(passwordBtn());
+          if (hasAuth('system:user:remove')) buttons.push(deleteBtn());
+
+          return (
+            <div class="flex-center gap-8px">
+              {buttons.map((btn, index) => (
+                <>
+                  {index !== 0 && <NDivider vertical />}
+                  {btn}
+                </>
+              ))}
+            </div>
+          );
+        }
       }
-    },
-    { key: 'createdAt', title: '创建时间', align: 'center', width: 160 },
-    {
-      key: 'operate',
-      title: '操作',
-      align: 'center',
-      width: 160,
-      render: (row: Api.SystemManage.User) => {
-        if (row.id === 1) return null;
-        return h('div', { class: 'flex items-center justify-center gap-4px' }, [
-          h(NButton, { text: true, type: 'primary', onClick: () => handleEdit(row.id) }, () => '编辑'),
-          h(NDivider, { vertical: true }),
-          h(NButton, { text: true, type: 'primary', onClick: () => handleResetPwd(row) }, () => '重置密码'),
-          h(NDivider, { vertical: true }),
-          h(NButton, { text: true, type: 'error', onClick: () => handleDelete(row.id) }, () => '删除')
-        ]);
-      }
-    }
-  ]
-});
+    ]
+  });
 
-const checkedRowKeys = ref<number[]>([]);
-const { bool: drawerVisible, setTrue: openDrawer, setFalse: closeDrawer } = useBoolean();
-const operateType = ref<'add' | 'edit'>('add');
-const editingId = ref<number | null>(null);
-const { bool: passwordVisible, setTrue: openPasswordDrawer, setFalse: closePasswordDrawer } = useBoolean();
-const passwordUserId = ref<number>(0);
+const { drawerVisible, operateType, editingData, handleAdd, handleEdit, checkedRowKeys, onBatchDeleted, onDeleted } =
+  useTableOperate(data, 'userId', getData);
 
-const formData = ref({
-  id: 0, deptId: null as number | null, userName: '', nickName: '', email: '', phone: '',
-  sex: '0', password: '', status: '0', roleIds: [] as number[], remark: ''
-});
-
-const rules = computed(() => ({
-  userName: [createRequiredRule('请输入用户名')],
-  nickName: [createRequiredRule('请输入昵称')],
-  password: operateType.value === 'add' ? [createRequiredRule('请输入密码'), patternRules.pwd] : [],
-  phone: [patternRules.phone],
-  email: [patternRules.email],
-  status: [createRequiredRule('请选择状态')]
-}));
-
-function handleAdd() {
-  operateType.value = 'add';
-  Object.assign(formData.value, { id: 0, deptId: null, userName: '', nickName: '', email: '', phone: '', sex: '0', password: '', status: '0', roleIds: [], remark: '' });
-  openDrawer();
+async function handleBatchDelete() {
+  // request
+  const { error } = await fetchBatchDeleteUser(checkedRowKeys.value);
+  if (error) return;
+  onBatchDeleted();
 }
 
-function handleEdit(id: number) {
-  operateType.value = 'edit';
-  editingId.value = id;
-  const row = data.value.find(item => item.id === id);
-  if (row) Object.assign(formData.value, { ...row, password: '' });
-  openDrawer();
+async function handleDelete(userId: CommonType.IdType) {
+  // request
+  const { error } = await fetchBatchDeleteUser([userId]);
+  if (error) return;
+  onDeleted();
 }
 
-function handleResetPwd(row: Api.SystemManage.User) {
-  passwordUserId.value = row.id;
+async function edit(userId: CommonType.IdType) {
+  handleEdit(userId);
+}
+
+async function handleResetPwd(userId: CommonType.IdType) {
+  const findItem = data.value.find(item => item.userId === userId) || null;
+  editingData.value = jsonClone(findItem);
   openPasswordDrawer();
 }
 
-async function handleDelete(_id: number) {
-  window.$message?.destroyAll();
-  window.$message?.success('删除成功');
-  getData();
-}
+const { loading: treeLoading, startLoading: startTreeLoading, endLoading: endTreeLoading } = useLoading();
+const deptPattern = ref<string>();
+const deptData = ref<Api.Common.CommonTreeRecord>([]);
+const selectedKeys = ref<string[]>([]);
 
-async function handleBatchDelete() {
-  if (checkedRowKeys.value.length === 0) {
-    window.$message?.warning('请选择要删除的用户');
-    return;
+async function getTreeData() {
+  startTreeLoading();
+  const { data: tree, error } = await fetchGetDeptTree();
+  if (!error) {
+    deptData.value = tree;
   }
-  window.$dialog?.warning({
-    title: '提示',
-    content: `确定删除选中的 ${checkedRowKeys.value.length} 个用户吗？`,
-    positiveText: '确定',
-    negativeText: '取消',
-    onPositiveClick: async () => {
-      window.$message?.destroyAll();
-      window.$message?.success('删除成功');
-      checkedRowKeys.value = [];
-      getData();
-    }
-  });
+  endTreeLoading();
 }
 
-async function handleSubmit() {
-  await validate();
-  window.$message?.destroyAll();
-  window.$message?.success(operateType.value === 'add' ? '添加成功' : '编辑成功');
-  closeDrawer();
-  getData();
+getTreeData();
+
+function handleClickTree(keys: string[]) {
+  searchParams.value.deptId = keys.length ? keys[0] : null;
+  checkedRowKeys.value = [];
+  getDataByPage();
+}
+
+function handleResetTreeData() {
+  deptPattern.value = undefined;
+  getTreeData();
+}
+
+function handleImport() {
+  openImportModal();
+}
+
+/** 处理状态切换 */
+async function handleStatusChange(
+  row: Api.System.User,
+  value: Api.Common.EnableStatus,
+  callback: (flag: boolean) => void
+) {
+  const { error } = await fetchUpdateUserStatus({
+    userId: row.userId,
+    status: value
+  });
+
+  callback(!error);
+
+  if (!error) {
+    window.$message?.success($t('page.system.user.statusChangeSuccess'));
+    getData();
+  }
 }
 
 function handleExport() {
-  window.$message?.info('导出功能开发中');
+  download('/system/user/export', searchParams.value, `${$t('page.system.user.title')}_${new Date().getTime()}.xlsx`);
 }
+
+const expandedKeys = ref<CommonType.IdType[]>([100]);
+
+const selectable = computed(() => {
+  return !loading.value;
+});
 
 function handleResetSearch() {
-  Object.assign(searchParams.value, { userName: '', nickName: '', phone: '', status: '' });
-  getData();
+  selectedKeys.value = [];
+  getDataByPage();
 }
-
-function handleSearch() {
-  getData();
-}
-
-function handleClickTree(keys: number[]) {
-  if (keys.length > 0) {
-    searchParams.value.deptId = keys[0];
-  } else {
-    searchParams.value.deptId = null;
-  }
-  getData();
-}
-
-async function getDeptTree() {
-  treeLoading.value = true;
-  treeLoading.value = false;
-}
-
-onMounted(() => {
-  getDeptTree();
-  getData();
-});
 </script>
 
 <template>
-  <div class="h-full flex gap-16px overflow-hidden">
-    <NCard :bordered="false" size="small" class="w-280px flex-shrink-0 card-wrapper" content-class="overflow-auto">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <span>部门列表</span>
-          <NButton size="small" text @click.stop="getDeptTree">
-            <template #icon><SvgIcon icon="ic:round-refresh" /></template>
-          </NButton>
-        </div>
-      </template>
-      <NInput v-model:value="deptPattern" clearable placeholder="请输入关键词搜索" class="mb-12px" />
-      <NSpin :show="treeLoading">
+  <TableSiderLayout :sider-title="$t('page.system.dept.title')">
+    <template #header-extra>
+      <NButton size="small" text class="h-18px" @click.stop="() => handleResetTreeData()">
+        <template #icon>
+          <SvgIcon icon="ic:round-refresh" />
+        </template>
+      </NButton>
+    </template>
+    <template #sider>
+      <NInput v-model:value="deptPattern" clearable :placeholder="$t('common.keywordSearch')" />
+      <NSpin class="dept-tree" :show="treeLoading">
         <NTree
           v-model:expanded-keys="expandedKeys"
           v-model:selected-keys="selectedKeys"
-          block-line
-          :data="deptData as any"
+          block-node
+          show-line
+          :data="deptData as []"
+          :show-irrelevant-nodes="false"
           :pattern="deptPattern"
+          class="infinite-scroll h-full min-h-200px py-3"
           key-field="id"
-          label-field="deptName"
-          class="min-h-200px"
-          selectable
+          label-field="label"
+          virtual-scroll
+          :selectable="selectable"
           @update:selected-keys="handleClickTree"
-        />
+        >
+          <template #empty>
+            <NEmpty :description="$t('page.system.dept.empty')" class="h-full min-h-200px justify-center" />
+          </template>
+        </NTree>
       </NSpin>
-    </NCard>
-
-    <div class="flex-1 flex flex-col gap-12px overflow-hidden">
-      <NCard :bordered="false" size="small" class="card-wrapper">
-        <NForm :model="searchParams" label-placement="left" inline>
-          <NFormItem label="用户名" path="userName">
-            <NInput v-model:value="searchParams.userName" placeholder="请输入用户名" clearable style="width: 160px" />
-          </NFormItem>
-          <NFormItem label="昵称" path="nickName">
-            <NInput v-model:value="searchParams.nickName" placeholder="请输入昵称" clearable style="width: 160px" />
-          </NFormItem>
-          <NFormItem label="手机号" path="phone">
-            <NInput v-model:value="searchParams.phone" placeholder="请输入手机号" clearable style="width: 160px" />
-          </NFormItem>
-          <NFormItem label="状态" path="status">
-            <NSelect
-              v-model:value="searchParams.status"
-              :options="[{ label: '全部', value: '' }, { label: '正常', value: '1' }, { label: '停用', value: '0' }]"
-              clearable
-              placeholder="请选择状态"
-              style="width: 120px"
-            />
-          </NFormItem>
-          <NFormItem>
-            <NSpace>
-              <NButton type="primary" @click="handleSearch">
-                <template #icon><icon-ic-round-search /></template>搜索
-              </NButton>
-              <NButton @click="handleResetSearch">
-                <template #icon><icon-ic-round-refresh /></template>重置
-              </NButton>
-            </NSpace>
-          </NFormItem>
-        </NForm>
-      </NCard>
-
+    </template>
+    <div class="h-full flex-col-stretch gap-12px overflow-hidden lt-sm:overflow-auto">
+      <UserSearch v-model:model="searchParams" @reset="handleResetSearch" @search="getDataByPage" />
       <TableRowCheckAlert v-model:checked-row-keys="checkedRowKeys" />
-
-      <NCard title="用户列表" :bordered="false" size="small" class="card-wrapper flex-1">
+      <NCard :title="$t('page.system.user.title')" :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
         <template #header-extra>
           <TableHeaderOperation
-            :loading="loading"
+            v-model:columns="columnChecks"
             :disabled-delete="checkedRowKeys.length === 0"
+            :loading="loading"
+            :show-add="hasAuth('system:user:add')"
+            :show-delete="hasAuth('system:user:remove')"
+            :show-export="hasAuth('system:user:export')"
             @add="handleAdd"
             @delete="handleBatchDelete"
             @export="handleExport"
             @refresh="getData"
-          />
+          >
+            <template #after>
+              <NButton v-if="hasAuth('system:user:import')" size="small" ghost @click="handleImport">
+                <template #icon>
+                  <icon-material-symbols-upload-rounded class="text-icon" />
+                </template>
+                {{ $t('common.import') }}
+              </NButton>
+            </template>
+          </TableHeaderOperation>
         </template>
         <NDataTable
           v-model:checked-row-keys="checkedRowKeys"
           :columns="columns"
           :data="data"
           size="small"
-          :flex-height="true"
+          :flex-height="!appStore.isMobile"
           :scroll-x="scrollX"
           :loading="loading"
           remote
-          :row-key="row => row.id"
-          :pagination="false ? mobilePagination : pagination"
+          :row-key="row => row.userId"
+          :pagination="mobilePagination"
           class="h-full"
         />
+        <UserImportModal v-model:visible="importVisible" @submitted="getData" />
+        <UserOperateDrawer
+          v-model:visible="drawerVisible"
+          :operate-type="operateType"
+          :row-data="editingData"
+          :dept-data="deptData"
+          :dept-id="searchParams.deptId"
+          @submitted="getDataByPage"
+        />
+        <UserPasswordDrawer v-model:visible="passwordVisible" :row-data="editingData" />
       </NCard>
     </div>
-
-    <NDrawer v-model:show="drawerVisible" :width="600" class="max-w-90%">
-      <NDrawerContent :title="operateType === 'add' ? '新增用户' : '编辑用户'" closable>
-        <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" :label-width="80" require-mark-placement="right-hanging">
-          <NFormItem v-if="operateType === 'add'" label="用户名" path="userName">
-            <NInput v-model:value="formData.userName" placeholder="请输入用户名" />
-          </NFormItem>
-          <NFormItem label="昵称" path="nickName">
-            <NInput v-model:value="formData.nickName" placeholder="请输入昵称" />
-          </NFormItem>
-          <NFormItem v-if="operateType === 'add'" label="密码" path="password">
-            <NInput v-model:value="formData.password" type="password" show-password-on="click" placeholder="请输入密码" />
-          </NFormItem>
-          <NFormItem label="手机号" path="phone">
-            <NInput v-model:value="formData.phone" placeholder="请输入手机号" />
-          </NFormItem>
-          <NFormItem label="邮箱" path="email">
-            <NInput v-model:value="formData.email" placeholder="请输入邮箱" />
-          </NFormItem>
-          <NFormItem label="性别" path="sex">
-            <NRadioGroup v-model:value="formData.sex">
-              <NRadioButton value="0">男</NRadioButton>
-              <NRadioButton value="1">女</NRadioButton>
-              <NRadioButton value="2">未知</NRadioButton>
-            </NRadioGroup>
-          </NFormItem>
-          <NFormItem label="状态" path="status">
-            <NRadioGroup v-model:value="formData.status">
-              <NRadioButton value="1">正常</NRadioButton>
-              <NRadioButton value="0">停用</NRadioButton>
-            </NRadioGroup>
-          </NFormItem>
-          <NFormItem label="备注" path="remark">
-            <NInput v-model:value="formData.remark" type="textarea" placeholder="请输入备注" :rows="3" />
-          </NFormItem>
-        </NForm>
-        <template #footer>
-          <NSpace justify="end">
-            <NButton @click="closeDrawer">取消</NButton>
-            <NButton type="primary" :loading="loading" @click="handleSubmit">确定</NButton>
-          </NSpace>
-        </template>
-      </NDrawerContent>
-    </NDrawer>
-
-    <NDrawer v-model:show="passwordVisible" :width="400" class="max-w-90%">
-      <NDrawerContent title="重置密码" closable>
-        <NForm label-placement="left" :label-width="80">
-          <NFormItem label="新密码">
-            <NInput type="password" show-password-on="click" placeholder="请输入新密码" />
-          </NFormItem>
-          <NFormItem label="确认密码">
-            <NInput type="password" show-password-on="click" placeholder="请再次输入密码" />
-          </NFormItem>
-        </NForm>
-        <template #footer>
-          <NSpace justify="end">
-            <NButton @click="closePasswordDrawer">取消</NButton>
-            <NButton type="primary">确定</NButton>
-          </NSpace>
-        </template>
-      </NDrawerContent>
-    </NDrawer>
-  </div>
+  </TableSiderLayout>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+.dept-tree {
+  .n-button {
+    --n-padding: 8px !important;
+  }
+
+  :deep(.n-tree__empty) {
+    height: 100%;
+    justify-content: center;
+  }
+
+  :deep(.n-spin-content) {
+    height: 100%;
+  }
+
+  :deep(.infinite-scroll) {
+    height: calc(100vh - 228px - var(--calc-footer-height, 0px)) !important;
+    max-height: calc(100vh - 228px - var(--calc-footer-height, 0px)) !important;
+  }
+
+  @media screen and (max-width: 1024px) {
+    :deep(.infinite-scroll) {
+      height: calc(100vh - 227px - var(--calc-footer-height, 0px)) !important;
+      max-height: calc(100vh - 227px - var(--calc-footer-height, 0px)) !important;
+    }
+  }
+
+  :deep(.n-tree-node) {
+    height: 30px;
+  }
+
+  :deep(.n-tree-node-switcher) {
+    height: 30px;
+  }
+
+  :deep(.n-tree-node-switcher__icon) {
+    font-size: 16px !important;
+    height: 16px !important;
+    width: 16px !important;
+  }
+}
+
 :deep(.n-data-table-wrapper),
 :deep(.n-data-table-base-table),
 :deep(.n-data-table-base-table-body) {
   height: 100%;
+}
+
+@media screen and (max-width: 800px) {
+  :deep(.n-data-table-base-table-body) {
+    max-height: calc(100vh - 400px - var(--calc-footer-height, 0px));
+  }
+}
+
+@media screen and (max-width: 802px) {
+  :deep(.n-data-table-base-table-body) {
+    max-height: calc(100vh - 473px - var(--calc-footer-height, 0px));
+  }
+}
+
+:deep(.n-card-header__main) {
+  min-width: 69px !important;
 }
 </style>

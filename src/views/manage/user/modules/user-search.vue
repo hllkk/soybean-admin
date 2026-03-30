@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { useAppStore } from '@/store/modules/app';
+import { ref, toRaw } from 'vue';
+import { NDatePicker } from 'naive-ui';
+import { jsonClone } from '@sa/utils';
+import { useNaiveForm } from '@/hooks/common/form';
+import { $t } from '@/locales';
 
 defineOptions({
   name: 'UserSearch'
 });
-
-const appStore = useAppStore();
 
 interface Emits {
   (e: 'reset'): void;
@@ -14,73 +16,106 @@ interface Emits {
 
 const emit = defineEmits<Emits>();
 
-const model = defineModel<Api.SystemManage.UserSearchParams>('model', { required: true });
+const { formRef, validate, restoreValidation } = useNaiveForm();
 
-function reset() {
-  Object.assign(model.value, {
-    userName: '',
-    nickName: '',
-    phone: '',
-    status: ''
-  });
+const dateRangeCreateTime = ref<[string, string] | null>(null);
+
+const model = defineModel<Api.System.UserSearchParams>('model', { required: true });
+
+const defaultModel = jsonClone(toRaw(model.value));
+
+function onDateRangeCreateTimeUpdate(value: [string, string] | null) {
+  const params = model.value.params!;
+  if (value && value.length === 2) {
+    [params.beginTime, params.endTime] = value;
+  } else {
+    params.beginTime = undefined;
+    params.endTime = undefined;
+  }
+}
+
+function resetModel() {
+  dateRangeCreateTime.value = null;
+  Object.assign(model.value, defaultModel);
+}
+
+async function reset() {
+  await restoreValidation();
+  resetModel();
   emit('reset');
 }
 
-function search() {
+async function search() {
+  await validate();
   emit('search');
 }
 </script>
 
 <template>
-  <NCard :bordered="false" size="small" class="card-wrapper">
-    <NForm :model="model" label-placement="left" :label-width="80">
-      <NGrid :cols="appStore.isMobile ? 1 : 24" :x-gap="16" :y-gap="16">
-        <NGi :span="appStore.isMobile ? 24 : 4">
-          <NFormItem label="用户名" path="userName">
-            <NInput v-model:value="model.userName" placeholder="请输入用户名" clearable />
-          </NFormItem>
-        </NGi>
-        <NGi :span="appStore.isMobile ? 24 : 4">
-          <NFormItem label="昵称" path="nickName">
-            <NInput v-model:value="model.nickName" placeholder="请输入昵称" clearable />
-          </NFormItem>
-        </NGi>
-        <NGi :span="appStore.isMobile ? 24 : 4">
-          <NFormItem label="手机号" path="phone">
-            <NInput v-model:value="model.phone" placeholder="请输入手机号" clearable />
-          </NFormItem>
-        </NGi>
-        <NGi :span="appStore.isMobile ? 24 : 4">
-          <NFormItem label="状态" path="status">
-            <NSelect
-              v-model:value="model.status"
-              :options="[
-                { label: '全部', value: '' },
-                { label: '正常', value: '1' },
-                { label: '停用', value: '0' }
-              ]"
-              clearable
-            />
-          </NFormItem>
-        </NGi>
-        <NGi :span="appStore.isMobile ? 24 : 8">
-          <NSpace>
-            <NButton type="primary" @click="search">
-              <template #icon>
-                <icon-ic-round-search />
-              </template>
-              搜索
-            </NButton>
-            <NButton @click="reset">
-              <template #icon>
-                <icon-ic-round-refresh />
-              </template>
-              重置
-            </NButton>
-          </NSpace>
-        </NGi>
-      </NGrid>
-    </NForm>
+  <NCard :bordered="false" size="small" class="table-search card-wrapper">
+    <NCollapse>
+      <NCollapseItem :title="$t('common.search')" name="user-search">
+        <NForm ref="formRef" :model="model" label-placement="left" :label-width="80">
+          <NGrid responsive="screen" item-responsive>
+            <NFormItemGi span="24 s:12 m:6" :label="$t('page.system.user.userName')" path="userName" class="pr-24px">
+              <NInput v-model:value="model.userName" :placeholder="$t('page.system.user.form.userName.required')" />
+            </NFormItemGi>
+            <NFormItemGi span="24 s:12 m:6" :label="$t('page.system.user.nickName')" path="nickName" class="pr-24px">
+              <NInput v-model:value="model.nickName" :placeholder="$t('page.system.user.form.nickName.required')" />
+            </NFormItemGi>
+            <NFormItemGi
+              span="24 s:12 m:6"
+              :label="$t('page.system.user.phonenumber')"
+              path="phonenumber"
+              class="pr-24px"
+            >
+              <NInput
+                v-model:value="model.phonenumber"
+                :placeholder="$t('page.system.user.form.phonenumber.required')"
+              />
+            </NFormItemGi>
+            <NFormItemGi span="24 s:12 m:6" :label="$t('page.system.user.status')" path="status" class="pr-24px">
+              <DictSelect
+                v-model:value="model.status"
+                :placeholder="$t('page.system.user.form.status.required')"
+                dict-code="sys_normal_disable"
+                clearable
+              />
+            </NFormItemGi>
+            <NFormItemGi
+              span="24 s:12 m:12"
+              :label="$t('page.system.user.createTime')"
+              path="createTime"
+              class="pr-24px"
+            >
+              <NDatePicker
+                v-model:formatted-value="dateRangeCreateTime"
+                type="datetimerange"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                clearable
+                @update:formatted-value="onDateRangeCreateTimeUpdate"
+              />
+            </NFormItemGi>
+            <NFormItemGi span="24 s:12 m:12" class="pr-24px">
+              <NSpace class="w-full" justify="end">
+                <NButton @click="reset">
+                  <template #icon>
+                    <icon-ic-round-refresh class="text-icon" />
+                  </template>
+                  {{ $t('common.reset') }}
+                </NButton>
+                <NButton type="primary" ghost @click="search">
+                  <template #icon>
+                    <icon-ic-round-search class="text-icon" />
+                  </template>
+                  {{ $t('common.search') }}
+                </NButton>
+              </NSpace>
+            </NFormItemGi>
+          </NGrid>
+        </NForm>
+      </NCollapseItem>
+    </NCollapse>
   </NCard>
 </template>
 
