@@ -38,7 +38,7 @@ declare namespace StorageType {
       siderCollapse: boolean;
     };
     /** The last login user id */
-    lastLoginUserId: string;
+    lastLoginUserId: CommonType.IdType;
     /** The remember me flag */
     login_remember_me: boolean;
     /** The remembered username */

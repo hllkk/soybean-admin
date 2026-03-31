@@ -12,7 +12,7 @@ declare namespace Api {
     }
 
     interface UserInfo {
-      userId: number;
+      userId: CommonType.IdType;
       userName: string;
       nickName: string;
       userAvatar: string;

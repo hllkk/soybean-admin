@@ -1,216 +1,292 @@
-<script setup lang="ts">
-import { h, onMounted, reactive, ref } from 'vue';
-import type { DataTableColumns } from 'naive-ui';
-import { NButton, NSpace } from 'naive-ui';
+<script setup lang="tsx">
+import { ref } from 'vue';
+import { NDivider, NTag } from 'naive-ui';
+import { jsonClone } from '@sa/utils';
+import { useBoolean } from '@sa/hooks';
+import { dataScopeRecord } from '@/constants/business';
+import { fetchBatchDeleteRole, fetchGetRoleList, fetchUpdateRoleStatus } from '@/service/api/system/role';
 import { useAppStore } from '@/store/modules/app';
+import { useAuth } from '@/hooks/business/auth';
+import { useDownload } from '@/hooks/business/download';
+import { defaultTransform, useNaivePaginatedTable, useTableOperate } from '@/hooks/common/table';
+import { useDict } from '@/hooks/business/dict';
+import { $t } from '@/locales';
+import ButtonIcon from '@/components/custom/button-icon.vue';
+import StatusSwitch from '@/components/custom/status-switch.vue';
+import RoleOperateDrawer from './modules/role-operate-drawer.vue';
+import RoleSearch from './modules/role-search.vue';
+import RoleDataScopeDrawer from './modules/role-data-scope-drawer.vue';
+import RoleAuthUserDrawer from './modules/role-auth-user-drawer.vue';
 
 defineOptions({
-  name: 'RoleManagePage'
+  name: 'RoleList'
 });
 
 const appStore = useAppStore();
+const { download } = useDownload();
+const { hasAuth } = useAuth();
 
-const loading = ref(false);
-const tableData = ref<Api.SystemManage.Role[]>([]);
-const pagination = reactive({
-  page: 1,
+useDict('sys_normal_disable');
+
+const { bool: dataScopeDrawerVisible, setTrue: openDataScopeDrawer } = useBoolean(false);
+const { bool: authUserDrawerVisible, setTrue: openAuthUserDrawer } = useBoolean(false);
+
+const searchParams = ref<Api.System.RoleSearchParams>({
+  pageNum: 1,
   pageSize: 10,
-  itemCount: 0,
-  showSizePicker: true,
-  pageSizes: [10, 20, 50]
+  roleName: null,
+  roleKey: null,
+  status: null,
+  params: {}
 });
 
-const searchParams = reactive({
-  roleName: '',
-  roleCode: '',
-  status: '' as '' | '0' | '1'
-});
+const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination, scrollX } =
+  useNaivePaginatedTable({
+    api: () => fetchGetRoleList(searchParams.value),
+    transform: response => defaultTransform(response),
+    onPaginationParamsChange: params => {
+      searchParams.value.pageNum = params.page;
+      searchParams.value.pageSize = params.pageSize;
+    },
+    columns: () => [
+      {
+        type: 'selection',
+        align: 'center',
+        width: 48
+      },
+      {
+        key: 'index',
+        title: $t('common.index'),
+        align: 'center',
+        width: 64,
+        render: (_, index) => index + 1
+      },
+      {
+        key: 'roleName',
+        title: '角色名称',
+        align: 'center',
+        minWidth: 120
+      },
+      {
+        key: 'roleKey',
+        title: '角色权限字符串',
+        align: 'center',
+        minWidth: 120
+      },
+      {
+        key: 'roleSort',
+        title: '显示顺序',
+        align: 'center',
+        minWidth: 120
+      },
+      {
+        key: 'dataScope',
+        title: '数据范围',
+        align: 'center',
+        minWidth: 180,
+        render: row => {
+          return <NTag type="info">{dataScopeRecord[row.dataScope]}</NTag>;
+        }
+      },
+      {
+        key: 'status',
+        title: '角色状态',
+        align: 'center',
+        minWidth: 120,
+        render(row) {
+          return (
+            <StatusSwitch
+              v-model:value={row.status}
+              disabled={row.roleId === 1}
+              info={row.roleKey}
+              onSubmitted={(value, callback) => handleStatusChange(row, value, callback)}
+            />
+          );
+        }
+      },
+      {
+        key: 'createTime',
+        title: '创建时间',
+        align: 'center',
+        minWidth: 120
+      },
+      {
+        key: 'operate',
+        title: $t('common.operate'),
+        align: 'center',
+        width: 230,
+        render: row => {
+          if (row.roleId === 1) return null;
 
-const showModal = ref(false);
-const modalType = ref<'add' | 'edit'>('add');
-const formData = reactive({
-  id: 0,
-  roleName: '',
-  roleCode: '',
-  description: '',
-  status: '1'
-});
+          const editBtn = () => {
+            return (
+              <ButtonIcon
+                text
+                type="primary"
+                icon="material-symbols:drive-file-rename-outline-outline"
+                tooltipContent={$t('common.edit')}
+                onClick={() => edit(row.roleId)}
+              />
+            );
+          };
 
-const columns: DataTableColumns<Api.SystemManage.Role> = [
-  { title: 'ID', key: 'id', width: 80 },
-  { title: '角色名称', key: 'roleName' },
-  { title: '角色编码', key: 'roleCode' },
-  { title: '描述', key: 'description' },
-  { title: '状态', key: 'status', render: (row) => (row.status === '1' ? '正常' : '停用') },
-  {
-    title: '操作',
-    key: 'actions',
-    width: 200,
-    render: (row) => {
-      return h(NSpace, null, {
-        default: () => [
-          h(NButton, { size: 'small', onClick: () => handleEdit(row) }, { default: () => '编辑' }),
-          h(NButton, { size: 'small', type: 'primary', onClick: () => handlePermission(row) }, { default: () => '权限' }),
-          h(NButton, { size: 'small', type: 'error', onClick: () => handleDelete(row) }, { default: () => '删除' })
-        ]
-      });
-    }
-  }
-];
+          const dataScopeBtn = () => {
+            return (
+              <ButtonIcon
+                text
+                type="primary"
+                icon="material-symbols:database"
+                tooltipContent="数据范围权限"
+                onClick={() => handleDataScope(row)}
+              />
+            );
+          };
 
-async function fetchData() {
-  loading.value = true;
-  loading.value = false;
-}
+          const authUserBtn = () => {
+            return (
+              <ButtonIcon
+                text
+                type="primary"
+                icon="material-symbols:assignment-ind-outline"
+                tooltipContent="分配用户"
+                onClick={() => handleAuthUser(row)}
+              />
+            );
+          };
 
-function handleSearch() {
-  pagination.page = 1;
-  fetchData();
-}
+          const deleteBtn = () => {
+            return (
+              <ButtonIcon
+                text
+                type="error"
+                icon="material-symbols:delete-outline"
+                tooltipContent={$t('common.delete')}
+                popconfirmContent={$t('common.confirmDelete')}
+                onPositiveClick={() => handleDelete(row.roleId)}
+              />
+            );
+          };
 
-function handleReset() {
-  Object.assign(searchParams, { roleName: '', roleCode: '', status: '' });
-  handleSearch();
-}
+          const buttons = [];
+          if (hasAuth('system:role:edit')) {
+            buttons.push(editBtn());
+            buttons.push(dataScopeBtn());
+            buttons.push(authUserBtn());
+          }
+          if (hasAuth('system:role:remove')) buttons.push(deleteBtn());
 
-function handleAdd() {
-  modalType.value = 'add';
-  Object.assign(formData, { id: 0, roleName: '', roleCode: '', description: '', status: '1' });
-  showModal.value = true;
-}
-
-function handleEdit(row: Api.SystemManage.Role) {
-  modalType.value = 'edit';
-  Object.assign(formData, row);
-  showModal.value = true;
-}
-
-function handlePermission(row: Api.SystemManage.Role) {
-  window.$message?.destroyAll();
-  window.$message?.info(`配置角色 "${row.roleName}" 的权限`);
-}
-
-function handleDelete(row: Api.SystemManage.Role) {
-  window.$dialog?.warning({
-    title: '提示',
-    content: `确定删除角色 "${row.roleName}" 吗？`,
-    positiveText: '确定',
-    negativeText: '取消',
-    onPositiveClick: () => {
-      window.$message?.destroyAll();
-      window.$message?.success('删除成功');
-      fetchData();
-    }
+          return (
+            <div class="flex-center gap-8px">
+              {buttons.map((btn, index) => (
+                <>
+                  {index !== 0 && <NDivider vertical />}
+                  {btn}
+                </>
+              ))}
+            </div>
+          );
+        }
+      }
+    ]
   });
+
+const { drawerVisible, operateType, editingData, handleAdd, handleEdit, checkedRowKeys, onBatchDeleted, onDeleted } =
+  useTableOperate(data, 'roleId', getData);
+
+async function handleBatchDelete() {
+  // request
+  const { error } = await fetchBatchDeleteRole(checkedRowKeys.value);
+  if (error) return;
+  onBatchDeleted();
 }
 
-async function handleSubmit() {
-  window.$message?.destroyAll();
-  window.$message?.success(modalType.value === 'add' ? '添加成功' : '编辑成功');
-  showModal.value = false;
-  fetchData();
+async function handleDelete(roleId: CommonType.IdType) {
+  // request
+  const { error } = await fetchBatchDeleteRole([roleId]);
+  if (error) return;
+  onDeleted();
 }
 
-function handlePageChange(page: number) {
-  pagination.page = page;
-  fetchData();
+async function edit(roleId: CommonType.IdType) {
+  handleEdit(roleId);
 }
 
-function handlePageSizeChange(pageSize: number) {
-  pagination.pageSize = pageSize;
-  pagination.page = 1;
-  fetchData();
+async function handleExport() {
+  download('/system/role/export', searchParams.value, `角色_${new Date().getTime()}.xlsx`);
 }
 
-onMounted(() => {
-  fetchData();
-});
+/** 处理状态切换 */
+async function handleStatusChange(
+  row: Api.System.Role,
+  value: Api.Common.EnableStatus,
+  callback: (flag: boolean) => void
+) {
+  const { error } = await fetchUpdateRoleStatus({
+    roleId: row.roleId,
+    status: value
+  });
+
+  callback(!error);
+
+  if (!error) {
+    window.$message?.success('状态修改成功');
+    getData();
+  }
+}
+
+function handleDataScope(row: Api.System.Role) {
+  const findItem = data.value.find(item => item.roleId === row.roleId) || null;
+  editingData.value = jsonClone(findItem);
+  openDataScopeDrawer();
+}
+
+function handleAuthUser(row: Api.System.Role) {
+  const findItem = data.value.find(item => item.roleId === row.roleId) || null;
+  editingData.value = jsonClone(findItem);
+  openAuthUserDrawer();
+}
 </script>
 
 <template>
-  <div class="h-full flex-col">
-    <NCard :bordered="false" class="mb-16px card-wrapper">
-      <NForm :model="searchParams" label-placement="left" :label-width="80">
-        <NGrid :cols="appStore.isMobile ? 1 : 4" :x-gap="16" :y-gap="16">
-          <NGi>
-            <NFormItem label="角色名称" path="roleName">
-              <NInput v-model:value="searchParams.roleName" placeholder="请输入角色名称" clearable />
-            </NFormItem>
-          </NGi>
-          <NGi>
-            <NFormItem label="角色编码" path="roleCode">
-              <NInput v-model:value="searchParams.roleCode" placeholder="请输入角色编码" clearable />
-            </NFormItem>
-          </NGi>
-          <NGi>
-            <NFormItem label="状态" path="status">
-              <NSelect
-                v-model:value="searchParams.status"
-                :options="[
-                  { label: '全部', value: '' },
-                  { label: '正常', value: '1' },
-                  { label: '停用', value: '0' }
-                ]"
-                clearable
-              />
-            </NFormItem>
-          </NGi>
-          <NGi>
-            <NSpace>
-              <NButton type="primary" @click="handleSearch">搜索</NButton>
-              <NButton @click="handleReset">重置</NButton>
-            </NSpace>
-          </NGi>
-        </NGrid>
-      </NForm>
-    </NCard>
-
-    <NCard :bordered="false" class="flex-1 card-wrapper">
-      <template #header>
-        <NSpace justify="space-between">
-          <span class="text-16px font-medium">角色列表</span>
-          <NButton type="primary" @click="handleAdd">新增角色</NButton>
-        </NSpace>
+  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+    <RoleSearch v-model:model="searchParams" @search="getDataByPage" />
+    <NCard title="角色列表" :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
+      <template #header-extra>
+        <TableHeaderOperation
+          v-model:columns="columnChecks"
+          :disabled-delete="checkedRowKeys.length === 0"
+          :loading="loading"
+          :show-add="hasAuth('system:role:add')"
+          :show-delete="hasAuth('system:role:remove')"
+          :show-export="hasAuth('system:role:export')"
+          @add="handleAdd"
+          @delete="handleBatchDelete"
+          @export="handleExport"
+          @refresh="getData"
+        />
       </template>
       <NDataTable
+        v-model:checked-row-keys="checkedRowKeys"
         :columns="columns"
-        :data="tableData"
+        :data="data"
+        size="small"
+        :flex-height="!appStore.isMobile"
+        :scroll-x="scrollX"
         :loading="loading"
-        :pagination="pagination"
-        :row-key="(row) => row.id"
         remote
-        flex-height
-        class="h-full"
-        @update:page="handlePageChange"
-        @update:page-size="handlePageSizeChange"
+        :row-key="row => row.roleId"
+        :pagination="mobilePagination"
+        class="sm:h-full"
       />
+      <RoleOperateDrawer
+        v-model:visible="drawerVisible"
+        :operate-type="operateType"
+        :row-data="editingData"
+        @submitted="getData"
+      />
+      <RoleDataScopeDrawer v-model:visible="dataScopeDrawerVisible" :row-data="editingData" @submitted="getData" />
+      <RoleAuthUserDrawer v-model:visible="authUserDrawerVisible" :row-data="editingData" @submitted="getData" />
     </NCard>
-
-    <NModal v-model:show="showModal" preset="card" :title="modalType === 'add' ? '新增角色' : '编辑角色'" class="w-600px">
-      <NForm :model="formData" label-placement="left" :label-width="80">
-        <NFormItem label="角色名称" path="roleName">
-          <NInput v-model:value="formData.roleName" placeholder="请输入角色名称" />
-        </NFormItem>
-        <NFormItem label="角色编码" path="roleCode">
-          <NInput v-model:value="formData.roleCode" placeholder="请输入角色编码" />
-        </NFormItem>
-        <NFormItem label="描述" path="description">
-          <NInput v-model:value="formData.description" placeholder="请输入描述" />
-        </NFormItem>
-        <NFormItem label="状态" path="status">
-          <NRadioGroup v-model:value="formData.status">
-            <NRadioButton value="1">正常</NRadioButton>
-            <NRadioButton value="0">停用</NRadioButton>
-          </NRadioGroup>
-        </NFormItem>
-      </NForm>
-      <template #footer>
-        <NSpace justify="end">
-          <NButton @click="showModal = false">取消</NButton>
-          <NButton type="primary" @click="handleSubmit">确定</NButton>
-        </NSpace>
-      </template>
-    </NModal>
   </div>
 </template>
 
