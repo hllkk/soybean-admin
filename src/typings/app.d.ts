@@ -349,6 +349,7 @@ declare namespace App {
         importFormat: string;
         importSize: string;
         importTip: string;
+        selectFileFirst: string;
         exportSuccess: string;
         exportFail: string;
         updateExisting: string;

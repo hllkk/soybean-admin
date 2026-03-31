@@ -139,8 +139,8 @@ export function useDownload() {
   }
 
   /** 公共下载接口 */
-  const download = (url: string, params: Record<string, any>, filename: string) =>
-    executeDownload({ method: 'POST', url, params, filename });
+  const download = (url: string, params: Record<string, any>, filename: string, method: 'GET' | 'POST' = 'POST') =>
+    executeDownload({ method, url, params, filename });
 
   /** OSS文件下载 */
   const oss = (ossId: CommonType.IdType) =>

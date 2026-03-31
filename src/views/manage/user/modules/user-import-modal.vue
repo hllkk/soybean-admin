@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { h, ref, watch } from 'vue';
-import type { UploadFileInfo } from 'naive-ui';
+import type { UploadFileInfo, UploadInst } from 'naive-ui';
 import { getToken } from '@/store/modules/auth/shared';
 import { useDownload } from '@/hooks/business/download';
 import { getServiceBaseURL } from '@/utils/service';
-import type FileUpload from '@/components/custom/file-upload.vue';
 import { $t } from '@/locales';
 
 defineOptions({
@@ -26,7 +25,7 @@ const headers: Record<string, string> = {
 
 const emit = defineEmits<Emits>();
 
-const uploadRef = ref<typeof FileUpload>();
+const uploadRef = ref<UploadInst>();
 const message = ref<string>('');
 const success = ref<boolean>(false);
 
@@ -48,16 +47,17 @@ function closeDrawer() {
 }
 
 async function handleSubmit() {
-  fileList.value.forEach(item => {
-    item.status = 'pending';
-  });
+  if (fileList.value.length === 0) {
+    window.$message?.warning($t('common.selectFileFirst'));
+    return;
+  }
   uploadRef.value?.submit();
 }
 
 function isErrorState(xhr: XMLHttpRequest) {
   const responseText = xhr?.responseText;
   const response = JSON.parse(responseText);
-  return response.code !== 200;
+  return response.code !== '0000';
 }
 
 function handleFinish(options: { file: UploadFileInfo; event?: ProgressEvent }) {
@@ -65,9 +65,26 @@ function handleFinish(options: { file: UploadFileInfo; event?: ProgressEvent }) 
   // @ts-expect-error Ignore type errors
   const responseText = event?.target?.responseText;
   const response = JSON.parse(responseText);
-  message.value = response.msg;
-  window.$message?.success($t('common.importSuccess'));
-  success.value = true;
+
+  if (response.code === '0000' && response.data) {
+    const { successCount: _successCount, failCount, msg } = response.data;
+    message.value = msg;
+
+    if (failCount > 0) {
+      // 有失败记录，显示错误
+      window.$message?.error($t('common.importFail'));
+      success.value = false;
+    } else {
+      // 全部成功
+      window.$message?.success($t('common.importSuccess'));
+      success.value = true;
+    }
+  } else {
+    message.value = response.msg;
+    window.$message?.error(response.msg || $t('common.importFail'));
+    success.value = false;
+  }
+
   return file;
 }
 
@@ -85,7 +102,8 @@ function handleDownloadTemplate() {
   download(
     '/system/user/importTemplate',
     {},
-    `${$t('page.system.user.title')}_${$t('common.importTemplate')}_${new Date().getTime()}.xlsx`
+    `${$t('page.system.user.title')}_${$t('common.importTemplate')}_${new Date().getTime()}.xlsx`,
+    'GET'
   );
 }
 
@@ -119,7 +137,6 @@ watch(visible, () => {
       :file-size="50"
       accept=".xls,.xlsx"
       :multiple="false"
-      directory-dnd
       :default-upload="false"
       list-type="text"
       :is-error-state="isErrorState"

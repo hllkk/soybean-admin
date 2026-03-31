@@ -23,6 +23,7 @@ const local: App.I18n.Schema = {
     importEnd: '的文件',
     importFormat: '且格式为',
     importTip: '请上传大小不超过',
+    selectFileFirst: '请先选择文件',
     exportSuccess: '导出成功',
     exportFail: '导出失败',
     updateExisting: '是否更新已经存在的数据',

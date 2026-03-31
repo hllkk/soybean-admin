@@ -23,6 +23,7 @@ const local: App.I18n.Schema = {
     importFormat: 'and the format is',
     importTip: 'Please upload a file no larger than',
     importSize: 'Please upload a file no larger than',
+    selectFileFirst: 'Please select a file first',
     exportSuccess: 'Export Success',
     exportFail: 'Export Fail',
     updateExisting: 'Whether to update the existing user data',

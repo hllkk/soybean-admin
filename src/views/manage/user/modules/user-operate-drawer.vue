@@ -85,10 +85,6 @@ async function getUserInfo(id: CommonType.IdType) {
   if (!error) {
     model.value.roleIds = data.roleIds;
     model.value.postIds = data.postIds;
-    roleOptions.value = data.roles.map(role => ({
-      label: role.roleName,
-      value: role.roleId
-    }));
   }
   endLoading();
 }
@@ -105,11 +101,12 @@ async function getRoleOptions() {
   endLoading();
 }
 
-function handleUpdateModelWhenEdit() {
+async function handleUpdateModelWhenEdit() {
   model.value = createDefaultModel();
+  // 获取角色列表（添加和编辑都需要）
+  await getRoleOptions();
 
   if (props.operateType === 'add') {
-    getRoleOptions();
     model.value.deptId = props.deptId;
     return;
   }
@@ -118,7 +115,7 @@ function handleUpdateModelWhenEdit() {
     startDeptLoading();
     Object.assign(model.value, jsonClone(props.rowData));
     model.value.password = '';
-    getUserInfo(props.rowData.userId);
+    await getUserInfo(props.rowData.userId);
     endDeptLoading();
   }
 }

@@ -160,9 +160,9 @@ declare namespace Api {
     /** user info */
     type UserInfo = {
       /** user post ids */
-      postIds: string[];
+      postIds: CommonType.IdType[];
       /** user role ids */
-      roleIds: string[];
+      roleIds: CommonType.IdType[];
       /** roles */
       roles: { roleId: CommonType.IdType; roleName: string }[];
     };
