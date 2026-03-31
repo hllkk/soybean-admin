@@ -48,29 +48,25 @@ async function loadCaptcha() {
 
   try {
     const result = await fetchCaptcha();
-    console.log("Captcha API result:", result);
-    
+
     if (result.error) {
       errorMsg.value = "获取验证码失败: " + (result.error.message || "未知错误");
-      console.error("Captcha API error:", result.error);
       return;
     }
     
     if (!result.data) {
       errorMsg.value = "获取验证码失败: 返回数据为空";
-      console.error("Captcha API returned empty data");
       return;
     }
-    
+
     captchaKey.value = result.data.captchaKey || "";
     imageBase64.value = result.data.image || "";
     thumbBase64.value = result.data.thumb || "";
-    
+
     if (!captchaKey.value) {
       errorMsg.value = "获取验证码失败: 数据格式错误";
     }
-  } catch (e) {
-    console.error("获取验证码失败:", e);
+  } catch {
     errorMsg.value = "获取验证码失败";
   } finally {
     loading.value = false;

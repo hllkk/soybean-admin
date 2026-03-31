@@ -13,7 +13,6 @@ import { clearAuthStorage, getToken } from "./shared";
 
 export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   const route = useRoute();
-  const authStore = useAuthStore();
   const routeStore = useRouteStore();
   const tabStore = useTabStore();
   const { toLogin, redirectFromLogin } = useRouterPush(false);
@@ -22,7 +21,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   const token = ref("");
 
   const userInfo: Api.Auth.UserInfo = reactive({
-    userId: "",
+    userId: 0,
     userName: "",
     nickName: "",
     userAvatar: "",
@@ -53,7 +52,23 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
 
     clearAuthStorage();
 
-    authStore.$reset();
+    // Reset state manually (Pinia setup style)
+    token.value = "";
+    Object.assign(userInfo, {
+      userId: 0,
+      userName: "",
+      nickName: "",
+      userAvatar: "",
+      userEmail: "",
+      userPhone: "",
+      userGender: 0,
+      roleId: 0,
+      lastLogin: "",
+      status: "",
+      role: "",
+      roles: [],
+      buttons: []
+    });
 
     if (!route.meta.constant) {
       await toLogin();
