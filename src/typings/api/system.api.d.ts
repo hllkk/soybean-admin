@@ -164,7 +164,7 @@ declare namespace Api {
       /** user role ids */
       roleIds: string[];
       /** roles */
-      roles: Role[];
+      roles: { roleId: CommonType.IdType; roleName: string }[];
     };
 
     /** user list */

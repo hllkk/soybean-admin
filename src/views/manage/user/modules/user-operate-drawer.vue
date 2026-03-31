@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { jsonClone } from '@sa/utils';
 import { useLoading } from '@sa/hooks';
-import { fetchCreateUser, fetchGetUserInfo, fetchUpdateUser } from '@/service/api/system';
+import { fetchCreateUser, fetchGetUserInfo, fetchUpdateUser, fetchGetRoleSelect } from '@/service/api/system';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { $t } from '@/locales';
 
@@ -79,7 +79,7 @@ const rules: Record<RuleKey, App.Global.FormRule[]> = {
   roleIds: [{ ...createRequiredRule('请选择角色'), type: 'array' }]
 };
 
-async function getUserInfo(id: CommonType.IdType = '') {
+async function getUserInfo(id: CommonType.IdType) {
   startLoading();
   const { error, data } = await fetchGetUserInfo(id);
   if (!error) {
@@ -93,11 +93,23 @@ async function getUserInfo(id: CommonType.IdType = '') {
   endLoading();
 }
 
+async function getRoleOptions() {
+  startLoading();
+  const { error, data } = await fetchGetRoleSelect();
+  if (!error) {
+    roleOptions.value = data.map(role => ({
+      label: role.roleName,
+      value: role.roleId
+    }));
+  }
+  endLoading();
+}
+
 function handleUpdateModelWhenEdit() {
   model.value = createDefaultModel();
 
   if (props.operateType === 'add') {
-    getUserInfo();
+    getRoleOptions();
     model.value.deptId = props.deptId;
     return;
   }

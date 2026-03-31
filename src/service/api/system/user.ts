@@ -42,6 +42,14 @@ export function fetchGetUserSelect() {
   });
 }
 
+/** 获取角色选择列表 */
+export function fetchGetRoleSelect() {
+  return request<{ roleId: CommonType.IdType; roleName: string }[]>({
+    url: '/system/role/select',
+    method: 'get'
+  });
+}
+
 /** 修改用户状态 */
 export function fetchUpdateUserStatus(data: Api.System.UserOperateParams) {
   return request<boolean>({
@@ -60,7 +68,7 @@ export function fetchBatchDeleteUser(userIds: CommonType.IdType[]) {
 }
 
 /** 根据用户编号获取详细信息 */
-export function fetchGetUserInfo(userId?: CommonType.IdType) {
+export function fetchGetUserInfo(userId: CommonType.IdType) {
   return request<Api.System.UserInfo>({
     url: `/system/user/${userId}`,
     method: 'get'

@@ -31,8 +31,8 @@ declare namespace Api {
     /**
      * 启用状态
      *
-     * - "0": 正常
-     * - "1": 停用
+     * - "1": 正常
+     * - "0": 停用
      */
     type EnableStatus = '0' | '1';
 
