@@ -133,8 +133,8 @@ function renderLabel({ option }: { option: TreeOption }) {
   if (label?.startsWith('route.') || label?.startsWith('menu.')) {
     label = $t(label as App.I18n.I18nKey);
   }
-  // 禁用的菜单显示红色
-  if (option.status === '1') {
+  // 禁用的菜单显示红色（status='0'表示停用）
+  if (option.status === '0') {
     return (
       <div class="flex items-center gap-4px text-error-200">
         {label}
@@ -143,7 +143,7 @@ function renderLabel({ option }: { option: TreeOption }) {
     );
   }
   // 隐藏的菜单显示灰色
-  if (option.visible === '1') {
+  if (option.hiddenInMenu === true) {
     return (
       <div class="flex items-center gap-4px text-gray-400">
         {label}
