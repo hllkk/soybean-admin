@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { jsonClone } from '@sa/utils';
 import { useLoading } from '@sa/hooks';
 import { fetchCreateRole, fetchUpdateRole } from '@/service/api/system/role';
@@ -81,7 +81,7 @@ async function handleUpdateModelWhenEdit() {
   model.value.menuIds = [];
 
   if (props.operateType === 'add') {
-    menuTreeRef.value?.refresh();
+    // 新增时组件会自动加载数据 (immediate=true)
     return;
   }
 
@@ -89,8 +89,13 @@ async function handleUpdateModelWhenEdit() {
     startMenuLoading();
     Object.assign(model.value, jsonClone(props.rowData));
 
-    // 先获取模块列表
-    await menuTreeRef.value?.getAppList();
+    // 等待组件挂载
+    await nextTick();
+
+    // 确保数据加载完成
+    await menuTreeRef.value?.refresh();
+
+    // 获取模块列表
     const apps = menuTreeRef.value?.appList || [];
 
     // 清空原有选中状态
@@ -101,8 +106,6 @@ async function handleUpdateModelWhenEdit() {
       apps.map(async (app: Api.System.App) => {
         const { data, error } = await fetchGetRoleMenuTreeSelect(model.value.roleId!, app.appCode);
         if (!error) {
-          // 加载该模块的菜单树
-          await menuTreeRef.value?.getModuleMenuList(app.appCode);
           // 设置该模块的选中状态
           menuTreeRef.value?.setCheckedKeysByModule(app.appCode, data.checkedKeys);
         }
@@ -195,7 +198,7 @@ watch(visible, () => {
             v-model:cascade="model.menuCheckStrictly"
             v-model:loading="menuLoading"
             :show-module-tabs="true"
-            :immediate="operateType === 'add'"
+            :immediate="true"
           />
         </NFormItem>
         <NFormItem label="备注" path="remark">

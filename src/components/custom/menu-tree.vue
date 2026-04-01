@@ -274,7 +274,7 @@ defineExpose({
   clearAllCheckedKeys,
   getAppList,
   getModuleMenuList,
-  appList
+  get appList() { return appList.value; }
 });
 </script>
 
