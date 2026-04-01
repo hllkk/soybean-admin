@@ -527,7 +527,7 @@ declare namespace App {
           striped: string;
         };
       };
-      route: Record<I18nRouteKey, string>;
+      route: Record<I18nRouteKey, string> & Record<string, string>;
       menu: Record<string, string>;
       dict: Record<string, Record<string, string>>;
       modules: Record<string, string>;
