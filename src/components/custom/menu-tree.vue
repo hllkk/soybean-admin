@@ -1,8 +1,9 @@
 <script setup lang="tsx">
-import { onMounted, ref, useAttrs, watch } from 'vue';
+import { onMounted, reactive, ref, watch, useAttrs } from 'vue';
 import type { TreeOption, TreeSelectInst, TreeSelectProps } from 'naive-ui';
 import { useBoolean } from '@sa/hooks';
 import { fetchGetMenuTreeSelect } from '@/service/api/system';
+import { fetchGetAppList } from '@/service/api/system/app';
 import SvgIcon from '@/components/custom/svg-icon.vue';
 import { $t } from '@/locales';
 
@@ -11,12 +12,14 @@ defineOptions({ name: 'MenuTree' });
 interface Props {
   immediate?: boolean;
   showHeader?: boolean;
+  showModuleTabs?: boolean;
   [key: string]: any;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   immediate: true,
-  showHeader: true
+  showHeader: true,
+  showModuleTabs: false
 });
 
 const { bool: expandAll } = useBoolean();
@@ -29,6 +32,13 @@ const options = defineModel<Api.System.MenuList>('options', { required: false, d
 const cascade = defineModel<boolean>('cascade', { required: false, default: true });
 const loading = defineModel<boolean>('loading', { required: false, default: false });
 const attrs: TreeSelectProps = useAttrs();
+
+// 模块相关状态
+const appList = ref<Api.System.AppList>([]);
+const activeModule = ref<string>('');
+const moduleMenuOptions = reactive<Record<string, Api.System.MenuList>>({});
+const moduleCheckedKeys = reactive<Record<string, CommonType.IdType[]>>({});
+const moduleLoading = reactive<Record<string, boolean>>({});
 
 async function getMenuList() {
   loading.value = true;
@@ -46,9 +56,60 @@ async function getMenuList() {
   loading.value = false;
 }
 
+async function getAppList() {
+  const { data, error } = await fetchGetAppList();
+  if (error) return;
+  appList.value = data;
+  if (appList.value.length > 0) {
+    activeModule.value = appList.value[0].appCode;
+  }
+}
+
+async function getModuleMenuList(module: string) {
+  moduleLoading[module] = true;
+  const { error, data } = await fetchGetMenuTreeSelect(module);
+  if (error) {
+    moduleLoading[module] = false;
+    return;
+  }
+  moduleMenuOptions[module] = [
+    {
+      id: 0,
+      label: '根目录',
+      icon: 'material-symbols:home-outline-rounded',
+      children: data
+    }
+  ] as Api.System.MenuList;
+  moduleLoading[module] = false;
+}
+
+async function loadAllModules() {
+  await getAppList();
+  if (appList.value.length > 0) {
+    await Promise.all(appList.value.map(app => getModuleMenuList(app.appCode)));
+  }
+}
+
+function mergeAllCheckedKeys() {
+  const allKeys: CommonType.IdType[] = [];
+  for (const module of appList.value) {
+    const keys = moduleCheckedKeys[module.appCode] || [];
+    allKeys.push(...keys);
+  }
+  checkedKeys.value = [...new Set(allKeys)];
+}
+
+watch(moduleCheckedKeys, () => {
+  mergeAllCheckedKeys();
+}, { deep: true });
+
 onMounted(() => {
   if (props.immediate) {
-    getMenuList();
+    if (props.showModuleTabs) {
+      loadAllModules();
+    } else {
+      getMenuList();
+    }
   }
 });
 
@@ -59,6 +120,12 @@ watch([expandAll, options], ([newVal]) => {
   } else {
     expandedKeys.value = [0];
   }
+});
+
+// 监听 activeModule 变化，更新展开状态
+watch(activeModule, () => {
+  expandedKeys.value = [0];
+  expandAll.value = false;
 });
 
 function renderLabel({ option }: { option: TreeOption }) {
@@ -124,6 +191,15 @@ function getLeafMenuIds(menu: Api.System.MenuList): CommonType.IdType[] {
 }
 
 function handleCheckedTreeNodeAll(checked: boolean) {
+  if (props.showModuleTabs) {
+    // 模块模式下，仅作用于当前激活模块
+    if (checked) {
+      moduleCheckedKeys[activeModule.value] = getAllMenuIds(moduleMenuOptions[activeModule.value] || []);
+      return;
+    }
+    moduleCheckedKeys[activeModule.value] = [];
+    return;
+  }
   if (checked) {
     checkedKeys.value = getAllMenuIds(options.value);
     return;
@@ -132,6 +208,14 @@ function handleCheckedTreeNodeAll(checked: boolean) {
 }
 
 function getCheckedMenuIds(isCascade: boolean = false) {
+  if (props.showModuleTabs) {
+    const allIds: string[] = [];
+    for (const module of appList.value) {
+      const keys = moduleCheckedKeys[module.appCode] || [];
+      allIds.push(...keys.map(String));
+    }
+    return allIds;
+  }
   const menuIds = menuTreeRef.value?.getCheckedData()?.keys as string[];
   const indeterminateData = menuTreeRef.value?.getIndeterminateData();
   if (cascade.value || isCascade) {
@@ -141,7 +225,35 @@ function getCheckedMenuIds(isCascade: boolean = false) {
   return menuIds;
 }
 
+function setCheckedKeysByModule(module: string, keys: CommonType.IdType[]) {
+  moduleCheckedKeys[module] = keys;
+}
+
+function clearAllCheckedKeys() {
+  for (const module of appList.value) {
+    moduleCheckedKeys[module.appCode] = [];
+  }
+  checkedKeys.value = [];
+}
+
+async function refresh() {
+  if (props.showModuleTabs) {
+    await loadAllModules();
+    return;
+  }
+  await getMenuList();
+}
+
 watch(cascade, () => {
+  if (props.showModuleTabs) {
+    // 模块模式下，处理当前激活模块的父子联动
+    if (cascade.value) {
+      const allLeafIds = getLeafMenuIds(moduleMenuOptions[activeModule.value] || []);
+      const selectedLeafIds = (moduleCheckedKeys[activeModule.value] || []).filter(id => allLeafIds.includes(id));
+      moduleCheckedKeys[activeModule.value] = selectedLeafIds;
+    }
+    return;
+  }
   if (cascade.value) {
     // 获取当前菜单树中的所有叶子节点ID
     const allLeafIds = getLeafMenuIds(options.value);
@@ -157,44 +269,92 @@ watch(cascade, () => {
 
 defineExpose({
   getCheckedMenuIds,
-  refresh: getMenuList
+  refresh,
+  setCheckedKeysByModule,
+  clearAllCheckedKeys,
+  getAppList,
+  getModuleMenuList,
+  appList
 });
 </script>
 
 <template>
   <div class="w-full flex-col gap-12px">
-    <div v-if="showHeader" class="w-full flex-center">
-      <NCheckbox v-model:checked="expandAll" :checked-value="true" :unchecked-value="false">展开/折叠</NCheckbox>
-      <NCheckbox
-        v-model:checked="checkAll"
-        :checked-value="true"
-        :unchecked-value="false"
-        @update:checked="handleCheckedTreeNodeAll"
-      >
-        全选/反选
-      </NCheckbox>
-      <NCheckbox v-model:checked="cascade" :checked-value="true" :unchecked-value="false">父子联动</NCheckbox>
-    </div>
-    <NSpin class="resource h-full w-full py-6px pl-3px" content-class="h-full" :show="loading">
-      <NTree
-        ref="menuTreeRef"
-        v-model:checked-keys="checkedKeys"
-        v-model:expanded-keys="expandedKeys"
-        multiple
-        checkable
-        :selectable="false"
-        key-field="id"
-        label-field="label"
-        :data="options"
-        :cascade="cascade"
-        :loading="loading"
-        virtual-scroll
-        check-strategy="all"
-        :render-label="renderLabel"
-        :render-prefix="renderPrefix"
-        v-bind="attrs"
-      />
-    </NSpin>
+    <!-- 模块 Tabs 模式 -->
+    <NTabs v-if="showModuleTabs" v-model:value="activeModule" type="line">
+      <NTabPane v-for="app in appList" :key="app.appCode" :name="app.appCode" :tab="app.appName">
+        <!-- 操作栏 -->
+        <div v-if="showHeader" class="w-full flex-center mb-12px">
+          <NCheckbox v-model:checked="expandAll" :checked-value="true" :unchecked-value="false">展开/折叠</NCheckbox>
+          <NCheckbox
+            v-model:checked="checkAll"
+            :checked-value="true"
+            :unchecked-value="false"
+            @update:checked="handleCheckedTreeNodeAll"
+          >
+            全选/反选
+          </NCheckbox>
+          <NCheckbox v-model:checked="cascade" :checked-value="true" :unchecked-value="false">父子联动</NCheckbox>
+        </div>
+        <!-- 菜单树 -->
+        <NSpin class="resource h-full w-full py-6px pl-3px" content-class="h-full" :show="moduleLoading[app.appCode]">
+          <NTree
+            ref="menuTreeRef"
+            v-model:checked-keys="moduleCheckedKeys[app.appCode]"
+            v-model:expanded-keys="expandedKeys"
+            multiple
+            checkable
+            :selectable="false"
+            key-field="id"
+            label-field="label"
+            :data="moduleMenuOptions[app.appCode] || []"
+            :cascade="cascade"
+            :loading="moduleLoading[app.appCode]"
+            virtual-scroll
+            check-strategy="all"
+            :render-label="renderLabel"
+            :render-prefix="renderPrefix"
+            v-bind="attrs"
+          />
+        </NSpin>
+      </NTabPane>
+    </NTabs>
+
+    <!-- 原有单模块模式 -->
+    <template v-else>
+      <div v-if="showHeader" class="w-full flex-center">
+        <NCheckbox v-model:checked="expandAll" :checked-value="true" :unchecked-value="false">展开/折叠</NCheckbox>
+        <NCheckbox
+          v-model:checked="checkAll"
+          :checked-value="true"
+          :unchecked-value="false"
+          @update:checked="handleCheckedTreeNodeAll"
+        >
+          全选/反选
+        </NCheckbox>
+        <NCheckbox v-model:checked="cascade" :checked-value="true" :unchecked-value="false">父子联动</NCheckbox>
+      </div>
+      <NSpin class="resource h-full w-full py-6px pl-3px" content-class="h-full" :show="loading">
+        <NTree
+          ref="menuTreeRef"
+          v-model:checked-keys="checkedKeys"
+          v-model:expanded-keys="expandedKeys"
+          multiple
+          checkable
+          :selectable="false"
+          key-field="id"
+          label-field="label"
+          :data="options"
+          :cascade="cascade"
+          :loading="loading"
+          virtual-scroll
+          check-strategy="all"
+          :render-label="renderLabel"
+          :render-prefix="renderPrefix"
+          v-bind="attrs"
+        />
+      </NSpin>
+    </template>
   </div>
 </template>
 

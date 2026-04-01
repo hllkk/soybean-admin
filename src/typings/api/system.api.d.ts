@@ -826,5 +826,16 @@ declare namespace Api {
 
     /** oss config list */
     type OssConfigList = Api.Common.PaginatingQueryRecord<OssConfig>;
+
+    /** app */
+    type App = Common.CommonRecord<{
+      /** 应用编码 */
+      appCode: string;
+      /** 应用名称 */
+      appName: string;
+    }>;
+
+    /** app list */
+    type AppList = App[];
   }
 }

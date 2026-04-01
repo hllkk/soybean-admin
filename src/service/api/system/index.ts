@@ -4,3 +4,4 @@ export * from "./post";
 export * from "./dict";
 export * from "./role";
 export * from "./menu";
+export * from "./app";

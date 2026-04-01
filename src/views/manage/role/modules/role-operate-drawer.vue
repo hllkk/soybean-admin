@@ -77,7 +77,6 @@ const rules: Record<RuleKey, App.Global.FormRule> = {
 };
 
 async function handleUpdateModelWhenEdit() {
-  menuOptions.value = [];
   model.value = createDefaultModel();
   model.value.menuIds = [];
 
@@ -89,10 +88,27 @@ async function handleUpdateModelWhenEdit() {
   if (props.operateType === 'edit' && props.rowData) {
     startMenuLoading();
     Object.assign(model.value, jsonClone(props.rowData));
-    const { data, error } = await fetchGetRoleMenuTreeSelect(model.value.roleId!);
-    if (error) return;
-    model.value.menuIds = data.checkedKeys;
-    menuOptions.value = data.menus;
+
+    // 先获取模块列表
+    await menuTreeRef.value?.getAppList();
+    const apps = menuTreeRef.value?.appList || [];
+
+    // 清空原有选中状态
+    menuTreeRef.value?.clearAllCheckedKeys();
+
+    // 并行获取各模块的角色菜单权限
+    await Promise.all(
+      apps.map(async (app: Api.System.App) => {
+        const { data, error } = await fetchGetRoleMenuTreeSelect(model.value.roleId!, app.appCode);
+        if (!error) {
+          // 加载该模块的菜单树
+          await menuTreeRef.value?.getModuleMenuList(app.appCode);
+          // 设置该模块的选中状态
+          menuTreeRef.value?.setCheckedKeysByModule(app.appCode, data.checkedKeys);
+        }
+      })
+    );
+
     stopMenuLoading();
   }
 }
@@ -178,6 +194,7 @@ watch(visible, () => {
             v-model:options="menuOptions"
             v-model:cascade="model.menuCheckStrictly"
             v-model:loading="menuLoading"
+            :show-module-tabs="true"
             :immediate="operateType === 'add'"
           />
         </NFormItem>
