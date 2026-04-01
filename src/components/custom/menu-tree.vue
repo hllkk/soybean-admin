@@ -282,7 +282,7 @@ defineExpose({
   <div class="w-full flex-col gap-12px">
     <!-- 模块 Tabs 模式 -->
     <NTabs v-if="showModuleTabs" v-model:value="activeModule" type="line">
-      <NTabPane v-for="app in appList" :key="app.appCode" :name="app.appCode" :tab="app.appName">
+      <NTabPane v-for="app in appList" :key="app.appCode" :name="app.appCode" :tab="$t(`modules.${app.appCode}`)">
         <!-- 操作栏 -->
         <div v-if="showHeader" class="w-full flex-center mb-12px">
           <NCheckbox v-model:checked="expandAll" :checked-value="true" :unchecked-value="false">展开/折叠</NCheckbox>

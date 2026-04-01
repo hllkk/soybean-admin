@@ -372,6 +372,10 @@ const local: App.I18n.Schema = {
       timeout: '超时'
     }
   },
+  modules: {
+    admin: '系统管理',
+    disk: '网盘管理'
+  },
   page: {
     login: {
       common: {

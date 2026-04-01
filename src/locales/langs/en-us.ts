@@ -376,6 +376,10 @@ const local: App.I18n.Schema = {
       timeout: 'Timeout'
     }
   },
+  modules: {
+    admin: 'System Management',
+    disk: 'Disk Management'
+  },
   page: {
     login: {
       common: {
