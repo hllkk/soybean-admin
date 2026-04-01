@@ -288,6 +288,7 @@ const local: App.I18n.Schema = {
     manage_user: 'User Management'
   },
   menu: {
+    root: 'Root',
     system_tenant: 'Tenant Management',
     system_log: 'Log Management',
     'monitor_snail-job': 'Job Management',

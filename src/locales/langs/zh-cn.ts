@@ -284,6 +284,7 @@ const local: App.I18n.Schema = {
     manage_user: '用户管理'
   },
   menu: {
+    root: '根目录',
     system_tenant: '租户管理',
     system_log: '日志管理',
     'monitor_snail-job': '任务调度中心',
