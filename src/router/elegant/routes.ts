@@ -134,41 +134,6 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
-        name: 'manage_log',
-        path: '/manage/log',
-        component: 'view.manage_log',
-        meta: {
-          title: 'manage_log',
-          i18nKey: 'route.manage_log',
-          icon: 'mdi:text-box',
-          order: 7
-        },
-        children: [
-          {
-            name: 'manage_log_login',
-            path: '/manage/log/login',
-            component: 'view.manage_log_login',
-            meta: {
-              title: 'manage_log_login',
-              i18nKey: 'route.manage_log_login',
-              icon: 'mdi:login',
-              order: 2
-            }
-          },
-          {
-            name: 'manage_log_operation',
-            path: '/manage/log/operation',
-            component: 'view.manage_log_operation',
-            meta: {
-              title: 'manage_log_operation',
-              i18nKey: 'route.manage_log_operation',
-              icon: 'mdi:text-box-search',
-              order: 1
-            }
-          }
-        ]
-      },
-      {
         name: 'manage_menu',
         path: '/manage/menu',
         component: 'view.manage_menu',

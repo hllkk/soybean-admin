@@ -28,9 +28,6 @@ declare module "@elegant-router/types" {
     "manage": "/manage";
     "manage_dept": "/manage/dept";
     "manage_dict": "/manage/dict";
-    "manage_log": "/manage/log";
-    "manage_log_login": "/manage/log/login";
-    "manage_log_operation": "/manage/log/operation";
     "manage_menu": "/manage/menu";
     "manage_post": "/manage/post";
     "manage_role": "/manage/role";
@@ -102,9 +99,6 @@ declare module "@elegant-router/types" {
     | "disk"
     | "manage_dept"
     | "manage_dict"
-    | "manage_log"
-    | "manage_log_login"
-    | "manage_log_operation"
     | "manage_menu"
     | "manage_post"
     | "manage_role"

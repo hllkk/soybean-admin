@@ -1,190 +1,217 @@
-<script setup lang="ts">
-import { h, onMounted, reactive, ref } from 'vue';
-import { NButton, NSpace } from 'naive-ui';
+<script setup lang="tsx">
+import { ref } from 'vue';
+import { NButton, NDivider } from 'naive-ui';
+import { jsonClone } from '@sa/utils';
+import { fetchBatchDeleteDept, fetchGetDeptList } from '@/service/api/system/dept';
+import { useAppStore } from '@/store/modules/app';
+import { useAuth } from '@/hooks/business/auth';
+import { treeTransform, useNaiveTreeTable, useTableOperate } from '@/hooks/common/table';
+import { useDict } from '@/hooks/business/dict';
+import DictTag from '@/components/custom/dict-tag.vue';
+import { $t } from '@/locales';
+import ButtonIcon from '@/components/custom/button-icon.vue';
+import DeptOperateDrawer from './modules/dept-operate-drawer.vue';
+import DeptSearch from './modules/dept-search.vue';
 
 defineOptions({
-  name: 'DeptManagePage'
+  name: 'DeptList'
 });
 
-const loading = ref(false);
-const tableData = ref<Api.SystemManage.Dept[]>([]);
+useDict('sys_normal_disable');
 
-const searchParams = reactive({
-  deptName: '',
-  status: '' as '' | '0' | '1'
+const appStore = useAppStore();
+const { hasAuth } = useAuth();
+
+const searchParams = ref<Api.System.DeptSearchParams>({
+  deptName: null,
+  status: null,
+  params: {}
 });
 
-const showModal = ref(false);
-const modalType = ref<'add' | 'edit'>('add');
-const formData = ref({
-  id: 0,
-  deptName: '',
-  parentId: 0,
-  leader: '' as string | undefined,
-  phone: '' as string | undefined,
-  email: '' as string | undefined,
-  order: 0,
-  status: '1' as '0' | '1'
-});
+const {
+  columns,
+  columnChecks,
+  data,
+  rows,
+  getData,
+  loading,
+  expandedRowKeys,
+  isCollapse,
+  expandAll,
+  collapseAll,
+  scrollX
+} = useNaiveTreeTable({
+  keyField: 'deptId',
+  api: () => fetchGetDeptList(searchParams.value),
+  transform: response => treeTransform(response, { idField: 'deptId' }),
+  columns: () => [
+    {
+      key: 'deptName',
+      title: $t('page.system.dept.deptName'),
+      align: 'center',
+      width: 230,
+      ellipsis: true
+    },
+    {
+      key: 'deptCategory',
+      title: $t('page.system.dept.deptCategory'),
+      align: 'center',
+      minWidth: 120
+    },
+    {
+      key: 'orderNum',
+      title: $t('page.system.dept.sort'),
+      align: 'center',
+      minWidth: 60
+    },
+    {
+      key: 'status',
+      title: $t('page.system.dept.status'),
+      align: 'center',
+      minWidth: 120,
+      render(row) {
+        return <DictTag size="small" value={row.status} dictCode="sys_normal_disable" />;
+      }
+    },
+    {
+      key: 'createTime',
+      title: $t('page.system.dept.createTime'),
+      align: 'center',
+      minWidth: 120
+    },
+    {
+      key: 'operate',
+      title: $t('common.operate'),
+      align: 'center',
+      width: 150,
+      render: row => {
+        const addBtn = () => {
+          return (
+            <ButtonIcon
+              text
+              type="primary"
+              icon="material-symbols:add-2-rounded"
+              tooltipContent={$t('common.add')}
+              onClick={() => addInRow(row)}
+            />
+          );
+        };
 
-async function fetchData() {
-  loading.value = true;
-  loading.value = false;
-}
+        const editBtn = () => {
+          return (
+            <ButtonIcon
+              text
+              type="primary"
+              icon="material-symbols:drive-file-rename-outline-outline"
+              tooltipContent={$t('common.edit')}
+              onClick={() => edit(row.deptId)}
+            />
+          );
+        };
 
-function handleSearch() {
-  fetchData();
-}
+        const deleteBtn = () => {
+          return (
+            <ButtonIcon
+              text
+              type="error"
+              icon="material-symbols:delete-outline"
+              tooltipContent={$t('common.delete')}
+              popconfirmContent={$t('common.confirmDelete')}
+              onPositiveClick={() => handleDelete(row.deptId)}
+            />
+          );
+        };
 
-function handleReset() {
-  Object.assign(searchParams, { deptName: '', status: '' });
-  handleSearch();
-}
+        const buttons = [];
+        if (hasAuth('system:dept:add')) buttons.push(addBtn());
+        if (hasAuth('system:dept:edit')) buttons.push(editBtn());
+        if (hasAuth('system:dept:remove')) buttons.push(deleteBtn());
 
-function handleAdd(parentId = 0) {
-  modalType.value = 'add';
-  formData.value = { id: 0, deptName: '', parentId, leader: '', phone: '', email: '', order: 0, status: '1' };
-  showModal.value = true;
-}
-
-function handleEdit(row: Api.SystemManage.Dept) {
-  modalType.value = 'edit';
-  formData.value = {
-    id: row.id,
-    deptName: row.deptName,
-    parentId: row.parentId,
-    leader: row.leader || '',
-    phone: row.phone || '',
-    email: row.email || '',
-    order: row.order,
-    status: row.status
-  };
-  showModal.value = true;
-}
-
-function handleDelete(row: Api.SystemManage.Dept) {
-  window.$dialog?.warning({
-    title: '提示',
-    content: `确定删除部门 "${row.deptName}" 吗？`,
-    positiveText: '确定',
-    negativeText: '取消',
-    onPositiveClick: () => {
-      window.$message?.destroyAll();
-      window.$message?.success('删除成功');
-      fetchData();
+        return (
+          <div class="flex-center gap-8px">
+            {buttons.map((btn, index) => (
+              <>
+                {index !== 0 && <NDivider vertical />}
+                {btn}
+              </>
+            ))}
+          </div>
+        );
+      }
     }
-  });
-}
-
-async function handleSubmit() {
-  window.$message?.destroyAll();
-  window.$message?.success(modalType.value === 'add' ? '添加成功' : '编辑成功');
-  showModal.value = false;
-  fetchData();
-}
-
-onMounted(() => {
-  fetchData();
+  ]
 });
+
+const { drawerVisible, operateType, editingData, handleAdd, handleEdit, onDeleted } = useTableOperate(
+  rows,
+  'deptId',
+  getData
+);
+
+async function handleDelete(deptId: CommonType.IdType) {
+  // request
+  const { error } = await fetchBatchDeleteDept([deptId]);
+  if (error) return;
+  onDeleted();
+}
+
+function edit(deptId: CommonType.IdType) {
+  handleEdit(deptId);
+}
+
+function addInRow(row: Api.System.Dept) {
+  editingData.value = jsonClone(row);
+  handleAdd();
+}
 </script>
 
 <template>
-  <div class="h-full flex-col">
-    <NCard :bordered="false" class="mb-16px card-wrapper">
-      <NForm :model="searchParams" label-placement="left" :label-width="80" inline>
-        <NFormItem label="部门名称" path="deptName">
-          <NInput v-model:value="searchParams.deptName" placeholder="请输入部门名称" clearable />
-        </NFormItem>
-        <NFormItem label="状态" path="status">
-          <NSelect
-            v-model:value="searchParams.status"
-            :options="[
-              { label: '全部', value: '' },
-              { label: '正常', value: '1' },
-              { label: '停用', value: '0' }
-            ]"
-            clearable
-            style="width: 120px"
-          />
-        </NFormItem>
-        <NFormItem>
-          <NSpace>
-            <NButton type="primary" @click="handleSearch">搜索</NButton>
-            <NButton @click="handleReset">重置</NButton>
-          </NSpace>
-        </NFormItem>
-      </NForm>
-    </NCard>
-
-    <NCard :bordered="false" class="flex-1 card-wrapper">
-      <template #header>
-        <NSpace justify="space-between">
-          <span class="text-16px font-medium">部门列表</span>
-          <NButton type="primary" @click="handleAdd()">新增部门</NButton>
-        </NSpace>
+  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+    <DeptSearch v-model:model="searchParams" @search="getData" />
+    <NCard :title="$t('page.system.dept.title')" :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
+      <template #header-extra>
+        <TableHeaderOperation
+          v-model:columns="columnChecks"
+          :loading="loading"
+          :show-add="hasAuth('system:dept:add')"
+          :show-delete="false"
+          @add="handleAdd"
+          @refresh="getData"
+        >
+          <template #prefix>
+            <NButton v-if="!isCollapse" :disabled="!data.length" size="small" @click="expandAll">
+              <template #icon>
+                <icon-quill-expand />
+              </template>
+              {{ $t('page.system.dept.expandAll') }}
+            </NButton>
+            <NButton v-if="isCollapse" :disabled="!data.length" size="small" @click="collapseAll">
+              <template #icon>
+                <icon-quill-collapse />
+              </template>
+              {{ $t('page.system.dept.collapseAll') }}
+            </NButton>
+          </template>
+        </TableHeaderOperation>
       </template>
       <NDataTable
-        :columns="[
-          { title: '部门名称', key: 'deptName' },
-          { title: '负责人', key: 'leader' },
-          { title: '联系电话', key: 'phone' },
-          { title: '邮箱', key: 'email' },
-          { title: '排序', key: 'order', width: 80 },
-          { title: '状态', key: 'status', render: (row) => (row.status === '1' ? '正常' : '停用') },
-          {
-            title: '操作',
-            key: 'actions',
-            width: 200,
-            render: (row) =>
-              h(NSpace, null, {
-                default: () => [
-                  h(NButton, { size: 'small', onClick: () => handleAdd(row.id) }, { default: () => '新增' }),
-                  h(NButton, { size: 'small', onClick: () => handleEdit(row) }, { default: () => '编辑' }),
-                  h(NButton, { size: 'small', type: 'error', onClick: () => handleDelete(row) }, { default: () => '删除' })
-                ]
-              })
-          }
-        ]"
-        :data="tableData"
+        v-model:expanded-row-keys="expandedRowKeys"
+        :columns="columns"
+        :data="data"
+        size="small"
+        :flex-height="!appStore.isMobile"
+        :scroll-x="scrollX"
         :loading="loading"
-        :row-key="(row) => row.id"
-        default-expand-all
-        flex-height
-        class="h-full"
+        :row-key="row => row.deptId"
+        class="sm:h-full"
+      />
+      <DeptOperateDrawer
+        v-model:visible="drawerVisible"
+        :operate-type="operateType"
+        :row-data="editingData"
+        @submitted="getData"
       />
     </NCard>
-
-    <NModal v-model:show="showModal" preset="card" :title="modalType === 'add' ? '新增部门' : '编辑部门'" class="w-600px">
-      <NForm :model="formData" label-placement="left" :label-width="80">
-        <NFormItem label="部门名称" path="deptName">
-          <NInput v-model:value="formData.deptName" placeholder="请输入部门名称" />
-        </NFormItem>
-        <NFormItem label="负责人" path="leader">
-          <NInput v-model:value="formData.leader" placeholder="请输入负责人" />
-        </NFormItem>
-        <NFormItem label="联系电话" path="phone">
-          <NInput v-model:value="formData.phone" placeholder="请输入联系电话" />
-        </NFormItem>
-        <NFormItem label="邮箱" path="email">
-          <NInput v-model:value="formData.email" placeholder="请输入邮箱" />
-        </NFormItem>
-        <NFormItem label="排序" path="order">
-          <NInputNumber v-model:value="formData.order" :min="0" />
-        </NFormItem>
-        <NFormItem label="状态" path="status">
-          <NRadioGroup v-model:value="formData.status">
-            <NRadioButton value="1">正常</NRadioButton>
-            <NRadioButton value="0">停用</NRadioButton>
-          </NRadioGroup>
-        </NFormItem>
-      </NForm>
-      <template #footer>
-        <NSpace justify="end">
-          <NButton @click="showModal = false">取消</NButton>
-          <NButton type="primary" @click="handleSubmit">确定</NButton>
-        </NSpace>
-      </template>
-    </NModal>
   </div>
 </template>
 
