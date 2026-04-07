@@ -393,8 +393,8 @@ const local: App.I18n.Schema = {
     }
   },
   modules: {
-    admin: '系统管理',
-    disk: '网盘管理'
+    admin: '系统模块',
+    disk: '网盘模块'
   },
   page: {
     login: {
@@ -788,6 +788,19 @@ const local: App.I18n.Schema = {
         noCache: '不缓存',
         rootName: '根目录',
         buttonPermissionList: '按钮权限列表',
+        addButton: '新增按钮',
+        editButton: '编辑按钮',
+        deleteButton: '删除按钮',
+        confirmDeleteButton: '确定删除该按钮权限吗？',
+        buttonLabel: '按钮名称',
+        buttonCode: '按钮编码',
+        sortSuccess: '排序更新成功',
+        sortFailed: '排序更新失败',
+        moduleAssociation: '所属模块',
+        selectModule: '请选择模块',
+        dragSortTip: '拖拽可调整菜单顺序',
+        dragInsideDisabled: '不支持拖拽到节点内部',
+        dragCrossLevelDisabled: '不支持跨层级拖拽',
         emptyMenu: '暂无菜单',
         menuDetail: '菜单详情',
         cascadeDeleteContent: '级联删除菜单将删除所选中的菜单，是否继续？',
@@ -860,6 +873,14 @@ const local: App.I18n.Schema = {
           permission: {
             required: '请输入权限标识',
             invalid: '权限标识不能为空'
+          },
+          buttonLabel: {
+            required: '请输入按钮名称',
+            invalid: '按钮名称不能为空'
+          },
+          buttonCode: {
+            required: '请输入按钮编码',
+            invalid: '按钮编码不能为空'
           }
         },
         placeholder: {

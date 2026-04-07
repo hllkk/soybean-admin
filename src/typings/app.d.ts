@@ -808,6 +808,19 @@ declare namespace App {
             noCache: string;
             rootName: string;
             buttonPermissionList: string;
+            addButton: string;
+            editButton: string;
+            deleteButton: string;
+            confirmDeleteButton: string;
+            buttonLabel: string;
+            buttonCode: string;
+            sortSuccess: string;
+            sortFailed: string;
+            moduleAssociation: string;
+            selectModule: string;
+            dragSortTip: string;
+            dragInsideDisabled: string;
+            dragCrossLevelDisabled: string;
             emptyMenu: string;
             menuDetail: string;
             cascadeDeleteContent: string;
@@ -836,6 +849,8 @@ declare namespace App {
               visible: FormMsg;
               status: FormMsg;
               permission: FormMsg;
+              buttonLabel: FormMsg;
+              buttonCode: FormMsg;
             };
             placeholder: {
               iconifyIconPlaceholder: string;

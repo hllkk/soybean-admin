@@ -397,8 +397,8 @@ const local: App.I18n.Schema = {
     }
   },
   modules: {
-    admin: 'System Management',
-    disk: 'Disk Management'
+    admin: 'System Module',
+    disk: 'Disk Module'
   },
   page: {
     login: {
@@ -792,6 +792,19 @@ const local: App.I18n.Schema = {
         noCache: 'No Cache',
         rootName: 'Root',
         buttonPermissionList: 'Button Permission List',
+        addButton: 'Add Button',
+        editButton: 'Edit Button',
+        deleteButton: 'Delete Button',
+        confirmDeleteButton: 'Are you sure to delete this button permission?',
+        buttonLabel: 'Button Label',
+        buttonCode: 'Button Code',
+        sortSuccess: 'Sort order updated successfully',
+        sortFailed: 'Failed to update sort order',
+        moduleAssociation: 'Associated Modules',
+        selectModule: 'Please select modules',
+        dragSortTip: 'Drag to adjust menu order',
+        dragInsideDisabled: 'Dragging inside node is not supported',
+        dragCrossLevelDisabled: 'Cross-level dragging is not supported',
         emptyMenu: 'Empty Menu',
         menuDetail: 'Menu Detail',
         cascadeDeleteContent: 'Cascade delete menu will delete the selected menu and all its sub-menus, are you sure?',
@@ -868,6 +881,14 @@ const local: App.I18n.Schema = {
           permission: {
             required: 'Please enter Permission',
             invalid: 'Permission cannot be empty'
+          },
+          buttonLabel: {
+            required: 'Please enter button label',
+            invalid: 'Button label cannot be empty'
+          },
+          buttonCode: {
+            required: 'Please enter button code',
+            invalid: 'Button code cannot be empty'
           }
         },
         placeholder: {

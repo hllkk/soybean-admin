@@ -3,6 +3,7 @@ import type { ComputedRef, Ref } from 'vue';
 import type { FormInst } from 'naive-ui';
 import { REG_CODE_SIX, REG_EMAIL, REG_PHONE, REG_PWD, REG_USER_NAME } from '@/constants/reg';
 import { $t } from '@/locales';
+import { isNull } from '@/utils/common';
 
 export function useFormRules() {
   const patternRules = {
@@ -47,9 +48,20 @@ export function useFormRules() {
   function createRequiredRule(message: string): App.Global.FormRule {
     return {
       required: true,
-      message
+      trigger: ['input', 'blur'],
+      validator: (_rule: any, value: any) => {
+        if (isNull(value) || (Array.isArray(value) && value.length === 0)) {
+          return new Error(message);
+        }
+        return true;
+      }
     };
   }
+
+  function createNumberRequiredRule(message: string): App.Global.FormRule {
+    return { ...createRequiredRule(message), type: 'number' };
+  }
+
 
   /** create a rule for confirming the password */
   function createConfirmPwdRule(pwd: string | Ref<string> | ComputedRef<string>) {
@@ -74,7 +86,8 @@ export function useFormRules() {
     formRules,
     defaultRequiredRule,
     createRequiredRule,
-    createConfirmPwdRule
+    createConfirmPwdRule,
+    createNumberRequiredRule
   };
 }
 

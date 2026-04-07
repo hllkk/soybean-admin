@@ -1,160 +1,824 @@
-<script setup lang="ts">
-import { h, onMounted, ref } from 'vue';
-import { NButton, NSpace } from 'naive-ui';
+<script setup lang="tsx">
+import { computed, ref, watch } from 'vue';
+import type { DataTableColumns, TreeInst, TreeOption } from 'naive-ui';
+import { NButton, NDivider, NIcon, NInput, NPopconfirm, NInputNumber } from 'naive-ui';
+import { useBoolean, useLoading } from '@sa/hooks';
+import { menuIsFrameRecord, menuTypeRecord } from '@/constants/business';
+import {
+  fetchDeleteMenu,
+  fetchGetMenuList,
+  fetchUpdateMenuSort,
+  fetchCreateButton,
+  fetchUpdateButton,
+  fetchDeleteButton
+} from '@/service/api/system';
+import { fetchGetAppList } from '@/service/api/system/app';
+import { useAppStore } from '@/store/modules/app';
+import { useDict } from '@/hooks/business/dict';
+import { useAuth } from '@/hooks/business/auth';
+import { handleTree } from '@/utils/common';
+import { $t } from '@/locales';
+import SvgIcon from '@/components/custom/svg-icon.vue';
+import DictTag from '@/components/custom/dict-tag.vue';
+import ButtonIcon from '@/components/custom/button-icon.vue';
+import MenuOperateDrawer from './modules/menu-operate-drawer.vue';
+import MenuCascadeDeleteModal from './modules/menu-cascade-delete-modal.vue';
 
-defineOptions({
-  name: 'MenuManagePage'
-});
+useDict('sys_show_hide');
+useDict('sys_normal_disable');
 
-const loading = ref(false);
-const tableData = ref<Api.SystemManage.Menu[]>([]);
+const defaultIcon = import.meta.env.VITE_MENU_ICON;
 
-const showModal = ref(false);
-const modalType = ref<'add' | 'edit'>('add');
-const formData = ref({
-  id: 0,
-  menuName: '',
-  menuType: 'directory' as 'directory' | 'menu' | 'button',
-  path: '' as string | undefined,
-  component: '' as string | undefined,
-  icon: '' as string | undefined,
-  order: 0,
-  status: '1' as '0' | '1',
-  parentId: 0
-});
+const { hasAuth } = useAuth();
+const appStore = useAppStore();
+const editingData = ref<Api.System.Menu>();
+const operateType = ref<NaiveUI.TableOperateType>('add');
+const { loading, startLoading, endLoading } = useLoading();
+const { bool: drawerVisible, setTrue: openDrawer } = useBoolean();
+const { bool: cascadeDeleteVisible, setTrue: openCascadeDeleteDrawer } = useBoolean();
+const { loading: btnLoading, startLoading: startBtnLoading, endLoading: endBtnLoading } = useLoading();
+/** tree pattern name , use tree search */
+const name = ref<string>();
+const createType = ref<Api.System.MenuType>();
+const createPid = ref<CommonType.IdType>(0);
+const currentMenu = ref<Api.System.Menu>();
+const treeData = ref<Api.System.Menu[]>([]);
+const checkedKeys = ref<CommonType.IdType[]>([0]);
+const expandedKeys = ref<CommonType.IdType[]>([0]);
 
-async function fetchData() {
-  loading.value = true;
-  loading.value = false;
+// 模块相关状态
+const appList = ref<Api.System.AppList>([]);
+const activeModule = ref<string>('');
+
+// 按钮权限行内编辑状态
+const editingButtonId = ref<CommonType.IdType | 'new' | null>(null);
+const editingButtonData = ref({ label: '', code: '', orderNum: 0 });
+
+// 是否为目录类型
+const isCatalog = computed(() => currentMenu.value?.menuType === 'M');
+
+// 是否为菜单类型
+const isMenu = computed(() => currentMenu.value?.menuType === 'C');
+
+// 外链类型
+const isExternalType = computed(() => currentMenu.value?.isFrame === '0');
+
+// iframe类型
+const isIframeType = computed(() => currentMenu.value?.isFrame === '2');
+
+const menuTreeRef = ref<TreeInst>();
+const btnData = ref<Api.System.MenuList>([]);
+
+// 获取应用模块列表
+async function getAppList() {
+  const { data, error } = await fetchGetAppList();
+  if (error) return;
+  appList.value = data;
+  if (appList.value.length > 0) {
+    activeModule.value = appList.value[0].appCode;
+  }
 }
 
-function handleAdd(parentId = 0) {
-  modalType.value = 'add';
-  formData.value = { id: 0, menuName: '', menuType: 'directory', path: '', component: '', icon: '', order: 0, status: '1', parentId };
-  showModal.value = true;
-}
-
-function handleEdit(row: Api.SystemManage.Menu) {
-  modalType.value = 'edit';
-  formData.value = {
-    id: row.id,
-    menuName: row.menuName,
-    menuType: row.menuType,
-    path: row.path || '',
-    component: row.component || '',
-    icon: row.icon || '',
-    order: row.order,
-    status: row.status,
-    parentId: row.parentId
-  };
-  showModal.value = true;
-}
-
-function handleDelete(row: Api.SystemManage.Menu) {
-  window.$dialog?.warning({
-    title: '提示',
-    content: `确定删除菜单 "${row.menuName}" 吗？`,
-    positiveText: '确定',
-    negativeText: '取消',
-    onPositiveClick: () => {
-      window.$message?.destroyAll();
-      window.$message?.success('删除成功');
-      fetchData();
+const getMeunTree = async () => {
+  startLoading();
+  const module = activeModule.value || undefined;
+  const { data, error } = await fetchGetMenuList(module ? { module } : undefined);
+  if (error) return;
+  const { tree } = handleTree(data, { idField: 'menuId', filterFn: item => item.menuType !== 'F' });
+  treeData.value = [
+    {
+      menuId: 0,
+      menuName: $t('page.system.menu.rootName'),
+      icon: 'material-symbols:home-outline-rounded',
+      children: tree
     }
-  });
-}
+  ] as Api.System.Menu[];
+  endLoading();
+};
 
-async function handleSubmit() {
-  window.$message?.destroyAll();
-  window.$message?.success(modalType.value === 'add' ? '添加成功' : '编辑成功');
-  showModal.value = false;
-  fetchData();
-}
-
-onMounted(() => {
-  fetchData();
+// 监听模块切换
+watch(activeModule, () => {
+  currentMenu.value = undefined;
+  checkedKeys.value = [];
+  expandedKeys.value = [0];
+  getMeunTree();
 });
+
+// 初始化
+getAppList();
+
+async function handleSubmitted(menuType?: Api.System.MenuType) {
+  if (menuType === 'F') {
+    await getBtnMenuList();
+    return;
+  }
+  await getMeunTree();
+  if (operateType.value === 'edit') {
+    currentMenu.value = menuTreeRef.value?.getCheckedData().options[0] as Api.System.Menu;
+  }
+}
+
+function handleAddMenu(pid: CommonType.IdType) {
+  createPid.value = pid;
+  createType.value = pid === 0 ? 'M' : 'C';
+  operateType.value = 'add';
+  openDrawer();
+}
+
+function handleUpdateMenu() {
+  operateType.value = 'edit';
+  editingData.value = currentMenu.value;
+  openDrawer();
+}
+
+async function handleDeleteMenu(id?: CommonType.IdType) {
+  const { error } = await fetchDeleteMenu(id || checkedKeys.value[0]);
+  if (error) return;
+  window.$message?.success($t('common.deleteSuccess'));
+  if (id) {
+    getBtnMenuList();
+    return;
+  }
+  expandedKeys.value.filter(item => !checkedKeys.value.includes(item));
+  currentMenu.value = undefined;
+  checkedKeys.value = [];
+  getMeunTree();
+}
+
+function renderLabel({ option }: { option: TreeOption }) {
+  let label = String(option.menuName);
+  if (label?.startsWith('route.') || label?.startsWith('menu.')) {
+    label = $t(label as App.I18n.I18nKey);
+  }
+  // 禁用的菜单显示红色
+  if (option.status === '1') {
+    return (
+      <div class="flex items-center gap-4px text-error-200">
+        {label}
+        <SvgIcon icon="ri:prohibited-line" class="text-16px" />
+      </div>
+    );
+  }
+  // 隐藏的菜单显示灰色
+  if (option.visible === '1') {
+    return (
+      <div class="flex items-center gap-4px text-gray-400">
+        {label}
+        <SvgIcon icon="codex:hidden" class="text-21px" />
+      </div>
+    );
+  }
+  return <div>{label}</div>;
+}
+
+function renderPrefix({ option }: { option: TreeOption }) {
+  const renderLocalIcon = String(option.icon).startsWith('local-icon-');
+  const icon = renderLocalIcon ? undefined : String(option.icon);
+  const localIcon = renderLocalIcon ? String(option.icon).replace('local-icon-', 'menu-') : undefined;
+  return <SvgIcon icon={icon || defaultIcon} localIcon={localIcon} />;
+}
+
+function renderSuffix({ option }: { option: TreeOption }) {
+  if (!['M'].includes(String(option.menuType)) || !hasAuth('system:menu:add')) {
+    return null;
+  }
+
+  return (
+    <div class="flex-center gap-8px">
+      <ButtonIcon
+        text
+        class="h-18px"
+        icon="ic-round-plus"
+        tooltip-content={$t('page.system.menu.addChildMenu')}
+        onClick={(event: Event) => {
+          event.stopPropagation();
+          handleAddMenu(option.menuId as CommonType.IdType);
+        }}
+      />
+    </div>
+  );
+}
+
+function reset() {
+  name.value = undefined;
+  getMeunTree();
+}
+
+function handleClickTree(option: Array<TreeOption | null>) {
+  checkedKeys.value = option?.map(item => item?.menuId as CommonType.IdType);
+
+  const menu = option[0] as Api.System.Menu;
+  if (menu?.menuId === 0) {
+    return;
+  }
+  currentMenu.value = menu;
+  getBtnMenuList();
+}
+
+const tagMap: Record<'0' | '1' | '2', NaiveUI.ThemeColor> = {
+  '0': 'success',
+  '1': 'warning',
+  '2': 'primary'
+};
+
+let controller = new AbortController();
+
+async function getBtnMenuList() {
+  if (!currentMenu.value?.menuId) {
+    return;
+  }
+  controller.abort();
+  controller = new AbortController();
+  startBtnLoading();
+  btnData.value = [];
+  const { data, error } = await fetchGetMenuList(
+    { parentId: currentMenu.value?.menuId, menuType: 'F' },
+    controller.signal
+  );
+  if (error) return;
+  btnData.value = data || [];
+  endBtnLoading();
+}
+
+function addBtnMenu() {
+  operateType.value = 'add';
+  createType.value = 'F';
+  createPid.value = currentMenu.value?.menuId || 0;
+  openDrawer();
+}
+
+function handleDeleteBtnMenu(id: CommonType.IdType) {
+  handleDeleteMenu(id);
+}
+
+function handleUpdateBtnMenu(row: Api.System.Menu) {
+  operateType.value = 'edit';
+  editingData.value = row;
+  openDrawer();
+}
+
+// 拖拽排序处理
+async function handleDrop({
+  node,
+  dragNode,
+  dropPosition
+}: {
+  node: TreeOption;
+  dragNode: TreeOption;
+  dropPosition: 'before' | 'after' | 'inside';
+}) {
+  if (dropPosition === 'inside') {
+    window.$message?.warning($t('page.system.menu.dragInsideDisabled'));
+    return;
+  }
+
+  // 检查同层级
+  if ((node as any).parentId !== (dragNode as any).parentId) {
+    window.$message?.warning($t('page.system.menu.dragCrossLevelDisabled'));
+    return;
+  }
+
+  const dragId = (dragNode as any).menuId;
+  const nodeOrder = (node as any).orderNum || 0;
+  const newOrder = dropPosition === 'before' ? nodeOrder - 1 : nodeOrder + 1;
+
+  const { error } = await fetchUpdateMenuSort({ menuId: dragId, orderBy: Math.max(0, newOrder) });
+  if (error) {
+    window.$message?.error($t('page.system.menu.sortFailed'));
+    return;
+  }
+
+  window.$message?.success($t('page.system.menu.sortSuccess'));
+  await getMeunTree();
+}
+
+// 按钮权限行内编辑函数
+function startEditButton(row: Api.System.Menu) {
+  editingButtonId.value = row.menuId!;
+  editingButtonData.value = { label: row.menuName || '', code: row.perms || '', orderNum: row.orderNum || 0 };
+}
+
+function cancelEditButton() {
+  editingButtonId.value = null;
+  editingButtonData.value = { label: '', code: '', orderNum: 0 };
+}
+
+async function saveButton(row?: Api.System.Menu) {
+  if (!editingButtonData.value.label || !editingButtonData.value.code) {
+    window.$message?.warning($t('page.system.menu.form.buttonLabel.invalid'));
+    return;
+  }
+
+  if (editingButtonId.value === 'new') {
+    const { error } = await fetchCreateButton({
+      menuId: currentMenu.value?.menuId,
+      label: editingButtonData.value.label,
+      code: editingButtonData.value.code,
+      orderNum: editingButtonData.value.orderNum
+    });
+    if (error) return;
+    window.$message?.success($t('common.addSuccess'));
+  } else if (editingButtonId.value && row) {
+    const { error } = await fetchUpdateButton({
+      id: row.menuId,
+      label: editingButtonData.value.label,
+      code: editingButtonData.value.code,
+      orderNum: editingButtonData.value.orderNum
+    });
+    if (error) return;
+    window.$message?.success($t('common.updateSuccess'));
+  }
+  cancelEditButton();
+  await getBtnMenuList();
+}
+
+function addNewButtonRow() {
+  editingButtonId.value = 'new';
+  editingButtonData.value = { label: '', code: '', orderNum: 0 };
+}
+
+async function handleDeleteButtonInline(id: CommonType.IdType) {
+  const { error } = await fetchDeleteButton(id);
+  if (error) return;
+  window.$message?.success($t('common.deleteSuccess'));
+  await getBtnMenuList();
+}
+
+const btnColumns: DataTableColumns<Api.System.Menu> = [
+  {
+    key: 'index',
+    width: 64,
+    align: 'center',
+    title() {
+      return (
+        <NButton circle type="primary" size="small" onClick={() => addNewButtonRow()}>
+          {{
+            icon: () => (
+              <NIcon>
+                <SvgIcon icon="ic-round-plus" />
+              </NIcon>
+            )
+          }}
+        </NButton>
+      );
+    },
+    render(row, index) {
+      if (editingButtonId.value === 'new' && index === 0) {
+        return '-';
+      }
+      if (editingButtonId.value === row.menuId) {
+        return (
+          <NInputNumber
+            value={editingButtonData.value.orderNum}
+            onUpdateValue={(val: number | null) => {
+              editingButtonData.value.orderNum = val ?? 0;
+            }}
+            size="small"
+            min={0}
+            class="w-60px"
+          />
+        );
+      }
+      return index + 1;
+    }
+  },
+  {
+    title: $t('page.system.menu.menuName'),
+    key: 'menuName',
+    minWidth: 120,
+    render(row) {
+      if (editingButtonId.value === 'new') {
+        return (
+          <NInput
+            value={editingButtonData.value.label}
+            onUpdateValue={(val: string) => (editingButtonData.value.label = val)}
+            size="small"
+            placeholder={$t('page.system.menu.form.buttonLabel.required')}
+          />
+        );
+      }
+      if (editingButtonId.value === row.menuId) {
+        return (
+          <NInput
+            value={editingButtonData.value.label}
+            onUpdateValue={(val: string) => (editingButtonData.value.label = val)}
+            size="small"
+            placeholder={$t('page.system.menu.form.buttonLabel.required')}
+          />
+        );
+      }
+      return row.menuName;
+    }
+  },
+  {
+    title: $t('page.system.menu.perms'),
+    key: 'perms',
+    align: 'center',
+    minWidth: 120,
+    render(row) {
+      if (editingButtonId.value === 'new') {
+        return (
+          <NInput
+            value={editingButtonData.value.code}
+            onUpdateValue={(val: string) => (editingButtonData.value.code = val)}
+            size="small"
+            placeholder={$t('page.system.menu.form.buttonCode.required')}
+          />
+        );
+      }
+      if (editingButtonId.value === row.menuId) {
+        return (
+          <NInput
+            value={editingButtonData.value.code}
+            onUpdateValue={(val: string) => (editingButtonData.value.code = val)}
+            size="small"
+            placeholder={$t('page.system.menu.form.buttonCode.required')}
+          />
+        );
+      }
+      return row.perms;
+    }
+  },
+  {
+    title: $t('page.system.menu.status'),
+    key: 'status',
+    minWidth: 80,
+    align: 'center',
+    render(row) {
+      if (editingButtonId.value === 'new' || editingButtonId.value === row.menuId) {
+        return '-';
+      }
+      return <DictTag size="small" value={row.status} dictCode="sys_normal_disable" />;
+    }
+  },
+  {
+    title: $t('page.system.menu.createTime'),
+    key: 'createTime',
+    align: 'center',
+    minWidth: 150,
+    render(row) {
+      if (editingButtonId.value === 'new' || editingButtonId.value === row.menuId) {
+        return '-';
+      }
+      return row.createTime;
+    }
+  },
+  {
+    title: $t('common.action'),
+    key: 'actions',
+    width: 120,
+    align: 'center',
+    render(row) {
+      // 新增行
+      if (editingButtonId.value === 'new') {
+        return (
+          <div class="flex-center gap-8px">
+            <NButton size="small" type="primary" onClick={() => saveButton()}>
+              {$t('common.save')}
+            </NButton>
+            <NButton size="small" onClick={() => cancelEditButton()}>
+              {$t('common.cancel')}
+            </NButton>
+          </div>
+        );
+      }
+
+      // 编辑行
+      if (editingButtonId.value === row.menuId) {
+        return (
+          <div class="flex-center gap-8px">
+            <NButton size="small" type="primary" onClick={() => saveButton(row)}>
+              {$t('common.save')}
+            </NButton>
+            <NButton size="small" onClick={() => cancelEditButton()}>
+              {$t('common.cancel')}
+            </NButton>
+          </div>
+        );
+      }
+
+      // 正常行
+      const divider = () => {
+        if (!hasAuth('system:menu:edit') || !hasAuth('system:menu:remove')) {
+          return null;
+        }
+        return <NDivider vertical />;
+      };
+
+      const editBtn = () => {
+        if (!hasAuth('system:menu:edit')) {
+          return null;
+        }
+        return (
+          <ButtonIcon
+            text
+            type="primary"
+            icon="material-symbols:drive-file-rename-outline-outline"
+            tooltipContent={$t('common.edit')}
+            onClick={() => startEditButton(row)}
+          />
+        );
+      };
+
+      const deleteBtn = () => {
+        if (!hasAuth('system:menu:remove')) {
+          return null;
+        }
+        return (
+          <ButtonIcon
+            text
+            type="error"
+            icon="material-symbols:delete-outline"
+            tooltipContent={$t('common.delete')}
+            popconfirmContent={$t('page.system.menu.confirmDeleteButton')}
+            onPositiveClick={() => handleDeleteButtonInline(row.menuId!)}
+          />
+        );
+      };
+
+      return (
+        <div class="flex-center gap-8px">
+          {editBtn()}
+          {divider()}
+          {deleteBtn()}
+        </div>
+      );
+    }
+  }
+];
+
+function renderMenuName(menuName: string) {
+  return menuName?.startsWith('route.') || menuName?.startsWith('menu.') ? $t(menuName as App.I18n.I18nKey) : menuName;
+}
+
+const renderIframeQuery = (queryParam: string) => {
+  try {
+    return JSON.parse(queryParam || '{}')?.url;
+  } catch {
+    return queryParam;
+  }
+};
 </script>
 
 <template>
-  <div class="h-full flex-col">
-    <NCard :bordered="false" class="flex-1 card-wrapper">
-      <template #header>
-        <NSpace justify="space-between">
-          <span class="text-16px font-medium">菜单列表</span>
-          <NButton type="primary" @click="handleAdd()">新增菜单</NButton>
-        </NSpace>
-      </template>
-      <NDataTable
-        :columns="[
-          { title: '菜单名称', key: 'menuName' },
-          { title: '类型', key: 'menuType', render: (row) => (row.menuType === 'directory' ? '目录' : row.menuType === 'menu' ? '菜单' : '按钮') },
-          { title: '路径', key: 'path' },
-          { title: '图标', key: 'icon' },
-          { title: '排序', key: 'order', width: 80 },
-          { title: '状态', key: 'status', render: (row) => (row.status === '1' ? '正常' : '停用') },
-          {
-            title: '操作',
-            key: 'actions',
-            width: 200,
-            render: (row) =>
-              h(NSpace, null, {
-                default: () => [
-                  h(NButton, { size: 'small', onClick: () => handleAdd(row.id) }, { default: () => '新增' }),
-                  h(NButton, { size: 'small', onClick: () => handleEdit(row) }, { default: () => '编辑' }),
-                  h(NButton, { size: 'small', type: 'error', onClick: () => handleDelete(row) }, { default: () => '删除' })
-                ]
-              })
-          }
-        ]"
-        :data="tableData"
-        :loading="loading"
-        :row-key="(row) => row.id"
-        default-expand-all
-        flex-height
-        class="h-full"
+  <TableSiderLayout default-expanded>
+    <template #header>{{ $t('page.system.menu.title') }}</template>
+    <template #header-extra>
+      <ButtonIcon
+        v-if="hasAuth('system:menu:add')"
+        size="small"
+        icon="material-symbols:add-rounded"
+        class="h-28px text-icon color-primary"
+        :tooltip-content="$t('page.system.menu.addMenu')"
+        @click.stop="handleAddMenu(0)"
       />
-    </NCard>
+      <ButtonIcon
+        v-if="hasAuth('system:menu:add')"
+        size="small"
+        icon="material-symbols:delete-outline"
+        class="h-28px text-icon color-error"
+        :tooltip-content="$t('page.system.menu.cascadeDelete')"
+        @click.stop="openCascadeDeleteDrawer"
+      />
+      <ButtonIcon
+        size="small"
+        icon="material-symbols:refresh-rounded"
+        class="h-28px text-icon"
+        :tooltip-content="$t('common.refresh')"
+        @click.stop="reset"
+      />
+    </template>
+    <template #sider>
+      <!-- 模块Tab -->
+      <NTabs v-if="appList.length > 0" v-model:value="activeModule" type="line" size="small" class="module-tabs mb-8px">
+        <NTabPane v-for="app in appList" :key="app.appCode" :name="app.appCode" :tab="$t(`modules.${app.appCode}`)" />
+      </NTabs>
+      <div class="flex gap-6px">
+        <NInput v-model:value="name" size="small" :placeholder="$t('page.system.menu.form.menuName.required')" />
+      </div>
+      <div v-if="hasAuth('system:menu:edit')" class="text-12px text-gray-400 mb-4px text-center">
+        {{ $t('page.system.menu.dragSortTip') }}
+      </div>
+      <NSpin :show="loading" class="infinite-scroll">
+        <NTree
+          ref="menuTreeRef"
+          v-model:checked-keys="checkedKeys"
+          v-model:expanded-keys="expandedKeys"
+          :cancelable="false"
+          :cascade="false"
+          block-node
+          show-line
+          :data="treeData as []"
+          :default-expanded-keys="[0]"
+          :show-irrelevant-nodes="false"
+          :pattern="name"
+          class="menu-tree py-3"
+          key-field="menuId"
+          label-field="menuName"
+          virtual-scroll
+          checkable
+          draggable
+          :render-label="renderLabel"
+          :render-prefix="renderPrefix"
+          :render-suffix="renderSuffix"
+          @update:selected-keys="(_: Array<string & number>, option: Array<TreeOption | null>) => handleClickTree(option)"
+          @drop="handleDrop"
+        >
+          <template #empty>
+            <NEmpty :description="$t('page.system.menu.emptyMenu')" class="h-full min-h-200px justify-center" />
+          </template>
+        </NTree>
+      </NSpin>
+    </template>
+    <div class="h-full flex-col-stretch gap-16px">
+      <template v-if="currentMenu">
+        <NCard
+          :title="$t('page.system.menu.menuDetail')"
+          :bordered="false"
+          size="small"
+          class="max-h-50% card-wrapper"
+          content-class="overflow-auto mb-12px"
+        >
+          <template #header-extra>
+            <NSpace>
+              <NButton
+                v-if="isCatalog && hasAuth('system:menu:add')"
+                size="small"
+                ghost
+                type="primary"
+                @click="handleAddMenu(currentMenu.menuId!)"
+              >
+                <template #icon>
+                  <icon-material-symbols-add-rounded />
+                </template>
+                {{ $t('page.system.menu.addChildMenu') }}
+              </NButton>
+              <NButton v-if="hasAuth('system:menu:edit')" size="small" ghost type="primary" @click="handleUpdateMenu">
+                <template #icon>
+                  <icon-material-symbols-drive-file-rename-outline-outline />
+                </template>
+                {{ $t('common.edit') }}
+              </NButton>
+              <NPopconfirm @positive-click="() => handleDeleteMenu()">
+                <template #trigger>
+                  <NButton
+                    v-if="hasAuth('system:menu:remove')"
+                    size="small"
+                    ghost
+                    type="error"
+                    :disabled="btnData.length > 0 || btnLoading"
+                  >
+                    <template #icon>
+                      <icon-material-symbols-delete-outline />
+                    </template>
+                    {{ $t('common.delete') }}
+                  </NButton>
+                </template>
+                {{ $t('common.confirmDelete') }}
+              </NPopconfirm>
+            </NSpace>
+          </template>
+          <NDescriptions
+            label-placement="left"
+            size="small"
+            bordered
+            :column="appStore.isMobile ? 1 : 2"
+            label-class="w-20% min-w-88px"
+            content-class="w-100px"
+          >
+            <NDescriptionsItem :label="$t('page.system.menu.menuType')">
+              <NTag class="m-1" size="small" type="primary">{{ menuTypeRecord[currentMenu.menuType!] }}</NTag>
+            </NDescriptionsItem>
+            <NDescriptionsItem :label="$t('page.system.menu.status')">
+              <DictTag size="small" :value="currentMenu.status" dict-code="sys_normal_disable" />
+            </NDescriptionsItem>
+            <NDescriptionsItem :label="$t('page.system.menu.menuName')">
+              {{ renderMenuName(currentMenu.menuName) }}
+            </NDescriptionsItem>
+            <NDescriptionsItem v-if="isMenu" :label="$t('page.system.menu.component')">
+              {{
+                currentMenu.component?.startsWith('layout.blank$view.')
+                  ? `${currentMenu.component?.slice(18, currentMenu.component.length)?.replaceAll('_', '/')}/index`
+                  : currentMenu.component
+              }}
+            </NDescriptionsItem>
+            <NDescriptionsItem
+              :label="!isExternalType ? $t('page.system.menu.path') : $t('page.system.menu.externalPath')"
+            >
+              {{ currentMenu.path }}
+            </NDescriptionsItem>
+            <NDescriptionsItem v-if="isMenu && !isExternalType && !isIframeType" :label="$t('page.system.menu.query')">
+              {{ currentMenu.queryParam }}
+            </NDescriptionsItem>
+            <NDescriptionsItem
+              v-if="isMenu && !isExternalType && isIframeType"
+              :label="$t('page.system.menu.iframeQuery')"
+            >
+              {{ renderIframeQuery(currentMenu.queryParam) }}
+            </NDescriptionsItem>
+            <NDescriptionsItem v-if="!isCatalog" :label="$t('page.system.menu.perms')">
+              {{ currentMenu.perms }}
+            </NDescriptionsItem>
+            <NDescriptionsItem :label="$t('page.system.menu.isFrame')">
+              <NTag v-if="currentMenu.isFrame" class="m-1" size="small" :type="tagMap[currentMenu.isFrame]">
+                {{ menuIsFrameRecord[currentMenu.isFrame] }}
+              </NTag>
+            </NDescriptionsItem>
+            <NDescriptionsItem :label="$t('page.system.menu.visible')">
+              <DictTag size="small" :value="currentMenu.visible" dict-code="sys_show_hide" />
+            </NDescriptionsItem>
+            <NDescriptionsItem v-if="isMenu" :label="$t('page.system.menu.isCache')">
+              <NTag v-if="currentMenu.isCache" class="m-1" size="small" :type="tagMap[currentMenu.isCache]">
+                {{ currentMenu.isCache === '0' ? $t('page.system.menu.cache') : $t('page.system.menu.noCache') }}
+              </NTag>
+            </NDescriptionsItem>
+          </NDescriptions>
+        </NCard>
 
-    <NModal v-model:show="showModal" preset="card" :title="modalType === 'add' ? '新增菜单' : '编辑菜单'" class="w-600px">
-      <NForm :model="formData" label-placement="left" :label-width="80">
-        <NFormItem label="菜单名称" path="menuName">
-          <NInput v-model:value="formData.menuName" placeholder="请输入菜单名称" />
-        </NFormItem>
-        <NFormItem label="菜单类型" path="menuType">
-          <NRadioGroup v-model:value="formData.menuType">
-            <NRadioButton value="directory">目录</NRadioButton>
-            <NRadioButton value="menu">菜单</NRadioButton>
-            <NRadioButton value="button">按钮</NRadioButton>
-          </NRadioGroup>
-        </NFormItem>
-        <NFormItem label="路径" path="path">
-          <NInput v-model:value="formData.path" placeholder="请输入路径" />
-        </NFormItem>
-        <NFormItem label="组件" path="component">
-          <NInput v-model:value="formData.component" placeholder="请输入组件路径" />
-        </NFormItem>
-        <NFormItem label="图标" path="icon">
-          <NInput v-model:value="formData.icon" placeholder="请输入图标" />
-        </NFormItem>
-        <NFormItem label="排序" path="order">
-          <NInputNumber v-model:value="formData.order" :min="0" />
-        </NFormItem>
-        <NFormItem label="状态" path="status">
-          <NRadioGroup v-model:value="formData.status">
-            <NRadioButton value="1">正常</NRadioButton>
-            <NRadioButton value="0">停用</NRadioButton>
-          </NRadioGroup>
-        </NFormItem>
-      </NForm>
-      <template #footer>
-        <NSpace justify="end">
-          <NButton @click="showModal = false">取消</NButton>
-          <NButton type="primary" @click="handleSubmit">确定</NButton>
-        </NSpace>
+        <NCard
+          :title="$t('page.system.menu.buttonPermissionList')"
+          :bordered="false"
+          size="small"
+          class="h-full overflow-auto card-wrapper"
+          content-class="overflow-auto mb-12px"
+        >
+          <template #header-extra>
+            <ButtonIcon
+              size="small"
+              icon="ic-round-refresh"
+              class="h-28px text-icon"
+              :tooltip-content="$t('common.refresh')"
+              @click.stop="getBtnMenuList"
+            />
+          </template>
+          <NDataTable class="h-full" :loading="btnLoading" :columns="btnColumns" :data="btnData" />
+        </NCard>
       </template>
-    </NModal>
-  </div>
+      <NCard v-else :bordered="false" size="small" class="h-full card-wrapper">
+        <NEmpty class="h-full flex-center" size="large" />
+      </NCard>
+    </div>
+    <MenuOperateDrawer
+      v-model:visible="drawerVisible"
+      :operate-type="operateType"
+      :row-data="editingData"
+      :tree-data="treeData"
+      :pid="createPid"
+      :menu-type="createType"
+      @submitted="handleSubmitted"
+    />
+    <MenuCascadeDeleteModal v-model:visible="cascadeDeleteVisible" @submitted="handleSubmitted" />
+  </TableSiderLayout>
 </template>
 
-<style scoped></style>
+<style scoped lang="scss">
+:deep(.infinite-scroll) {
+  height: auto;
+  max-height: calc(100vh - 224px - var(--calc-footer-height, 0px));
+  overflow-y: auto;
+}
+
+@media screen and (max-width: 1024px) {
+  :deep(.infinite-scroll) {
+    max-height: calc(100vh - 227px - var(--calc-footer-height, 0px));
+  }
+}
+
+:deep(.n-spin-content) {
+  height: 100%;
+}
+
+:deep(.n-tree-node-checkbox) {
+  display: none;
+}
+
+:deep(.n-data-table-base-table) {
+  height: 100% !important;
+}
+
+.menu-tree {
+  :deep(.n-tree-node) {
+    height: 25px;
+  }
+
+  :deep(.n-tree-node-switcher) {
+    height: 25px;
+  }
+
+  :deep(.n-tree-node-switcher__icon) {
+    font-size: 16px !important;
+    height: 16px !important;
+    width: 16px !important;
+  }
+}
+
+.module-tabs {
+  :deep(.n-tabs-nav) {
+    justify-content: space-around !important;
+  }
+  :deep(.n-tabs-tab) {
+    flex: 1 !important;
+    justify-content: center !important;
+  }
+}
+</style>

@@ -240,7 +240,7 @@ declare namespace Api {
      * - "0": "默认布局"
      * - "1": "空白布局"
      */
-    type MenuLayout = '0' | '1';
+    type MenuLayout = '0' | '1' | '2';
 
     /**
      * menu type
@@ -297,13 +297,15 @@ declare namespace Api {
       children: MenuList;
       id?: CommonType.IdType;
       label?: string;
+      /** 所属模块 */
+      moduleCodes?: string[];
     }>;
 
     /** menu list */
     type MenuList = Menu[];
 
     /** menu search params */
-    type MenuSearchParams = CommonType.RecordNullable<Pick<Menu, 'menuName' | 'status' | 'menuType' | 'parentId'>>;
+    type MenuSearchParams = CommonType.RecordNullable<Pick<Menu, 'menuName' | 'status' | 'menuType' | 'parentId'> & { module?: string }>;
 
     /** menu operate params */
     type MenuOperateParams = CommonType.RecordNullable<
@@ -324,6 +326,7 @@ declare namespace Api {
         | 'perms'
         | 'icon'
         | 'remark'
+        | 'moduleCodes'
       >
     >;
 
@@ -837,5 +840,60 @@ declare namespace Api {
 
     /** app list */
     type AppList = App[];
+
+    /** button */
+    type Button = {
+      /** 按钮ID */
+      id: CommonType.IdType;
+      /** 菜单ID */
+      menuId: CommonType.IdType;
+      /** 按钮名称 */
+      label: string;
+      /** 按钮编码 */
+      code: string;
+      /** 排序 */
+      orderNum: number;
+      /** 创建时间 */
+      createdAt?: string;
+      /** 更新时间 */
+      updatedAt?: string;
+    };
+
+    /** button operate params */
+    type ButtonOperateParams = {
+      id?: CommonType.IdType;
+      menuId?: CommonType.IdType;
+      label?: string;
+      code?: string;
+      orderNum?: number;
+    };
+
+    /** button list */
+    type ButtonList = Button[];
+
+    /** menu detail */
+    type MenuDetail = {
+      id: CommonType.IdType;
+      parentId: CommonType.IdType;
+      menuName: string;
+      menuType: MenuType;
+      routeName?: string;
+      routePath: string;
+      component?: string;
+      i18nKey?: string;
+      icon?: string;
+      iconType?: IconType;
+      orderBy: number;
+      status: Common.EnableStatus;
+      hiddenInMenu: boolean;
+      keepAlive: boolean;
+      constant: boolean;
+      href?: string;
+      fixedIndexInTab?: number;
+      activeMenu?: string;
+      multiTab: boolean;
+      query?: string;
+      moduleCodes?: string[];
+    };
   }
 }
