@@ -1,135 +1,191 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { ref, computed } from 'vue';
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
+import type { SettingConfig } from './types';
+import SettingMenu from './components/SettingMenu.vue';
+import GeneralSetting from './components/GeneralSetting.vue';
+import SecuritySetting from './components/SecuritySetting.vue';
+import LdapSetting from './components/LdapSetting.vue';
+import DiskSetting from './components/DiskSetting.vue';
+import NotifySetting from './components/NotifySetting.vue';
+import AuthSetting from './components/AuthSetting.vue';
 
 defineOptions({
   name: 'SettingsPage'
 });
 
 const loading = ref(false);
+const activeKey = ref('general');
 
-// 系统设置表单
-const formData = reactive({
-  // 基础设置
-  siteName: 'OPS管理系统',
-  siteDescription: '企业运维管理平台',
-  logo: '',
-  favicon: '',
+const breakpoints = useBreakpoints(breakpointsTailwind);
+const isMobile = breakpoints.smaller('lg');
 
-  // 安全设置
-  passwordMinLength: 6,
-  passwordRequireSpecial: false,
-  loginFailLockCount: 5,
-  loginFailLockTime: 30,
-
-  // 文件设置
-  maxUploadSize: 100,
-  allowFileTypes: '.jpg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar',
-
-  // 邮件设置
-  smtpHost: '',
-  smtpPort: 465,
-  smtpUser: '',
-  smtpPassword: '',
-  smtpFrom: ''
+// Config data with all default values
+const config = ref<SettingConfig>({
+  general: {
+    siteName: 'OPS管理系统',
+    siteDescription: '企业运维管理平台',
+    logo: '',
+    favicon: '',
+    defaultPassword: '',
+    defaultRole: 'user',
+    captchaEnabled: false,
+    captchaType: 'click',
+    captchaTolerance: 5
+  },
+  security: {
+    passwordMinLength: 6,
+    passwordRequireSpecial: false,
+    loginFailLockCount: 5,
+    loginFailLockTime: 30,
+    ipValidationEnabled: false,
+    ipValidationMode: 'blacklist',
+    ipBlacklist: '',
+    ipWhitelist: ''
+  },
+  ldap: {
+    enabled: false,
+    server: '',
+    bindUser: '',
+    bindPassword: '',
+    baseOU: '',
+    searchPageSize: 100,
+    fieldMapping: '',
+    syncEnabled: false,
+    syncDefaultEnabled: true,
+    syncStrategy: 'incremental',
+    conflictStrategy: 'skip'
+  },
+  disk: {
+    maxUploadSize: 100,
+    allowedFileTypes: '.jpg,.png,.pdf,.doc,.zip',
+    storageQuota: 10,
+    diskName: '',
+    diskLogo: '',
+    shareLinkPasswordRequired: false,
+    shareLinkPasswordMinLength: 6,
+    uploadLinkPasswordRequired: false,
+    uploadLinkPasswordMinLength: 6,
+    syncEnabled: false,
+    onlyOfficeEnabled: false,
+    onlyOfficeUrl: '',
+    onlyOfficeSecret: '',
+    onlyOfficeCallbackUrl: '',
+    videoTranscodeEnabled: false,
+    ffmpegPath: '',
+    transcodeThreads: 4,
+    transcodePreset: 'medium'
+  },
+  notify: {
+    smtpHost: '',
+    smtpPort: 465,
+    smtpUser: '',
+    smtpPassword: '',
+    smsEnabled: false,
+    smsGateway: '',
+    feishuEnabled: false,
+    feishuAppId: '',
+    feishuAppSecret: '',
+    webhookUrl: ''
+  },
+  auth: {
+    weworkEnabled: false,
+    weworkDomainFileName: '',
+    weworkDomainFileContent: '',
+    wechatEnabled: false,
+    giteeEnabled: false,
+    githubEnabled: false
+  }
 });
+
+const menuTitleMap: Record<string, string> = {
+  general: '常规配置',
+  security: '安全配置',
+  ldap: 'LDAP配置',
+  disk: '网盘配置',
+  notify: '通知渠道',
+  auth: '认证配置'
+};
+
+const currentTitle = computed(() => menuTitleMap[activeKey.value]);
 
 async function handleSave() {
   loading.value = true;
-  // TODO: 调用API保存设置
-  loading.value = false;
-  window.$message?.destroyAll();
-  window.$message?.success('保存成功');
+  try {
+    // TODO: Call API to save settings
+    await new Promise(resolve => setTimeout(resolve, 500));
+    window.$message?.success('保存成功');
+  } catch {
+    window.$message?.error('保存失败');
+  } finally {
+    loading.value = false;
+  }
 }
 </script>
 
 <template>
-  <div class="h-full overflow-auto">
-    <NCard :bordered="false" class="card-wrapper">
-      <NTabs type="line" animated>
-        <NTabPane name="basic" tab="基础设置">
-          <NForm :model="formData" label-placement="left" :label-width="120" class="mt-16px">
-            <NFormItem label="站点名称" path="siteName">
-              <NInput v-model:value="formData.siteName" placeholder="请输入站点名称" class="max-w-400px" />
-            </NFormItem>
-            <NFormItem label="站点描述" path="siteDescription">
-              <NInput v-model:value="formData.siteDescription" placeholder="请输入站点描述" class="max-w-400px" />
-            </NFormItem>
-            <NFormItem label="Logo" path="logo">
-              <NInput v-model:value="formData.logo" placeholder="Logo URL" class="max-w-400px" />
-            </NFormItem>
-            <NFormItem label="Favicon" path="favicon">
-              <NInput v-model:value="formData.favicon" placeholder="Favicon URL" class="max-w-400px" />
-            </NFormItem>
-          </NForm>
-        </NTabPane>
+  <div class="h-full overflow-hidden">
+    <!-- Mobile layout -->
+    <template v-if="isMobile">
+      <NCard :bordered="false" class="card-wrapper h-full">
+        <NCollapse :default-expanded-names="['menu']">
+          <NCollapseItem name="menu" title="配置选项">
+            <SettingMenu v-model:active-key="activeKey" />
+          </NCollapseItem>
+        </NCollapse>
 
-        <NTabPane name="security" tab="安全设置">
-          <NForm :model="formData" label-placement="left" :label-width="150" class="mt-16px">
-            <NFormItem label="密码最小长度" path="passwordMinLength">
-              <NInputNumber v-model:value="formData.passwordMinLength" :min="4" :max="20" class="w-200px" />
-            </NFormItem>
-            <NFormItem label="密码包含特殊字符" path="passwordRequireSpecial">
-              <NSwitch v-model:value="formData.passwordRequireSpecial" />
-            </NFormItem>
-            <NFormItem label="登录失败锁定次数" path="loginFailLockCount">
-              <NInputNumber v-model:value="formData.loginFailLockCount" :min="3" :max="10" class="w-200px" />
-            </NFormItem>
-            <NFormItem label="锁定时间(分钟)" path="loginFailLockTime">
-              <NInputNumber v-model:value="formData.loginFailLockTime" :min="5" :max="120" class="w-200px" />
-            </NFormItem>
-          </NForm>
-        </NTabPane>
+        <NDivider style="margin: 12px 0" />
 
-        <NTabPane name="file" tab="文件设置">
-          <NForm :model="formData" label-placement="left" :label-width="150" class="mt-16px">
-            <NFormItem label="最大上传大小(MB)" path="maxUploadSize">
-              <NInputNumber v-model:value="formData.maxUploadSize" :min="1" :max="500" class="w-200px" />
-            </NFormItem>
-            <NFormItem label="允许的文件类型" path="allowFileTypes">
-              <NInput
-                v-model:value="formData.allowFileTypes"
-                type="textarea"
-                placeholder="多个类型用逗号分隔"
-                class="max-w-500px"
-                :rows="3"
-              />
-            </NFormItem>
-          </NForm>
-        </NTabPane>
+        <div class="flex justify-between items-center mb-16px">
+          <div class="text-16px font-600">{{ currentTitle }}</div>
+          <NButton type="primary" :loading="loading" @click="handleSave">保存</NButton>
+        </div>
 
-        <NTabPane name="email" tab="邮件设置">
-          <NForm :model="formData" label-placement="left" :label-width="120" class="mt-16px">
-            <NFormItem label="SMTP服务器" path="smtpHost">
-              <NInput v-model:value="formData.smtpHost" placeholder="smtp.example.com" class="max-w-400px" />
-            </NFormItem>
-            <NFormItem label="SMTP端口" path="smtpPort">
-              <NInputNumber v-model:value="formData.smtpPort" :min="1" :max="65535" class="w-200px" />
-            </NFormItem>
-            <NFormItem label="SMTP用户名" path="smtpUser">
-              <NInput v-model:value="formData.smtpUser" placeholder="请输入SMTP用户名" class="max-w-400px" />
-            </NFormItem>
-            <NFormItem label="SMTP密码" path="smtpPassword">
-              <NInput
-                v-model:value="formData.smtpPassword"
-                type="password"
-                placeholder="请输入SMTP密码"
-                class="max-w-400px"
-              />
-            </NFormItem>
-            <NFormItem label="发件人地址" path="smtpFrom">
-              <NInput v-model:value="formData.smtpFrom" placeholder="noreply@example.com" class="max-w-400px" />
-            </NFormItem>
-          </NForm>
-        </NTabPane>
-      </NTabs>
+        <div class="overflow-auto" style="height: calc(100% - 180px)">
+          <GeneralSetting v-if="activeKey === 'general'" v-model:config="config.general" />
+          <SecuritySetting v-else-if="activeKey === 'security'" v-model:config="config.security" />
+          <LdapSetting v-else-if="activeKey === 'ldap'" v-model:config="config.ldap" />
+          <DiskSetting v-else-if="activeKey === 'disk'" v-model:config="config.disk" />
+          <NotifySetting v-else-if="activeKey === 'notify'" v-model:config="config.notify" />
+          <AuthSetting v-else-if="activeKey === 'auth'" v-model:config="config.auth" />
+        </div>
+      </NCard>
+    </template>
 
-      <NDivider />
+    <!-- Desktop layout -->
+    <template v-else>
+      <NSplit :default-size="0.22" :min="0.18" :max="0.3" class="h-full">
+        <template #1>
+          <NCard :bordered="false" class="card-wrapper h-full">
+            <SettingMenu v-model:active-key="activeKey" />
+          </NCard>
+        </template>
+        <template #2>
+          <NCard :bordered="false" class="card-wrapper h-full">
+            <!-- Header -->
+            <div class="flex justify-between items-center pb-16px" style="border-bottom: 2px solid #e8e8e8">
+              <div class="text-16px font-600">{{ currentTitle }}</div>
+              <NButton type="primary" :loading="loading" @click="handleSave">保存</NButton>
+            </div>
 
-      <NSpace justify="end">
-        <NButton type="primary" :loading="loading" @click="handleSave">保存设置</NButton>
-      </NSpace>
-    </NCard>
+            <!-- Content area -->
+            <div class="overflow-auto pt-16px" style="height: calc(100% - 60px)">
+              <GeneralSetting v-if="activeKey === 'general'" v-model:config="config.general" />
+              <SecuritySetting v-else-if="activeKey === 'security'" v-model:config="config.security" />
+              <LdapSetting v-else-if="activeKey === 'ldap'" v-model:config="config.ldap" />
+              <DiskSetting v-else-if="activeKey === 'disk'" v-model:config="config.disk" />
+              <NotifySetting v-else-if="activeKey === 'notify'" v-model:config="config.notify" />
+              <AuthSetting v-else-if="activeKey === 'auth'" v-model:config="config.auth" />
+            </div>
+          </NCard>
+        </template>
+      </NSplit>
+    </template>
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.card-wrapper {
+  border-radius: 8px;
+}
+</style>
