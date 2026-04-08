@@ -17,12 +17,12 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const menuItems: SettingMenuItem[] = [
-  { key: 'general', label: '常规配置', icon: 'carbon:settings', description: '通用默认配置，优化系统体验' },
-  { key: 'security', label: '安全配置', icon: 'carbon:security', description: '密码策略、IP校验设置' },
-  { key: 'ldap', label: 'LDAP配置', icon: 'carbon:network-3', description: '企业目录服务集成设置' },
-  { key: 'disk', label: '网盘配置', icon: 'carbon:cloud', description: '文件存储、OnlyOffice配置' },
-  { key: 'notify', label: '通知渠道', icon: 'carbon:notification', description: '邮件、短信、飞书推送配置' },
-  { key: 'auth', label: '认证配置', icon: 'carbon:user-authentication', description: '企业微信、GitHub等第三方登录' }
+  { key: 'general', label: '常规配置', icon: '📌', description: '通用默认配置，优化系统体验' },
+  { key: 'security', label: '安全配置', icon: '🔒', description: '系统安全配置，增强系统防护' },
+  { key: 'ldap', label: 'LDAP配置', icon: '🌐', description: '企业目录服务集成设置' },
+  { key: 'disk', label: '网盘配置', icon: '💾', description: '文件存储、OnlyOffice配置' },
+  { key: 'notify', label: '通知渠道', icon: '📢', description: '通知渠道配置，发送系统通知' },
+  { key: 'auth', label: '认证配置', icon: '🔐', description: '认证配置，系统认证' }
 ];
 
 function handleSelect(key: string) {
@@ -31,72 +31,45 @@ function handleSelect(key: string) {
 </script>
 
 <template>
-  <div class="setting-menu">
+  <DarkModeContainer class="h-full flex flex-col rounded-md space-y-2">
     <div
       v-for="item in menuItems"
       :key="item.key"
-      class="menu-item"
-      :class="{ active: props.activeKey === item.key }"
+      class="ml-0 flex flex-none flex-row cursor-pointer items-center justify-start rounded-md bg-container p-4 transition-all duration-200 ease-in-out space-x-2 active:bg-primary-100 hover:bg-primary-50 dark:active:bg-primary-800/30 dark:hover:bg-primary-900/20"
+      :class="[
+        props.activeKey === item.key
+          ? [
+            'border-solid border-0 rounded-r-none border-r-3 border-primary-600',
+            'bg-gradient-to-r from-primary-200/80 to-primary-100/60',
+            'dark:border-primary-400 dark:from-primary-800/60 dark:to-primary-900/40',
+            'shadow-sm']
+          : 'border-transparent'
+      ]"
       @click="handleSelect(item.key)"
     >
-      <div class="menu-title">
-        <SvgIcon :icon="item.icon" class="mr-8px" />
-        <span>{{ item.label }}</span>
+      <span class="mr-8px">{{ item.icon }}</span>
+      <div class="flex flex-col flex-1 space-y-1">
+        <span
+          class="select-none font-semibold transition-colors"
+          :class="[props.activeKey === item.key ? 'text-primary-800 dark:text-primary-200' : 'text-base-text']"
+        >
+          {{ item.label }}
+        </span>
+        <span
+          class="select-none text-xs transition-colors"
+          :class="[props.activeKey === item.key ? 'text-primary-700/80 dark:text-primary-300/80' : 'text-base-text/70 opacity-75']"
+        >
+          {{ item.description }}
+        </span>
       </div>
-      <div class="menu-desc">{{ item.description }}</div>
+      <!-- 选中状态指示器 -->
+      <div
+        v-if="props.activeKey === item.key"
+        class="h-3 w-3 rounded-full bg-primary-600 shadow-sm transition-all duration-200 dark:bg-primary-400"
+      />
     </div>
-  </div>
+  </DarkModeContainer>
 </template>
 
 <style scoped>
-.setting-menu {
-  padding: 12px;
-}
-
-.menu-item {
-  padding: 12px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-bottom: 4px;
-  border: 1px solid transparent;
-  position: relative;
-  transition: all 0.2s ease;
-  background: transparent;
-}
-
-.menu-item:hover {
-  background-color: rgba(var(--primary-color), 0.06);
-}
-
-.menu-item.active {
-  background: linear-gradient(135deg, rgba(var(--primary-color), 0.08) 0%, rgba(var(--primary-color), 0.12) 100%);
-  border-right: 3px solid rgb(var(--primary-color));
-}
-
-.menu-item.active::after {
-  content: '';
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 6px;
-  background-color: rgb(var(--primary-color));
-  border-radius: 50%;
-  opacity: 0.6;
-}
-
-.menu-title {
-  font-weight: 500;
-  font-size: 14px;
-  color: var(--n-text-color);
-  display: flex;
-  align-items: center;
-}
-
-.menu-desc {
-  font-size: 12px;
-  color: var(--n-text-color-disabled);
-  margin-top: 4px;
-}
 </style>

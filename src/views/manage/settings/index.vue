@@ -154,24 +154,24 @@ async function handleSave() {
 
     <!-- Desktop layout -->
     <template v-else>
-      <div class="flex gap-16px h-full">
+      <div class="flex flex-1 flex-row">
         <!-- Left panel -->
-        <div class="w-280px flex-shrink-0">
-          <NCard :bordered="false" class="card-wrapper h-full">
-            <SettingMenu v-model:active-key="activeKey" />
-          </NCard>
+        <div class="w-1/5 flex-none">
+          <SettingMenu v-model:active-key="activeKey" />
         </div>
 
         <!-- Right panel -->
-        <NCard :bordered="false" class="card-wrapper h-full flex-1 overflow-hidden">
+        <NCard :bordered="false" class="card-wrapper ml-4 h-full flex-1 flex flex-col" :content-style="{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }">
           <!-- Header -->
-          <div class="flex justify-between items-center pb-16px" style="border-bottom: 2px solid var(--n-border-color)">
-            <div class="text-16px font-600">{{ currentTitle }}</div>
-            <NButton type="primary" :loading="loading" @click="handleSave">保存</NButton>
-          </div>
+          <template #header>
+            <div class="flex justify-between items-center">
+              <div class="text-16px font-600">{{ currentTitle }}</div>
+              <NButton type="primary" :loading="loading" @click="handleSave">保存</NButton>
+            </div>
+          </template>
 
           <!-- Content area -->
-          <div class="overflow-y-auto overflow-x-visible pt-16px" style="height: calc(100% - 60px)">
+          <div class="flex-1 overflow-y-auto overflow-x-hidden">
             <GeneralSetting v-if="activeKey === 'general'" v-model:config="config.general" />
             <SecuritySetting v-else-if="activeKey === 'security'" v-model:config="config.security" />
             <LdapSetting v-else-if="activeKey === 'ldap'" v-model:config="config.ldap" />
