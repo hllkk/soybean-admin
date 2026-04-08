@@ -391,6 +391,12 @@ declare namespace App {
         noChange: string;
         userCenter: string;
         switchRole: string;
+        detail: string;
+        clear: string;
+        startDate: string;
+        endDate: string;
+        pleaseInput: string;
+        pleaseSelect: string;
         yesOrNo: {
           yes: string;
           no: string;
@@ -1062,6 +1068,52 @@ declare namespace App {
             exportTemplate: string;
             importSuccess: string;
             statusChangeSuccess: string;
+          };
+          operationLog: {
+            pageTitle: string;
+            title: string;
+            businessType: string;
+            method: string;
+            requestMethod: string;
+            operName: string;
+            operIp: string;
+            operLocation: string;
+            costTime: string;
+            status: string;
+            operTime: string;
+            detail: string;
+            clearConfirm: string;
+            clearSuccess: string;
+            businessTypeOptions: {
+              other: string;
+              insert: string;
+              update: string;
+              delete: string;
+              grant: string;
+              export: string;
+              import: string;
+              force: string;
+              genCode: string;
+              clean: string;
+            };
+          };
+          loginLog: {
+            pageTitle: string;
+            userName: string;
+            deviceType: string;
+            ipaddr: string;
+            loginLocation: string;
+            browser: string;
+            os: string;
+            status: string;
+            msg: string;
+            loginTime: string;
+            detail: string;
+            lock: string;
+            lockConfirm: string;
+            clearConfirm: string;
+            clearSuccess: string;
+            lockSuccess: string;
           };
         };
         about: {

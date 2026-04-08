@@ -24,6 +24,9 @@ declare module "@elegant-router/types" {
     "disk": "/disk";
     "iframe-page": "/iframe-page/:url";
     "init": "/init";
+    "log": "/log";
+    "log_login": "/log/login";
+    "log_operation": "/log/operation";
     "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
     "manage": "/manage";
     "manage_dept": "/manage/dept";
@@ -71,6 +74,7 @@ declare module "@elegant-router/types" {
     | "disk"
     | "iframe-page"
     | "init"
+    | "log"
     | "login"
     | "manage"
   >;
@@ -97,6 +101,8 @@ declare module "@elegant-router/types" {
     | "login"
     | "admin"
     | "disk"
+    | "log_login"
+    | "log_operation"
     | "manage_dept"
     | "manage_dict"
     | "manage_menu"

@@ -65,6 +65,12 @@ const local: App.I18n.Schema = {
     noChange: 'No actions were taken',
     userCenter: 'User Center',
     switchRole: 'Switch Role',
+    detail: 'Detail',
+    clear: 'Clear',
+    startDate: 'Start Date',
+    endDate: 'End Date',
+    pleaseInput: 'Please input',
+    pleaseSelect: 'Please select',
     yesOrNo: {
       yes: 'Yes',
       no: 'No'
@@ -72,7 +78,6 @@ const local: App.I18n.Schema = {
     second: 'Second',
     selected: 'selected',
     anyRecords: 'records',
-    clear: 'Clear',
     noSelectRecord: 'No Records Selected'
   },
   request: {
@@ -280,6 +285,7 @@ const local: App.I18n.Schema = {
     'user-center': 'User Center',
     log: 'Log Management',
     log_login: 'Login Log',
+    log_operation: 'Operation Log',
     log_operate: 'Operation Log',
     system: 'System Management',
     system_user: 'User Management',
@@ -1269,6 +1275,52 @@ const local: App.I18n.Schema = {
         exportTemplate: 'Export Template',
         importSuccess: 'Import successful',
         statusChangeSuccess: 'Status modified successfully'
+      },
+      operationLog: {
+        pageTitle: 'Operation Log List',
+        title: 'System Module',
+        businessType: 'Operation Type',
+        method: 'Method Name',
+        requestMethod: 'Request Method',
+        operName: 'Operator',
+        operIp: 'Operation IP',
+        operLocation: 'Operation Location',
+        costTime: 'Cost Time',
+        status: 'Status',
+        operTime: 'Operation Time',
+        detail: 'Detail',
+        clearConfirm: 'Are you sure to clear all operation logs?',
+        clearSuccess: 'Cleared successfully',
+        businessTypeOptions: {
+          other: 'Other',
+          insert: 'Insert',
+          update: 'Update',
+          delete: 'Delete',
+          grant: 'Grant',
+          export: 'Export',
+          import: 'Import',
+          force: 'Force Logout',
+          genCode: 'Generate Code',
+          clean: 'Clean Data'
+        }
+      },
+      loginLog: {
+        pageTitle: 'Login Log List',
+        userName: 'Username',
+        deviceType: 'Device Type',
+        ipaddr: 'Login IP',
+        loginLocation: 'Login Location',
+        browser: 'Browser',
+        os: 'OS',
+        status: 'Status',
+        msg: 'Message',
+        loginTime: 'Login Time',
+        detail: 'Detail',
+        lock: 'Lock',
+        lockConfirm: 'Are you sure to lock this user?',
+        clearConfirm: 'Are you sure to clear all login logs?',
+        clearSuccess: 'Cleared successfully',
+        lockSuccess: 'Locked successfully'
       }
     },
     about: {

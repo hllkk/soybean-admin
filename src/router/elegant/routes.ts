@@ -88,6 +88,41 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'log',
+    path: '/log',
+    component: 'layout.base',
+    meta: {
+      title: 'log',
+      i18nKey: 'route.log',
+      icon: 'carbon-cloud-logging',
+      order: 4
+    },
+    children: [
+      {
+        name: 'log_login',
+        path: '/log/login',
+        component: 'view.log_login',
+        meta: {
+          title: 'log_login',
+          i18nKey: 'route.log_login',
+          icon: 'carbon-login',
+          order: 1
+        }
+      },
+      {
+        name: 'log_operation',
+        path: '/log/operation',
+        component: 'view.log_operation',
+        meta: {
+          title: 'log_operation',
+          i18nKey: 'route.log_operation',
+          icon: 'carbon-operations-record',
+          order: 2
+        }
+      }
+    ]
+  },
+  {
     name: 'login',
     path: '/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?',
     component: 'layout.base$view.login',
@@ -106,7 +141,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'manage',
       i18nKey: 'route.manage',
-      icon: 'mdi:cog',
+      icon: 'carbon-cloud-service-management',
       order: 3,
       module: 'admin'
     },
@@ -118,7 +153,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_dept',
           i18nKey: 'route.manage_dept',
-          icon: 'mdi:office-building',
+          icon: 'carbon-development',
           order: 4
         }
       },
@@ -129,7 +164,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_dict',
           i18nKey: 'route.manage_dict',
-          icon: 'mdi:book-open-variant',
+          icon: 'iconoir-book',
           order: 6
         }
       },
@@ -140,7 +175,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_menu',
           i18nKey: 'route.manage_menu',
-          icon: 'mdi:menu',
+          icon: 'carbon-menu',
           order: 3
         }
       },
@@ -151,7 +186,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_post',
           i18nKey: 'route.manage_post',
-          icon: 'mdi:briefcase',
+          icon: 'carbon-ibm-z-processor-capacity-reference',
           order: 5
         }
       },
@@ -162,7 +197,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_role',
           i18nKey: 'route.manage_role',
-          icon: 'mdi:account-group',
+          icon: 'carbon-user-role',
           order: 2
         }
       },
@@ -173,7 +208,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_settings',
           i18nKey: 'route.manage_settings',
-          icon: 'mdi:cog-outline',
+          icon: 'carbon-settings-edit',
           order: 8
         }
       },
@@ -184,7 +219,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_user',
           i18nKey: 'route.manage_user',
-          icon: 'mdi:account',
+          icon: 'carbon-user',
           order: 1
         }
       }

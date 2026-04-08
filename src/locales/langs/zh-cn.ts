@@ -65,6 +65,12 @@ const local: App.I18n.Schema = {
     noChange: '没有进行任何操作',
     userCenter: '个人中心',
     switchRole: '切换角色',
+    detail: '详情',
+    clear: '清空',
+    startDate: '开始日期',
+    endDate: '结束日期',
+    pleaseInput: '请输入',
+    pleaseSelect: '请选择',
     yesOrNo: {
       yes: '是',
       no: '否'
@@ -72,7 +78,6 @@ const local: App.I18n.Schema = {
     second: '秒',
     selected: '已选择',
     anyRecords: '条记录',
-    clear: '清空',
     noSelectRecord: '未选中任何记录'
   },
   request: {
@@ -276,6 +281,7 @@ const local: App.I18n.Schema = {
     'user-center': '个人中心',
     log: '日志管理',
     log_login: '登录日志',
+    log_operation: '操作日志',
     log_operate: '操作日志',
     system: '系统管理',
     system_user: '用户管理',
@@ -1261,6 +1267,52 @@ const local: App.I18n.Schema = {
         exportTemplate: '导出模板',
         importSuccess: '导入成功',
         statusChangeSuccess: '状态修改成功'
+      },
+      operationLog: {
+        pageTitle: '操作日志列表',
+        title: '系统模块',
+        businessType: '操作类型',
+        method: '方法名称',
+        requestMethod: '请求方式',
+        operName: '操作人员',
+        operIp: '操作IP',
+        operLocation: '操作地点',
+        costTime: '耗时',
+        status: '状态',
+        operTime: '操作时间',
+        detail: '详情',
+        clearConfirm: '确定清空所有操作日志吗？',
+        clearSuccess: '清空成功',
+        businessTypeOptions: {
+          other: '其他',
+          insert: '新增',
+          update: '修改',
+          delete: '删除',
+          grant: '授权',
+          export: '导出',
+          import: '导入',
+          force: '强退',
+          genCode: '生成代码',
+          clean: '清空数据'
+        }
+      },
+      loginLog: {
+        pageTitle: '登录日志列表',
+        userName: '用户账号',
+        deviceType: '设备类型',
+        ipaddr: '登录IP',
+        loginLocation: '登录地点',
+        browser: '浏览器',
+        os: '操作系统',
+        status: '状态',
+        msg: '提示消息',
+        loginTime: '登录时间',
+        detail: '详情',
+        lock: '锁定',
+        lockConfirm: '确定锁定该用户吗？',
+        clearConfirm: '确定清空所有登录日志吗？',
+        clearSuccess: '清空成功',
+        lockSuccess: '锁定成功'
       }
     },
     about: {

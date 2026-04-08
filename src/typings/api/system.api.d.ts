@@ -895,5 +895,66 @@ declare namespace Api {
       query?: string;
       moduleCodes?: string[];
     };
+
+    /** operation log */
+    type OperationLog = {
+      operId: CommonType.IdType;
+      title: string;
+      businessType: number;
+      method: string;
+      requestMethod: string;
+      operName: string;
+      operUrl: string;
+      operIp: string;
+      operLocation: string;
+      operParam: string;
+      jsonResult: string;
+      status: number;
+      errorMsg: string;
+      operTime: string;
+      costTime: number;
+    };
+
+    /** operation log search params */
+    type OperationLogSearchParams = CommonType.RecordNullable<{
+      title?: string;
+      operName?: string;
+      operIp?: string;
+      businessType?: number;
+      status?: number;
+      beginTime?: string;
+      endTime?: string;
+    }> &
+      Common.CommonSearchParams;
+
+    /** operation log list */
+    type OperationLogList = Common.PaginatingQueryRecord<OperationLog>;
+
+    /** login log */
+    type LoginLog = {
+      infoId: CommonType.IdType;
+      userName: string;
+      deviceType: string;
+      ipaddr: string;
+      loginLocation: string;
+      browser: string;
+      os: string;
+      status: string;
+      msg: string;
+      loginTime: string;
+    };
+
+    /** login log search params */
+    type LoginLogSearchParams = CommonType.RecordNullable<{
+      userName?: string;
+      ipaddr?: string;
+      status?: string;
+      beginTime?: string;
+      endTime?: string;
+    }> &
+      Common.CommonSearchParams;
+
+    /** login log list */
+    type LoginLogList = Common.PaginatingQueryRecord<LoginLog>;
   }
 }
