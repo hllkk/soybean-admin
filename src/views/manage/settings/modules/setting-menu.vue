@@ -65,12 +65,12 @@ function handleSelect(key: string) {
 }
 
 .menu-item:hover {
-  background: #f5f5f5;
+  background-color: rgba(var(--primary-color), 0.06);
 }
 
 .menu-item.active {
-  background: linear-gradient(135deg, rgba(102,126,234,0.12) 0%, rgba(118,75,162,0.12) 100%);
-  border-right: 3px solid #667eea;
+  background: linear-gradient(135deg, rgba(var(--primary-color), 0.08) 0%, rgba(var(--primary-color), 0.12) 100%);
+  border-right: 3px solid rgb(var(--primary-color));
 }
 
 .menu-item.active::after {
@@ -81,34 +81,22 @@ function handleSelect(key: string) {
   transform: translateY(-50%);
   width: 6px;
   height: 6px;
-  background: linear-gradient(135deg, #a8b4f9 0%, #c4a8e9 100%);
+  background-color: rgb(var(--primary-color));
   border-radius: 50%;
+  opacity: 0.6;
 }
 
 .menu-title {
   font-weight: 500;
   font-size: 14px;
-  color: #333;
+  color: var(--n-text-color);
   display: flex;
   align-items: center;
 }
 
 .menu-desc {
   font-size: 12px;
-  color: #888;
+  color: var(--n-text-color-disabled);
   margin-top: 4px;
-}
-
-/* 暗黑模式适配 */
-html.dark .menu-item:hover {
-  background: rgba(255,255,255,0.08);
-}
-
-html.dark .menu-title {
-  color: #e0e0e0;
-}
-
-html.dark .menu-desc {
-  color: #888;
 }
 </style>

@@ -2,13 +2,13 @@
 import { ref, computed } from 'vue';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 import type { SettingConfig } from './types';
-import SettingMenu from './components/SettingMenu.vue';
-import GeneralSetting from './components/GeneralSetting.vue';
-import SecuritySetting from './components/SecuritySetting.vue';
-import LdapSetting from './components/LdapSetting.vue';
-import DiskSetting from './components/DiskSetting.vue';
-import NotifySetting from './components/NotifySetting.vue';
-import AuthSetting from './components/AuthSetting.vue';
+import SettingMenu from './modules/setting-menu.vue';
+import GeneralSetting from './modules/general-setting.vue';
+import SecuritySetting from './modules/security-setting.vue';
+import LdapSetting from './modules/ldap-setting.vue';
+import DiskSetting from './modules/disk-setting.vue';
+import NotifySetting from './modules/notify-setting.vue';
+import AuthSetting from './modules/auth-setting.vue';
 
 defineOptions({
   name: 'SettingsPage'
@@ -154,32 +154,33 @@ async function handleSave() {
 
     <!-- Desktop layout -->
     <template v-else>
-      <NSplit :default-size="0.22" :min="0.18" :max="0.3" class="h-full">
-        <template #1>
+      <div class="flex gap-16px h-full">
+        <!-- Left panel -->
+        <div class="w-280px flex-shrink-0">
           <NCard :bordered="false" class="card-wrapper h-full">
             <SettingMenu v-model:active-key="activeKey" />
           </NCard>
-        </template>
-        <template #2>
-          <NCard :bordered="false" class="card-wrapper h-full">
-            <!-- Header -->
-            <div class="flex justify-between items-center pb-16px" style="border-bottom: 2px solid #e8e8e8">
-              <div class="text-16px font-600">{{ currentTitle }}</div>
-              <NButton type="primary" :loading="loading" @click="handleSave">保存</NButton>
-            </div>
+        </div>
 
-            <!-- Content area -->
-            <div class="overflow-auto pt-16px" style="height: calc(100% - 60px)">
-              <GeneralSetting v-if="activeKey === 'general'" v-model:config="config.general" />
-              <SecuritySetting v-else-if="activeKey === 'security'" v-model:config="config.security" />
-              <LdapSetting v-else-if="activeKey === 'ldap'" v-model:config="config.ldap" />
-              <DiskSetting v-else-if="activeKey === 'disk'" v-model:config="config.disk" />
-              <NotifySetting v-else-if="activeKey === 'notify'" v-model:config="config.notify" />
-              <AuthSetting v-else-if="activeKey === 'auth'" v-model:config="config.auth" />
-            </div>
-          </NCard>
-        </template>
-      </NSplit>
+        <!-- Right panel -->
+        <NCard :bordered="false" class="card-wrapper h-full flex-1 overflow-hidden">
+          <!-- Header -->
+          <div class="flex justify-between items-center pb-16px" style="border-bottom: 2px solid var(--n-border-color)">
+            <div class="text-16px font-600">{{ currentTitle }}</div>
+            <NButton type="primary" :loading="loading" @click="handleSave">保存</NButton>
+          </div>
+
+          <!-- Content area -->
+          <div class="overflow-y-auto overflow-x-visible pt-16px" style="height: calc(100% - 60px)">
+            <GeneralSetting v-if="activeKey === 'general'" v-model:config="config.general" />
+            <SecuritySetting v-else-if="activeKey === 'security'" v-model:config="config.security" />
+            <LdapSetting v-else-if="activeKey === 'ldap'" v-model:config="config.ldap" />
+            <DiskSetting v-else-if="activeKey === 'disk'" v-model:config="config.disk" />
+            <NotifySetting v-else-if="activeKey === 'notify'" v-model:config="config.notify" />
+            <AuthSetting v-else-if="activeKey === 'auth'" v-model:config="config.auth" />
+          </div>
+        </NCard>
+      </div>
     </template>
   </div>
 </template>
