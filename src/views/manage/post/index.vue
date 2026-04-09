@@ -308,8 +308,9 @@ function handleResetSearch() {
   }
 
   :deep(.infinite-scroll) {
-    height: calc(100vh - 228px - var(--calc-footer-height, 0px)) !important;
-    max-height: calc(100vh - 228px - var(--calc-footer-height, 0px)) !important;
+    height: auto;
+    max-height: calc(100vh - 228px - var(--calc-footer-height, 0px));
+    overflow-y: auto;
   }
 
   @media screen and (max-width: 1024px) {
