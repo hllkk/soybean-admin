@@ -146,7 +146,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         title: $t('common.operate'),
         align: 'center',
         width: 80,
-        render: row => {
+        render: () => {
           return (
             <ButtonIcon
               text
@@ -169,7 +169,7 @@ async function handleBatchDelete() {
   onBatchDeleted();
 }
 
-async function handleDelete(operId: CommonType.IdType) {
+async function _handleDelete(operId: CommonType.IdType) {
   const { error } = await fetchDeleteOperationLog(operId);
   if (error) return;
   onDeleted();
@@ -207,8 +207,7 @@ function handleResetSearch() {
 <template>
   <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
     <OperationSearch v-model:model="searchParams" @reset="handleResetSearch" @search="getDataByPage" />
-    <TableRowCheckAlert v-model:checked-row-keys="checkedRowKeys" />
-    <NCard :title="$t('page.system.operationLog.pageTitle')" :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
+        <NCard :title="$t('page.system.operationLog.pageTitle')" :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
       <template #header-extra>
         <TableHeaderOperation
           v-model:columns="columnChecks"
@@ -221,8 +220,11 @@ function handleResetSearch() {
           @export="handleExport"
           @refresh="getData"
         >
-          <template #before>
-            <NButton v-if="hasAuth('system:operlog:remove')" size="small" ghost type="warning" @click="handleClean">
+          <template #prefix>
+            <NButton v-if="hasAuth('system:operlog:remove')" size="small" ghost type="error" @click="handleClean">
+              <template #icon>
+                <icon-material-symbols-warning-outline-rounded />
+              </template>
               {{ $t('common.clear') }}
             </NButton>
           </template>

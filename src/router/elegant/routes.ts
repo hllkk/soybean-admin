@@ -115,9 +115,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.log_login',
         meta: {
           title: 'log_login',
-          i18nKey: 'route.log_login',
-          icon: 'carbon-login',
-          order: 1
+          i18nKey: 'route.log_login'
         }
       },
       {

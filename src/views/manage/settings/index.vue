@@ -154,9 +154,9 @@ async function handleSave() {
 
     <!-- Desktop layout -->
     <template v-else>
-      <div class="flex flex-1 flex-row">
+      <div class="h-full flex flex-row">
         <!-- Left panel -->
-        <div class="w-1/5 flex-none">
+        <div class="h-full w-1/5 flex-none">
           <SettingMenu v-model:active-key="activeKey" />
         </div>
 
@@ -171,7 +171,7 @@ async function handleSave() {
           </template>
 
           <!-- Content area -->
-          <div class="flex-1 overflow-y-auto overflow-x-hidden">
+          <div class="setting-content flex-1 overflow-y-auto overflow-x-hidden pr-1">
             <GeneralSetting v-if="activeKey === 'general'" v-model:config="config.general" />
             <SecuritySetting v-else-if="activeKey === 'security'" v-model:config="config.security" />
             <LdapSetting v-else-if="activeKey === 'ldap'" v-model:config="config.ldap" />
@@ -188,5 +188,37 @@ async function handleSave() {
 <style scoped>
 .card-wrapper {
   border-radius: 8px;
+}
+
+/* 右侧内容区滚动条样式 - 只在hover时显示 */
+.setting-content {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.setting-content:hover {
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+.setting-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.setting-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.setting-content::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+  transition: background-color 0.3s;
+}
+
+.setting-content:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+}
+
+.setting-content:hover::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(155, 155, 155, 0.8);
 }
 </style>

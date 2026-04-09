@@ -1,37 +1,43 @@
 <script setup lang="tsx">
 import { ref } from 'vue';
-import { NTag } from 'naive-ui';
-import {
-  fetchGetLoginLogList,
-  fetchDeleteLoginLog,
-  fetchBatchDeleteLoginLog,
-  fetchCleanLoginLog,
-  fetchLockUser
-} from '@/service/api/system';
+import { NDivider } from 'naive-ui';
 import { useAppStore } from '@/store/modules/app';
-import { defaultTransform, useNaivePaginatedTable, useTableOperate } from '@/hooks/common/table';
 import { useAuth } from '@/hooks/business/auth';
 import { useDownload } from '@/hooks/business/download';
-import ButtonIcon from '@/components/custom/button-icon.vue';
+import { defaultTransform, useNaivePaginatedTable, useTableOperate } from '@/hooks/common/table';
+import { useDict } from '@/hooks/business/dict';
+import DictTag from '@/components/custom/dict-tag.vue';
+import SvgIcon from '@/components/custom/svg-icon.vue';
 import { $t } from '@/locales';
-import LoginSearch from './modules/login-search.vue';
+import ButtonIcon from '@/components/custom/button-icon.vue';
+import LoginInforSearch from './modules/login-infor-search.vue';
+import LoginInforViewDrawer from './modules/login-infor-view-drawer.vue';
+import { fetchBatchDeleteLoginInfor, fetchCleanLoginInfor, fetchGetLoginInforList, fetchUnlockLoginInfor } from '@/service/api/logfor';
+import { getBrowserIcon, getOsIcon } from '@/utils/icon';
 
 defineOptions({
-  name: 'LoginLogList'
+  name: 'LoginInforList'
 });
 
-const { hasAuth } = useAuth();
 const appStore = useAppStore();
 const { download } = useDownload();
+const { hasAuth } = useAuth();
+
+useDict('sys_common_status');
+useDict('sys_device_type');
 
 const searchParams = ref<Api.System.LoginLogSearchParams>({
   pageNum: 1,
-  pageSize: 10
+  pageSize: 10,
+  userName: null,
+  ipaddr: null,
+  status: null,
+  params: {}
 });
 
 const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination, scrollX } =
   useNaivePaginatedTable({
-    api: () => fetchGetLoginLogList(searchParams.value),
+    api: () => fetchGetLoginInforList(searchParams.value),
     transform: response => defaultTransform(response),
     onPaginationParamsChange: params => {
       searchParams.value.pageNum = params.page ?? 1;
@@ -47,93 +53,123 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         key: 'index',
         title: $t('common.index'),
         align: 'center',
-        width: 60,
-        render: (_, index) => {
-          return (searchParams.value.pageNum - 1) * searchParams.value.pageSize + index + 1;
-        }
+        width: 64,
+        render: (_, index) => index + 1
       },
       {
         key: 'userName',
-        title: $t('page.system.loginLog.userName'),
+        title: '用户账号',
         align: 'center',
-        width: 120,
-        ellipsis: true
+        minWidth: 120
       },
       {
         key: 'deviceType',
-        title: $t('page.system.loginLog.deviceType'),
+        title: '设备类型',
         align: 'center',
-        width: 100
+        minWidth: 120,
+        render: row => {
+          return <DictTag size="small" value={row.deviceType} dict-code="sys_device_type" />;
+        }
       },
       {
         key: 'ipaddr',
-        title: $t('page.system.loginLog.ipaddr'),
+        title: '登录IP地址',
         align: 'center',
-        width: 120
+        minWidth: 120
       },
       {
         key: 'loginLocation',
-        title: $t('page.system.loginLog.loginLocation'),
-        align: 'left',
-        width: 120,
-        ellipsis: true
+        title: '登录地点',
+        align: 'center',
+        minWidth: 120
       },
       {
         key: 'browser',
-        title: $t('page.system.loginLog.browser'),
+        title: '浏览器类型',
         align: 'center',
-        width: 120,
-        ellipsis: true
-      },
-      {
-        key: 'os',
-        title: $t('page.system.loginLog.os'),
-        align: 'center',
-        width: 120,
-        ellipsis: true
-      },
-      {
-        key: 'status',
-        title: $t('page.system.loginLog.status'),
-        align: 'center',
-        width: 80,
+        minWidth: 120,
         render: row => {
           return (
-            <NTag type={row.status === '0' ? 'success' : 'error'} size="small">
-              {row.status === '0' ? '成功' : '失败'}
-            </NTag>
+            <div class="flex items-center justify-center gap-2">
+              <SvgIcon icon={getBrowserIcon(row.browser)} />
+              {row.browser}
+            </div>
           );
         }
       },
       {
-        key: 'loginTime',
-        title: $t('page.system.loginLog.loginTime'),
+        key: 'os',
+        title: '操作系统',
         align: 'center',
-        width: 160
+        ellipsis: {
+          tooltip: true
+        },
+        minWidth: 120,
+        render: row => {
+          const osName = row.os?.split(' or ')[0] ?? '';
+          return (
+            <div class="flex items-center justify-center gap-2">
+              <SvgIcon icon={getOsIcon(osName)} />
+              {osName}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'status',
+        title: '登录状态',
+        align: 'center',
+        minWidth: 120,
+        render: row => {
+          return <DictTag size="small" value={row.status} dict-code="sys_common_status" />;
+        }
+      },
+      {
+        key: 'loginTime',
+        title: '访问时间',
+        align: 'center',
+        ellipsis: {
+          tooltip: true
+        },
+        minWidth: 120
       },
       {
         key: 'operate',
         title: $t('common.operate'),
         align: 'center',
-        width: 100,
+        width: 130,
         render: row => {
+          const viewBtn = () => {
+            return (
+              <ButtonIcon
+                type="primary"
+                text
+                icon="material-symbols:visibility-outline"
+                tooltipContent="详情"
+                onClick={() => view(row.infoId!)}
+              />
+            );
+          };
+
+          const unlockBtn = () => {
+            return (
+              <>
+                <NDivider vertical />
+                <ButtonIcon
+                  type="primary"
+                  text
+                  icon="material-symbols:lock-open-outline"
+                  tooltipContent="解锁"
+                  popconfirmContent={`确认解锁用户 ${row.userName} 吗？`}
+                  onPositiveClick={() => handleUnlockLoginInfor(row.userName!)}
+                />
+              </>
+            );
+          };
           return (
             <div class="flex-center gap-8px">
-              <ButtonIcon
-                text
-                type="primary"
-                icon="material-symbols:visibility-outline"
-                tooltipContent={$t('common.detail')}
-                onClick={() => handleDetail()}
-              />
-              <ButtonIcon
-                text
-                type="warning"
-                icon="material-symbols:lock-outline"
-                tooltipContent={$t('page.system.loginLog.lock')}
-                popconfirmContent={$t('page.system.loginLog.lockConfirm')}
-                onPositiveClick={() => handleLock(row.userName)}
-              />
+              {viewBtn()}
+              {unlockBtn()}
             </div>
           );
         }
@@ -141,76 +177,78 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
     ]
   });
 
-const { checkedRowKeys, onDeleted, onBatchDeleted } = useTableOperate(data, 'infoId', getData);
+const { drawerVisible, editingData, handleEdit, checkedRowKeys, onBatchDeleted } = useTableOperate(
+  data,
+  'infoId',
+  getData
+);
 
 async function handleBatchDelete() {
-  const { error } = await fetchBatchDeleteLoginLog(checkedRowKeys.value);
+  // request
+  const { error } = await fetchBatchDeleteLoginInfor(checkedRowKeys.value);
   if (error) return;
   onBatchDeleted();
 }
 
-async function _handleDelete(infoId: CommonType.IdType) {
-  const { error } = await fetchDeleteLoginLog(infoId);
-  if (error) return;
-  onDeleted();
+async function view(infoId: CommonType.IdType) {
+  handleEdit(infoId);
 }
 
-function handleDetail() {
-  window.$message?.info($t('common.lookForward'));
+async function handleExport() {
+  download('/monitor/logininfor/export', searchParams.value, `登录日志记录_${new Date().getTime()}.xlsx`);
 }
 
-async function handleLock(userName: string) {
-  const { error } = await fetchLockUser(userName);
-  if (!error) {
-    window.$message?.success($t('page.system.loginLog.lockSuccess'));
-  }
-}
-
-async function handleClean() {
-  window.$dialog?.warning({
-    title: $t('common.warning'),
-    content: $t('page.system.loginLog.clearConfirm'),
-    positiveText: $t('common.confirm'),
-    negativeText: $t('common.cancel'),
+async function handleCleanLoginInfor() {
+  window.$dialog?.error({
+    title: '提示',
+    content: '是否确认清空所有登录日志数据项?',
+    positiveText: '确认清空',
+    negativeText: '取消',
     onPositiveClick: async () => {
-      const { error } = await fetchCleanLoginLog();
-      if (!error) {
-        window.$message?.success($t('page.system.loginLog.clearSuccess'));
-        getData();
-      }
+      const { error } = await fetchCleanLoginInfor();
+      if (error) return;
+      window.$message?.success('清空成功');
+      await getData();
     }
   });
 }
 
-function handleExport() {
-  download('/system/logininfor/export', searchParams.value, `登录日志_${new Date().getTime()}.xlsx`);
-}
-
-function handleResetSearch() {
-  getDataByPage();
+async function handleUnlockLoginInfor(username: string) {
+  const { error } = await fetchUnlockLoginInfor(username);
+  if (error) return;
+  window.$message?.success('解锁成功');
+  await getDataByPage();
 }
 </script>
 
 <template>
   <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
-    <LoginSearch v-model:model="searchParams" @reset="handleResetSearch" @search="getDataByPage" />
-    <TableRowCheckAlert v-model:checked-row-keys="checkedRowKeys" />
-    <NCard :title="$t('page.system.loginLog.pageTitle')" :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
+    <LoginInforSearch v-model:model="searchParams" @search="getDataByPage" />
+    <NCard title="登录日志列表" :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
       <template #header-extra>
         <TableHeaderOperation
           v-model:columns="columnChecks"
           :disabled-delete="checkedRowKeys.length === 0"
           :loading="loading"
           :show-add="false"
-          :show-delete="hasAuth('system:logininfor:remove')"
-          :show-export="hasAuth('system:logininfor:export')"
+          :show-delete="hasAuth('monitor:logininfor:remove')"
+          :show-export="hasAuth('monitor:logininfor:export')"
           @delete="handleBatchDelete"
           @export="handleExport"
           @refresh="getData"
         >
-          <template #before>
-            <NButton v-if="hasAuth('system:logininfor:remove')" size="small" ghost type="warning" @click="handleClean">
-              {{ $t('common.clear') }}
+          <template #prefix>
+            <NButton
+              v-if="hasAuth('monitor:logininfor:remove')"
+              type="error"
+              ghost
+              size="small"
+              @click="handleCleanLoginInfor"
+            >
+              <template #icon>
+                <icon-material-symbols-warning-outline-rounded />
+              </template>
+              清空
             </NButton>
           </template>
         </TableHeaderOperation>
@@ -228,6 +266,7 @@ function handleResetSearch() {
         :pagination="mobilePagination"
         class="sm:h-full"
       />
+      <LoginInforViewDrawer v-model:visible="drawerVisible" :row-data="editingData" />
     </NCard>
   </div>
 </template>

@@ -31,7 +31,7 @@ function handleSelect(key: string) {
 </script>
 
 <template>
-  <DarkModeContainer class="h-full flex flex-col rounded-md space-y-2">
+  <DarkModeContainer class="h-full flex flex-col rounded-md gap-2 p-2">
     <div
       v-for="item in menuItems"
       :key="item.key"

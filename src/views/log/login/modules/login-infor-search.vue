@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toRaw } from 'vue';
+import { ref, toRaw } from 'vue';
 import { jsonClone } from '@sa/utils';
 import { useNaiveForm } from '@/hooks/common/form';
 import { $t } from '@/locales';
@@ -16,11 +16,21 @@ const emit = defineEmits<Emits>();
 
 const { formRef, validate, restoreValidation } = useNaiveForm();
 
+const dateRangeLoginTime = ref<[string, string] | null>(null);
+
 const model = defineModel<Api.System.LoginLogSearchParams>('model', { required: true });
 
 const defaultModel = jsonClone(toRaw(model.value));
 
+function onDateRangeLoginTimeUpdate(value: [string, string] | null) {
+  if (value?.length) {
+    model.value.params!.beginTime = value[0];
+    model.value.params!.endTime = value[1];
+  }
+}
+
 function resetModel() {
+  dateRangeLoginTime.value = null;
   Object.assign(model.value, defaultModel);
 }
 
@@ -42,13 +52,30 @@ async function search() {
       <NCollapseItem :title="$t('common.search')" name="user-search">
         <NForm ref="formRef" :model="model" label-placement="left" :label-width="80">
           <NGrid responsive="screen" item-responsive>
-            <NFormItemGi span="24 s:12 m:8" label="IP地址" path="ipaddr" class="pr-24px">
-              <NInput v-model:value="model.ipaddr" placeholder="请输入IP地址" />
+            <NFormItemGi span="24 s:12 m:6" label="IP地址" path="ipaddr" class="pr-24px">
+              <NInput v-model:value="model.ipaddr" placeholder="请输入登录IP地址" />
             </NFormItemGi>
-            <NFormItemGi span="24 s:12 m:8" label="用户账号" path="userName" class="pr-24px">
+            <NFormItemGi span="24 s:12 m:6" label="用户账号" path="userName" class="pr-24px">
               <NInput v-model:value="model.userName" placeholder="请输入用户账号" />
             </NFormItemGi>
-            <NFormItemGi span="24 s:24 m:8" class="pr-24px">
+            <NFormItemGi span="24 s:12 m:6" label="登录状态" path="status" class="pr-24px">
+              <DictSelect
+                v-model:value="model.status"
+                placeholder="请选择登录状态"
+                dict-code="sys_common_status"
+                clearable
+              />
+            </NFormItemGi>
+            <NFormItemGi span="24 s:12 m:6" label="登录时间" path="loginTime" class="pr-24px">
+              <NDatePicker
+                v-model:formatted-value="dateRangeLoginTime"
+                type="datetimerange"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                clearable
+                @update:formatted-value="onDateRangeLoginTimeUpdate"
+              />
+            </NFormItemGi>
+            <NFormItemGi span="24" class="pr-24px">
               <NSpace class="w-full" justify="end">
                 <NButton @click="reset">
                   <template #icon>
