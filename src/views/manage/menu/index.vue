@@ -15,7 +15,6 @@ import { fetchGetAppList } from '@/service/api/system/app';
 import { useAppStore } from '@/store/modules/app';
 import { useDict } from '@/hooks/business/dict';
 import { useAuth } from '@/hooks/business/auth';
-import { handleTree } from '@/utils/common';
 import { $t } from '@/locales';
 import SvgIcon from '@/components/custom/svg-icon.vue';
 import DictTag from '@/components/custom/dict-tag.vue';
@@ -69,14 +68,14 @@ const getMeunTree = async () => {
   const module = activeModule.value || undefined;
   const { data, error } = await fetchGetMenuList(module ? { module } : undefined);
   if (error) return;
-  const { tree } = handleTree(data, { idField: 'menuId', filterFn: item => item.menuType !== 'F' });
+  // 后端返回的已经是树形结构，直接添加根节点
   treeData.value = [
     {
       menuId: 0,
       parentId: 0,
       menuName: $t('page.system.menu.rootName'),
       icon: 'material-symbols:home-outline-rounded',
-      children: tree
+      children: data
     }
   ] as Api.System.Menu[];
   endLoading();
@@ -133,8 +132,8 @@ function renderLabel({ option }: { option: TreeOption }) {
   if (label?.startsWith('route.') || label?.startsWith('menu.')) {
     label = $t(label as App.I18n.I18nKey);
   }
-  // 禁用的菜单显示红色
-  if (option.status === '1') {
+  // 禁用的菜单显示红色（'0' = 停用/禁用）
+  if (option.status === '0') {
     return (
       <div class="flex items-center gap-4px text-error-200">
         {label}
@@ -142,7 +141,7 @@ function renderLabel({ option }: { option: TreeOption }) {
       </div>
     );
   }
-  // 隐藏的菜单显示灰色
+  // 隐藏的菜单显示灰色（'1' = 隐藏）
   if (option.visible === '1') {
     return (
       <div class="flex items-center gap-4px text-gray-400">
@@ -517,6 +516,29 @@ function renderMenuName(menuName: string) {
   return menuName?.startsWith('route.') || menuName?.startsWith('menu.') ? $t(menuName as App.I18n.I18nKey) : menuName;
 }
 
+/**
+ * 渲染组件路径
+ * 将后端存储的格式转换为实际文件路径格式
+ * view.manage_user → manage/user/index
+ * layout.base$view.manage_user → manage/user/index
+ */
+function renderComponentPath(component: string) {
+  if (!component) return '';
+
+  // 如果包含 $view.，取 $view. 后面的部分
+  if (component.includes('$view.')) {
+    component = component.split('$view.')[1];
+  }
+
+  // 如果以 view. 开头，去掉前缀
+  if (component.startsWith('view.')) {
+    component = component.slice(5);
+  }
+
+  // 将 _ 替换为 /，添加 /index 后缀
+  return `${component.replaceAll('_', '/')}/index.vue`;
+}
+
 const renderIframeQuery = (queryParam: string) => {
   try {
     return JSON.parse(queryParam || '{}')?.url;
@@ -657,11 +679,7 @@ const renderIframeQuery = (queryParam: string) => {
               {{ renderMenuName(currentMenu.menuName) }}
             </NDescriptionsItem>
             <NDescriptionsItem v-if="isMenu" :label="$t('page.system.menu.component')">
-              {{
-                currentMenu.component?.startsWith('layout.blank$view.')
-                  ? `${currentMenu.component?.slice(18, currentMenu.component.length)?.replaceAll('_', '/')}/index`
-                  : currentMenu.component
-              }}
+              {{ renderComponentPath(currentMenu.component) }}
             </NDescriptionsItem>
             <NDescriptionsItem
               :label="!isExternalType ? $t('page.system.menu.path') : $t('page.system.menu.externalPath')"
