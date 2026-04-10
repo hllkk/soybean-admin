@@ -145,7 +145,7 @@ declare namespace Api {
         | 'password'
         | 'status'
         | 'remark'
-      > & { roleIds: CommonType.IdType[]; postIds: CommonType.IdType[] }
+      > & { roleIds: CommonType.IdType[]; postIds: CommonType.IdType[]; forceCreate?: boolean }
     >;
 
     /** user profile operate params */
@@ -155,6 +155,20 @@ declare namespace Api {
     type UserPasswordOperateParams = CommonType.RecordNullable<{
       oldPassword: string;
       newPassword: string;
+    }>;
+
+    /** restore deleted user params */
+    type RestoreUserParams = CommonType.RecordNullable<{
+      userName: string;
+      password: string;
+      nickName?: string;
+      email?: string;
+      phonenumber?: string;
+      sex?: string;
+      deptId?: CommonType.IdType;
+      status?: Common.EnableStatus;
+      roleIds?: CommonType.IdType[];
+      postIds?: CommonType.IdType[];
     }>;
 
     /** user info */

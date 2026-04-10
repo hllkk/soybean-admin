@@ -142,3 +142,12 @@ export function fetchUpdateUserAvatar(formData: FormData) {
     data: formData
   });
 }
+
+/** 恢复已删除用户 */
+export function fetchRestoreDeletedUser(data: Api.System.RestoreUserParams) {
+  return request<boolean>({
+    url: '/system/user/restore',
+    method: 'put',
+    data
+  });
+}

@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { jsonClone } from '@sa/utils';
 import { useLoading } from '@sa/hooks';
-import { fetchCreateUser, fetchGetUserInfo, fetchUpdateUser, fetchGetRoleSelect } from '@/service/api/system';
+import { fetchCreateUser, fetchGetUserInfo, fetchUpdateUser, fetchGetRoleSelect, fetchRestoreDeletedUser } from '@/service/api/system';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { $t } from '@/locales';
 
@@ -124,6 +124,10 @@ function closeDrawer() {
   visible.value = false;
 }
 
+/** 显示恢复用户确认对话框 */
+const showRestoreConfirm = ref(false);
+const pendingUserData = ref<Api.System.RestoreUserParams | null>(null);
+
 async function handleSubmit() {
   await validate();
 
@@ -145,7 +149,27 @@ async function handleSubmit() {
       postIds,
       remark
     });
-    if (error) return;
+    if (error) {
+      // 检测是否是软删除用户冲突
+      const errMsg = (error as any)?.response?.data?.msg || error?.message || '';
+      if (errMsg.startsWith('USER_DELETED_CONFLICT:')) {
+        pendingUserData.value = {
+          userName,
+          password,
+          nickName,
+          email,
+          phonenumber,
+          sex,
+          deptId,
+          status,
+          roleIds,
+          postIds
+        };
+        showRestoreConfirm.value = true;
+        return;
+      }
+      return;
+    }
   }
 
   if (props.operateType === 'edit') {
@@ -168,6 +192,63 @@ async function handleSubmit() {
   window.$message?.success($t('common.updateSuccess'));
   closeDrawer();
   emit('submitted');
+}
+
+/** 恢复已删除用户 */
+async function handleRestoreUser() {
+  if (!pendingUserData.value) return;
+
+  const { error } = await fetchRestoreDeletedUser(pendingUserData.value);
+  if (error) {
+    const errMsg = (error as any)?.response?.data?.msg || error?.message || '恢复失败';
+    window.$message?.error(errMsg);
+    return;
+  }
+
+  window.$message?.success('用户恢复成功');
+  showRestoreConfirm.value = false;
+  pendingUserData.value = null;
+  closeDrawer();
+  emit('submitted');
+}
+
+/** 创建新用户（强制创建，即使存在同名已删除用户） */
+async function handleForceCreateUser() {
+  if (!pendingUserData.value) return;
+
+  const { userName, password, nickName, email, phonenumber, sex, deptId, status, roleIds, postIds } =
+    pendingUserData.value;
+
+  const { error } = await fetchCreateUser({
+    deptId,
+    userName,
+    password,
+    nickName,
+    email,
+    phonenumber,
+    sex,
+    status,
+    roleIds,
+    postIds,
+    forceCreate: true
+  });
+  if (error) {
+    const errMsg = (error as any)?.response?.data?.msg || error?.message || '创建失败';
+    window.$message?.error(errMsg);
+    return;
+  }
+
+  window.$message?.success('用户创建成功');
+  showRestoreConfirm.value = false;
+  pendingUserData.value = null;
+  closeDrawer();
+  emit('submitted');
+}
+
+/** 取消操作 */
+function handleCancelConflict() {
+  showRestoreConfirm.value = false;
+  pendingUserData.value = null;
 }
 
 watch(visible, () => {
@@ -252,6 +333,26 @@ watch(visible, () => {
       </template>
     </NDrawerContent>
   </NDrawer>
+
+  <!-- 恢复已删除用户确认对话框 -->
+  <NModal v-model:show="showRestoreConfirm" preset="card" title="用户名冲突" class="w-500px" :mask-closable="false">
+    <div class="py-4">
+      <p>该用户名 <strong>{{ pendingUserData?.userName }}</strong> 已被删除的用户占用。</p>
+      <p class="mt-2">请选择操作方式：</p>
+      <ul class="list-disc pl-6 mt-2 text-gray-500">
+        <li>恢复旧用户：使用当前信息恢复该用户（保留原ID和关联数据）</li>
+        <li>创建新用户：创建同名新用户（旧用户数据仍保留但不可见）</li>
+        <li>取消：修改用户名后重新提交</li>
+      </ul>
+    </div>
+    <template #footer>
+      <NSpace justify="end">
+        <NButton @click="handleCancelConflict">取消</NButton>
+        <NButton type="warning" @click="handleForceCreateUser">创建新用户</NButton>
+        <NButton type="primary" @click="handleRestoreUser">恢复旧用户</NButton>
+      </NSpace>
+    </template>
+  </NModal>
 </template>
 
 <style scoped></style>

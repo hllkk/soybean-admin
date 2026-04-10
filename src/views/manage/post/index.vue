@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { NButton, NDivider } from 'naive-ui';
 import { useLoading } from '@sa/hooks';
 import { fetchBatchDeletePost, fetchGetPostDeptSelect, fetchGetPostList } from '@/service/api/system/post';
