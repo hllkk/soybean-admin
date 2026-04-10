@@ -247,7 +247,7 @@ export function defaultTransform<ApiData>(
     const { rows, pageNum, pageSize, total } = data;
 
     return {
-      data: rows,
+      data: rows ?? [],
       pageNum,
       pageSize,
       total

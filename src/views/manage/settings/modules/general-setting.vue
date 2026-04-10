@@ -13,7 +13,9 @@ interface Emits {
   (e: 'update:config', value: GeneralSettingConfig): void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const props = defineProps<Props>();
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const emit = defineEmits<Emits>();
 
 const configModel = defineModel<GeneralSettingConfig>('config', { required: true });

@@ -7,7 +7,6 @@ import { menuIsFrameRecord, menuTypeRecord } from '@/constants/business';
 import {
   fetchDeleteMenu,
   fetchGetMenuList,
-  fetchUpdateMenuSort,
   fetchCreateButton,
   fetchUpdateButton,
   fetchDeleteButton
@@ -46,14 +45,6 @@ const treeData = ref<Api.System.Menu[]>([]);
 const checkedKeys = ref<CommonType.IdType[]>([0]);
 const expandedKeys = ref<CommonType.IdType[]>([0]);
 
-// 模块相关状态
-const appList = ref<Api.System.AppList>([]);
-const activeModule = ref<string>('');
-
-// 按钮权限行内编辑状态
-const editingButtonId = ref<CommonType.IdType | 'new' | null>(null);
-const editingButtonData = ref({ label: '', code: '', orderNum: 0 });
-
 // 是否为目录类型
 const isCatalog = computed(() => currentMenu.value?.menuType === 'M');
 
@@ -69,15 +60,9 @@ const isIframeType = computed(() => currentMenu.value?.isFrame === '2');
 const menuTreeRef = ref<TreeInst>();
 const btnData = ref<Api.System.MenuList>([]);
 
-// 获取应用模块列表
-async function getAppList() {
-  const { data, error } = await fetchGetAppList();
-  if (error) return;
-  appList.value = data;
-  if (appList.value.length > 0) {
-    activeModule.value = appList.value[0].appCode;
-  }
-}
+// 模块相关状态
+const appList = ref<Api.System.AppList>([]);
+const activeModule = ref<string>('');
 
 const getMeunTree = async () => {
   startLoading();
@@ -88,6 +73,7 @@ const getMeunTree = async () => {
   treeData.value = [
     {
       menuId: 0,
+      parentId: 0,
       menuName: $t('page.system.menu.rootName'),
       icon: 'material-symbols:home-outline-rounded',
       children: tree
@@ -103,9 +89,6 @@ watch(activeModule, () => {
   expandedKeys.value = [0];
   getMeunTree();
 });
-
-// 初始化
-getAppList();
 
 async function handleSubmitted(menuType?: Api.System.MenuType) {
   if (menuType === 'F') {
@@ -240,57 +223,40 @@ async function getBtnMenuList() {
   endBtnLoading();
 }
 
-function addBtnMenu() {
+// 按钮权限行内编辑状态
+const editingButtonId = ref<CommonType.IdType | 'new' | null>(null);
+const editingButtonData = ref({ label: '', code: '', orderNum: 0 });
+
+// 获取应用模块列表
+async function getAppList() {
+  const { data, error } = await fetchGetAppList();
+  if (error) return;
+  appList.value = data;
+  if (appList.value.length > 0) {
+    activeModule.value = appList.value[0].appCode;
+  }
+}
+
+// 初始化
+getAppList();
+
+function _addBtnMenu() {
   operateType.value = 'add';
   createType.value = 'F';
   createPid.value = currentMenu.value?.menuId || 0;
   openDrawer();
 }
 
-function handleDeleteBtnMenu(id: CommonType.IdType) {
+function _handleDeleteBtnMenu(id: CommonType.IdType) {
   handleDeleteMenu(id);
 }
 
-function handleUpdateBtnMenu(row: Api.System.Menu) {
+function _handleUpdateBtnMenu(row: Api.System.Menu) {
   operateType.value = 'edit';
   editingData.value = row;
   openDrawer();
 }
 
-// 拖拽排序处理
-async function handleDrop({
-  node,
-  dragNode,
-  dropPosition
-}: {
-  node: TreeOption;
-  dragNode: TreeOption;
-  dropPosition: 'before' | 'after' | 'inside';
-}) {
-  if (dropPosition === 'inside') {
-    window.$message?.warning($t('page.system.menu.dragInsideDisabled'));
-    return;
-  }
-
-  // 检查同层级
-  if ((node as any).parentId !== (dragNode as any).parentId) {
-    window.$message?.warning($t('page.system.menu.dragCrossLevelDisabled'));
-    return;
-  }
-
-  const dragId = (dragNode as any).menuId;
-  const nodeOrder = (node as any).orderNum || 0;
-  const newOrder = dropPosition === 'before' ? nodeOrder - 1 : nodeOrder + 1;
-
-  const { error } = await fetchUpdateMenuSort({ menuId: dragId, orderBy: Math.max(0, newOrder) });
-  if (error) {
-    window.$message?.error($t('page.system.menu.sortFailed'));
-    return;
-  }
-
-  window.$message?.success($t('page.system.menu.sortSuccess'));
-  await getMeunTree();
-}
 
 // 按钮权限行内编辑函数
 function startEditButton(row: Api.System.Menu) {
@@ -596,9 +562,6 @@ const renderIframeQuery = (queryParam: string) => {
       <div class="flex gap-6px">
         <NInput v-model:value="name" size="small" :placeholder="$t('page.system.menu.form.menuName.required')" />
       </div>
-      <div v-if="hasAuth('system:menu:edit')" class="text-12px text-gray-400 mb-4px text-center">
-        {{ $t('page.system.menu.dragSortTip') }}
-      </div>
       <NSpin :show="loading" class="infinite-scroll">
         <NTree
           ref="menuTreeRef"
@@ -617,12 +580,10 @@ const renderIframeQuery = (queryParam: string) => {
           label-field="menuName"
           virtual-scroll
           checkable
-          draggable
           :render-label="renderLabel"
           :render-prefix="renderPrefix"
           :render-suffix="renderSuffix"
           @update:selected-keys="(_: Array<string & number>, option: Array<TreeOption | null>) => handleClickTree(option)"
-          @drop="handleDrop"
         >
           <template #empty>
             <NEmpty :description="$t('page.system.menu.emptyMenu')" class="h-full min-h-200px justify-center" />

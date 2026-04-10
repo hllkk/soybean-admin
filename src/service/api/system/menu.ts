@@ -71,7 +71,7 @@ export function fetchGetMenuDetail(id: CommonType.IdType) {
 }
 
 /** 更新菜单排序 */
-export function fetchUpdateMenuSort(data: { menuId: CommonType.IdType; orderBy: number }) {
+export function fetchUpdateMenuSort(data: { menuId: CommonType.IdType; parentId: CommonType.IdType; targetIndex: number }) {
   return request<boolean>({
     url: '/system/menu/sort',
     method: 'put',

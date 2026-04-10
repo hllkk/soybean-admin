@@ -179,10 +179,6 @@ async function handleExport() {
 
 const expandedKeys = ref<CommonType.IdType[]>([100]);
 
-const selectable = computed(() => {
-  return !loading.value;
-});
-
 const { loading: treeLoading, startLoading: startTreeLoading, endLoading: endTreeLoading } = useLoading();
 const deptPattern = ref<string>();
 const deptData = ref<Api.Common.CommonTreeRecord>([]);
@@ -200,7 +196,8 @@ async function getDeptOptions() {
 getDeptOptions();
 
 function handleClickTree(keys: string[]) {
-  searchParams.value.belongDeptId = keys.length ? keys[0] : null;
+  if (loading.value) return; // 防止加载中重复触发
+  searchParams.value.belongDeptId = keys.length ? Number(keys[0]) : null;
   checkedRowKeys.value = [];
   getDataByPage();
 }
@@ -212,6 +209,7 @@ function handleResetTreeData() {
 
 function handleResetSearch() {
   selectedKeys.value = [];
+  searchParams.value.belongDeptId = null;
   getDataByPage();
 }
 </script>
@@ -236,12 +234,10 @@ function handleResetSearch() {
           :data="deptData as []"
           :show-irrelevant-nodes="false"
           :pattern="deptPattern"
-          block-line
           class="infinite-scroll h-full min-h-200px py-3"
           key-field="id"
           label-field="label"
           virtual-scroll
-          :selectable="selectable"
           @update:selected-keys="handleClickTree"
         >
           <template #empty>

@@ -34,6 +34,15 @@ const REMEMBERED_USER_KEY = 'remembered_user';
 // 是否显示初始化按钮
 const showInitButton = ref(true);
 
+// checkDB 缓存 Key
+const CHECK_DB_CACHE_KEY = 'check_db_result';
+const CHECK_DB_CACHE_EXPIRE = 5 * 60 * 1000; // 5分钟缓存
+
+interface CheckDBCache {
+  needInit: boolean;
+  timestamp: number;
+}
+
 // 页面加载时恢复记住的用户名
 onMounted(async () => {
   const remembered = localStg.get(REMEMBER_ME_KEY);
@@ -45,10 +54,31 @@ onMounted(async () => {
     }
   }
 
+  // 检查缓存
+  const cache = localStg.get(CHECK_DB_CACHE_KEY) as CheckDBCache | null;
+  const now = Date.now();
+
+  if (cache && (now - cache.timestamp) < CHECK_DB_CACHE_EXPIRE) {
+    // 使用缓存结果
+    showInitButton.value = cache.needInit;
+    return;
+  }
+
   // 检查是否需要初始化（使用扁平响应模式）
   const { data, error } = await fetchCheckDB();
   if (!error && data?.needInit) {
     showInitButton.value = true;
+    // 缓存结果
+    localStg.set(CHECK_DB_CACHE_KEY, {
+      needInit: true,
+      timestamp: now
+    } as CheckDBCache);
+  } else if (!error) {
+    // 缓存不需要初始化的结果
+    localStg.set(CHECK_DB_CACHE_KEY, {
+      needInit: false,
+      timestamp: now
+    } as CheckDBCache);
   }
 });
 

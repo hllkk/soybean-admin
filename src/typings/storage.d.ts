@@ -43,5 +43,10 @@ declare namespace StorageType {
     login_remember_me: boolean;
     /** The remembered username */
     remembered_user: string;
+    /** The check db result cache */
+    check_db_result: {
+      needInit: boolean;
+      timestamp: number;
+    };
   }
 }

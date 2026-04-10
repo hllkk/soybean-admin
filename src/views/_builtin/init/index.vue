@@ -58,7 +58,7 @@ const model = reactive({
   port: '3306',
   userName: 'root',
   password: '',
-  dbName: 'ops_master',
+  dbName: 'devops-admin',
   dbPath: '', // sqlite专用
   // Redis配置
   redisEnabled: false,
