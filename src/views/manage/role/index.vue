@@ -97,7 +97,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
           return (
             <StatusSwitch
               v-model:value={row.status}
-              disabled={row.roleId === 1}
+              disabled={row.roleKey === 'SUPER'}
               info={row.roleKey}
               onSubmitted={(value, callback) => handleStatusChange(row, value, callback)}
             />
@@ -116,7 +116,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         align: 'center',
         width: 230,
         render: row => {
-          if (row.roleId === 1) return null;
+          if (row.roleKey === 'SUPER') return null;
 
           const editBtn = () => {
             return (

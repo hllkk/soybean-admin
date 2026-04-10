@@ -127,7 +127,8 @@ watch(visible, () => {
           <NInput v-model:value="model.roleKey" disabled placeholder="请输入权限字符" />
         </NFormItem>
         <NFormItem label="权限范围" path="dataScope">
-          <NSelect v-model:value="model.dataScope" :options="dataScopeOptions" />
+          <NSelect v-model:value="model.dataScope" :options="dataScopeOptions" :disabled="model.roleKey === 'SUPER'" />
+          <span v-if="model.roleKey === 'SUPER'" class="ml-8px text-gray">超级管理员拥有全部数据权限，不可修改</span>
         </NFormItem>
         <NFormItem v-if="model.dataScope === '2'" label="数据权限" path="deptIds" class="pr-24px">
           <DeptTree

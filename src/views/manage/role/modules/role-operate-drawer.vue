@@ -185,7 +185,7 @@ watch(visible, () => {
           <NInputNumber v-model:value="model.roleSort" placeholder="请输入显示顺序" />
         </NFormItem>
         <NFormItem label="角色状态" path="status">
-          <NRadioGroup v-model:value="model.status">
+          <NRadioGroup v-model:value="model.status" :disabled="model.roleKey === 'SUPER'">
             <NRadio v-for="item in sysNormalDisableOptions" :key="item.value" :value="item.value" :label="item.label" />
           </NRadioGroup>
         </NFormItem>
