@@ -141,7 +141,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         align: 'center',
         width: 150,
         render: row => {
-          if (isSuperAdmin(row)) return null;
+          const isSuper = isSuperAdmin(row);
 
           const editBtn = () => {
             return (
@@ -150,6 +150,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
                 type="primary"
                 icon="material-symbols:drive-file-rename-outline-outline"
                 tooltipContent={$t('common.edit')}
+                disabled={isSuper}
                 onClick={() => edit(row.userId)}
               />
             );
@@ -162,6 +163,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
                 type="primary"
                 icon="material-symbols:key-vertical-outline"
                 tooltipContent="重置密码"
+                disabled={isSuper}
                 onClick={() => handleResetPwd(row.userId)}
               />
             );
@@ -174,7 +176,8 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
                 type="error"
                 icon="material-symbols:delete-outline"
                 tooltipContent={$t('common.delete')}
-                popconfirmContent={$t('common.confirmDelete')}
+                disabled={isSuper}
+                popconfirmContent={isSuper ? undefined : $t('common.confirmDelete')}
                 onPositiveClick={() => handleDelete(row.userId)}
               />
             );
