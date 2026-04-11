@@ -115,7 +115,8 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.log_login',
         meta: {
           title: 'log_login',
-          i18nKey: 'route.log_login'
+          i18nKey: 'route.log_login',
+          icon: 'hugeicons:logout-circle-01'
         }
       },
       {
@@ -184,7 +185,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_menu',
           i18nKey: 'route.manage_menu',
-          icon: 'carbon-menu',
+          icon: 'mingcute:list-ordered-line',
           order: 3
         }
       },
