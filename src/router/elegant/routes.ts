@@ -116,7 +116,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'log_login',
           i18nKey: 'route.log_login',
-          icon: 'hugeicons:logout-circle-01'
+          icon: 'carbon-login'
         }
       },
       {

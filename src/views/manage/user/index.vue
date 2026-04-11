@@ -25,6 +25,11 @@ defineOptions({
 useDict('sys_user_sex');
 useDict('sys_normal_disable');
 
+// 判断是否是超级管理员（基于角色编码）
+function isSuperAdmin(row: Api.System.User): boolean {
+  return row.roles?.some(role => role.roleKey === 'SUPER') ?? false;
+}
+
 const { hasAuth } = useAuth();
 const appStore = useAppStore();
 const { download } = useDownload();
@@ -117,7 +122,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
           return (
             <StatusSwitch
               v-model:value={row.status}
-              disabled={row.userId === 1}
+              disabled={isSuperAdmin(row)}
               info={row.userName}
               onSubmitted={(value, callback) => handleStatusChange(row, value, callback)}
             />
@@ -136,7 +141,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         align: 'center',
         width: 150,
         render: row => {
-          if (row.userId === 1) return null;
+          if (isSuperAdmin(row)) return null;
 
           const editBtn = () => {
             return (

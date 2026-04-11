@@ -116,6 +116,8 @@ declare namespace Api {
       password: string;
       /** 帐号状态（0正常 1停用） */
       status: Common.EnableStatus;
+      /** 用户角色列表 */
+      roles?: { roleId: CommonType.IdType; roleName: string; roleKey?: string }[];
       /** 最后登录IP */
       loginIp: string;
       /** 最后登录时间 */
