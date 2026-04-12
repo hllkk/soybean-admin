@@ -90,3 +90,11 @@ export function fetchBatchDeleteRole(roleIds: CommonType.IdType[]) {
     method: 'delete'
   });
 }
+
+/** 获取角色完整权限树（菜单+按钮统一返回） */
+export function fetchGetRoleAuthTree(roleId: CommonType.IdType) {
+  return request<Api.System.RoleAuthTreeResponse>({
+    url: `/system/role/auth-tree/${roleId}`,
+    method: 'get'
+  });
+}
