@@ -3,7 +3,6 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { jsonClone } from '@sa/utils';
 import { useLoading } from '@sa/hooks';
 import { fetchCreateRole, fetchUpdateRole } from '@/service/api/system/role';
-import { fetchGetRoleMenuTreeSelect, fetchGetRoleButtonTreeSelect } from '@/service/api/system';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { useDict } from '@/hooks/business/dict';
 import { $t } from '@/locales';
@@ -94,34 +93,18 @@ async function handleUpdateModelWhenEdit() {
     // 等待组件挂载
     await nextTick();
 
-    // 确保数据加载完成
-    await menuTreeRef.value?.refresh();
+    // 加载完整权限树（包含所有模块的菜单和按钮）
+    const authTree = await menuTreeRef.value?.loadRoleAuthTree(model.value.roleId!);
 
-    // 获取模块列表
-    const apps = menuTreeRef.value?.appList || [];
+    if (authTree) {
+      // 合并菜单和按钮的选中ID，设置到各模块
+      const allCheckedKeys = [...authTree.menus, ...authTree.buttons];
+      const apps = menuTreeRef.value?.appList || [];
 
-    // 清空原有选中状态
-    menuTreeRef.value?.clearAllCheckedKeys();
-
-    // 并行获取各模块的角色菜单权限
-    await Promise.all(
-      apps.map(async (app: Api.System.App) => {
-        const { data, error } = await fetchGetRoleMenuTreeSelect(model.value.roleId!, app.appCode);
-        if (!error) {
-          // 设置该模块的选中状态
-          menuTreeRef.value?.setCheckedKeysByModule(app.appCode, data.checkedKeys);
-        }
-
-        // 获取按钮权限
-        const { data: btnData, error: btnError } = await fetchGetRoleButtonTreeSelect(
-          model.value.roleId!,
-          app.appCode
-        );
-        if (!btnError && btnData.checkedKeys) {
-          menuTreeRef.value?.setCheckedKeysByModule(app.appCode, btnData.checkedKeys);
-        }
-      })
-    );
+      for (const app of apps) {
+        menuTreeRef.value?.setCheckedKeysByModule(app.appCode, allCheckedKeys);
+      }
+    }
 
     stopMenuLoading();
   }
