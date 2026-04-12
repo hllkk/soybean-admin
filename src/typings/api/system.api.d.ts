@@ -87,6 +87,18 @@ declare namespace Api {
     type MenuTreeSelectItem = {
       id: CommonType.IdType;
       label: string;
+      /** 菜单类型（M目录 C菜单 F按钮） */
+      menuType?: 'M' | 'C' | 'F';
+      /** 菜单图标 */
+      icon?: string;
+      /** 菜单状态（0正常 1停用） */
+      status?: Common.EnableStatus;
+      /** 是否隐藏 */
+      hiddenInMenu?: boolean;
+      /** 所属模块 */
+      module?: string;
+      /** 权限标识（按钮节点使用） */
+      perms?: string;
       children?: MenuTreeSelectItem[];
     };
 
