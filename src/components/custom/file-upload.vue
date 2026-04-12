@@ -1,6 +1,6 @@
 <script setup lang="tsx">
 import { computed, defineComponent, useAttrs } from 'vue';
-import type { UploadFileInfo, UploadProps } from 'naive-ui';
+import type { UploadFileInfo } from 'naive-ui';
 import type { JSX } from 'vue/jsx-runtime';
 import { fetchBatchDeleteOss } from '@/service/api/system/oss';
 import { getToken } from '@/store/modules/auth/shared';
@@ -40,7 +40,7 @@ const accept = computed(() => {
   return props.uploadType === 'file' ? AcceptType.File : AcceptType.Image;
 });
 
-const attrs: UploadProps = useAttrs();
+const attrs = useAttrs();
 
 let fileNum = 0;
 const fileList = defineModel<UploadFileInfo[]>('fileList', {

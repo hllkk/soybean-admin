@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, useAttrs, watch } from 'vue';
-import type { SelectProps } from 'naive-ui';
 import { useLoading } from '@sa/hooks';
 import { fetchGetPostSelect } from '@/service/api/system';
 
@@ -17,7 +16,7 @@ const props = defineProps<Props>();
 
 const value = defineModel<CommonType.IdType[] | null>('value', { required: false });
 
-const attrs: SelectProps = useAttrs();
+const attrs = useAttrs();
 
 const { loading: postLoading, startLoading: startPostLoading, endLoading: endPostLoading } = useLoading();
 

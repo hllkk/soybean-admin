@@ -103,6 +103,7 @@ watch(visible, () => {
           :cascade="true"
           :show-header="false"
           :immediate="true"
+          :show-module-tabs="true"
         />
       </NFormItem>
     </NForm>

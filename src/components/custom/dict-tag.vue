@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue';
-import type { TagProps } from 'naive-ui';
 import { jsonClone } from '@sa/utils';
 import { useDict } from '@/hooks/business/dict';
 import { isNotNull } from '@/utils/common';
@@ -23,7 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
   value: () => []
 });
 
-const attrs = useAttrs() as TagProps;
+const attrs = useAttrs();
 
 const { transformDictData } = useDict(props.dictCode, props.immediate);
 
