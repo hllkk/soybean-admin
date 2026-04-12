@@ -113,14 +113,3 @@ export function fetchGetMenuButtons(menuId: CommonType.IdType) {
   });
 }
 
-/** 获取角色按钮权限 */
-export function fetchGetRoleButtonTreeSelect(roleId: CommonType.IdType, module?: string) {
-  return request<{
-    checkedKeys: CommonType.IdType[];
-    buttons: Api.System.Button[];
-  }>({
-    url: `/system/role/buttons/${roleId}`,
-    method: 'get',
-    params: module ? { module } : undefined
-  });
-}
