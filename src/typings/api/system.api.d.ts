@@ -57,8 +57,22 @@ declare namespace Api {
         | 'dataScope'
         | 'status'
         | 'remark'
-      > & { menuIds: CommonType.IdType[]; deptIds: CommonType.IdType[] }
+      > & { menuIds: CommonType.IdType[]; deptIds: CommonType.IdType[]; buttonIds: CommonType.IdType[] }
     >;
+
+    /** role detail response */
+    type RoleDetailResponse = {
+      roleId: CommonType.IdType;
+      roleName: string;
+      roleKey: string;
+      roleSort: number;
+      dataScope: string;
+      status: Common.EnableStatus;
+      description?: string;
+      menuIds: CommonType.IdType[];
+      buttonIds: CommonType.IdType[];
+      deptIds: CommonType.IdType[];
+    };
 
     /** role list */
     type RoleList = Common.PaginatingQueryRecord<Role>;
@@ -319,6 +333,12 @@ declare namespace Api {
 
     /** menu list */
     type MenuList = Menu[];
+
+    /** menu buttons response */
+    type MenuButtonsResponse = {
+      menuId: CommonType.IdType;
+      buttons: Button[];
+    };
 
     /** menu search params */
     type MenuSearchParams = CommonType.RecordNullable<Pick<Menu, 'menuName' | 'status' | 'menuType' | 'parentId'> & { module?: string }>;
