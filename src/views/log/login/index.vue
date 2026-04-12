@@ -239,7 +239,7 @@ async function handleUnlockLoginInfor(username: string) {
         >
           <template #prefix>
             <NButton
-              v-if="hasAuth('monitor:logininfor:remove')"
+              v-if="hasAuth('monitor:logininfor:clear')"
               type="error"
               ghost
               size="small"

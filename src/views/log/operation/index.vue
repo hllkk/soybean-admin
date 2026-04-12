@@ -214,14 +214,14 @@ function handleResetSearch() {
           :disabled-delete="checkedRowKeys.length === 0"
           :loading="loading"
           :show-add="false"
-          :show-delete="hasAuth('system:operlog:remove')"
-          :show-export="hasAuth('system:operlog:export')"
+          :show-delete="hasAuth('monitor:operlog:remove')"
+          :show-export="hasAuth('monitor:operlog:export')"
           @delete="handleBatchDelete"
           @export="handleExport"
           @refresh="getData"
         >
           <template #prefix>
-            <NButton v-if="hasAuth('system:operlog:remove')" size="small" ghost type="error" @click="handleClean">
+            <NButton v-if="hasAuth('monitor:operlog:clear')" size="small" ghost type="error" @click="handleClean">
               <template #icon>
                 <icon-material-symbols-warning-outline-rounded />
               </template>

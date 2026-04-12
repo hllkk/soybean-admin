@@ -404,16 +404,16 @@ const tableTitle = computed(() => {
             :disabled-delete="checkedRowKeys.length === 0"
             :disable-add="!searchParams.dictType"
             :loading="loading"
-            :show-add="hasAuth('system:user:add')"
-            :show-delete="hasAuth('system:user:remove')"
-            :show-export="hasAuth('system:user:export')"
+            :show-add="hasAuth('system:dict:add')"
+            :show-delete="hasAuth('system:dict:remove')"
+            :show-export="hasAuth('system:dict:export')"
             @add="handleAdd"
             @delete="handleBatchDelete"
             @refresh="getData"
             @export="handleExport"
           >
             <template #prefix>
-              <NButton ghost size="small" @click="handleRefreshCache">
+              <NButton v-if="hasAuth('system:dict:refreshCache')" ghost size="small" @click="handleRefreshCache">
                 <template #icon>
                   <icon-material-symbols-refresh-rounded class="text-icon" />
                 </template>
