@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { jsonClone } from '@sa/utils';
 import { useLoading } from '@sa/hooks';
 import { fetchCreateRole, fetchUpdateRole } from '@/service/api/system/role';
-import { fetchGetRoleMenuTreeSelect } from '@/service/api/system';
+import { fetchGetRoleMenuTreeSelect, fetchGetRoleButtonTreeSelect } from '@/service/api/system';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { useDict } from '@/hooks/business/dict';
 import { $t } from '@/locales';
@@ -37,6 +37,7 @@ const visible = defineModel<boolean>('visible', {
 const { options: sysNormalDisableOptions } = useDict('sys_normal_disable', false);
 
 const menuOptions = ref<Api.System.MenuList>([]);
+const showButtons = ref(true);
 
 const { loading: menuLoading, startLoading: startMenuLoading, endLoading: stopMenuLoading } = useLoading();
 
@@ -58,6 +59,7 @@ const model = ref<Model>(createDefaultModel());
 function createDefaultModel(): Model {
   return {
     menuIds: [],
+    buttonIds: [],
     roleName: '',
     roleKey: '',
     roleSort: 1,
@@ -109,6 +111,15 @@ async function handleUpdateModelWhenEdit() {
           // 设置该模块的选中状态
           menuTreeRef.value?.setCheckedKeysByModule(app.appCode, data.checkedKeys);
         }
+
+        // 获取按钮权限
+        const { data: btnData, error: btnError } = await fetchGetRoleButtonTreeSelect(
+          model.value.roleId!,
+          app.appCode
+        );
+        if (!btnError && btnData.checkedKeys) {
+          menuTreeRef.value?.setCheckedKeysByModule(app.appCode, btnData.checkedKeys);
+        }
       })
     );
 
@@ -124,6 +135,8 @@ async function handleSubmit() {
   await validate();
   const { roleId, roleName, roleKey, roleSort, menuCheckStrictly, status, remark } = model.value;
   const menuIds = menuTreeRef.value?.getCheckedMenuIds();
+  const buttonIds = menuTreeRef.value?.getCheckedButtonIds();
+
   // request
   if (props.operateType === 'add') {
     const { error } = await fetchCreateRole({
@@ -133,7 +146,8 @@ async function handleSubmit() {
       menuCheckStrictly,
       status,
       remark,
-      menuIds
+      menuIds,
+      buttonIds
     });
     if (error) return;
   }
@@ -147,7 +161,8 @@ async function handleSubmit() {
       menuCheckStrictly,
       status,
       remark,
-      menuIds
+      menuIds,
+      buttonIds
     });
     if (error) return;
   }
@@ -194,6 +209,7 @@ watch(visible, () => {
             v-if="visible"
             ref="menuTreeRef"
             v-model:checked-keys="model.menuIds"
+            v-model:show-buttons="showButtons"
             v-model:options="menuOptions"
             v-model:cascade="model.menuCheckStrictly"
             v-model:loading="menuLoading"
