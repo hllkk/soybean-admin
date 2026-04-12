@@ -1,8 +1,9 @@
 <script setup lang="tsx">
 import { onMounted, reactive, ref, watch, useAttrs } from 'vue';
 import type { TreeOption, TreeSelectInst } from 'naive-ui';
+import { NTooltip } from 'naive-ui';
 import { useBoolean } from '@sa/hooks';
-import { fetchGetMenuTreeSelect } from '@/service/api/system';
+import { fetchGetMenuTreeSelect, fetchGetMenuButtons } from '@/service/api/system';
 import { fetchGetAppList } from '@/service/api/system/app';
 import SvgIcon from '@/components/custom/svg-icon.vue';
 import { $t } from '@/locales';
@@ -39,6 +40,14 @@ const activeModule = ref<string>('');
 const moduleMenuOptions = reactive<Record<string, Api.System.MenuList>>({});
 const moduleCheckedKeys = reactive<Record<string, CommonType.IdType[]>>({});
 const moduleLoading = reactive<Record<string, boolean>>({});
+
+// 按钮相关状态
+const buttonsMap = reactive<Record<string, Api.System.ButtonList>>({}); // menuId -> buttons
+const buttonIds = defineModel<CommonType.IdType[]>('buttonIds', { required: false, default: [] });
+const moduleButtonCheckedKeys = reactive<Record<string, CommonType.IdType[]>>({});
+
+// 是否显示按钮
+const showButtons = defineModel<boolean>('showButtons', { required: false, default: false });
 
 async function getMenuList() {
   loading.value = true;
@@ -81,6 +90,63 @@ async function getModuleMenuList(module: string) {
     }
   ] as Api.System.MenuList;
   moduleLoading[module] = false;
+}
+
+async function loadMenuButtons(menuId: CommonType.IdType) {
+  if (buttonsMap[String(menuId)]) return; // 已加载
+
+  const { data, error } = await fetchGetMenuButtons(menuId);
+  if (error) return;
+
+  buttonsMap[String(menuId)] = data || [];
+}
+
+/** 构建带按钮的树节点 */
+function buildTreeWithButtons(menuList: Api.System.MenuList): Api.System.MenuList {
+  return menuList.map(menu => {
+    const node = { ...menu };
+
+    // 如果是菜单类型(C)且有按钮，添加按钮作为子节点
+    if (menu.menuType === 'C' && showButtons.value) {
+      const buttons = buttonsMap[String(menu.id)] || [];
+      if (buttons.length > 0) {
+        const buttonNodes: Api.System.Menu[] = buttons.map(btn => ({
+          id: btn.id,
+          label: btn.label,
+          menuType: 'F' as Api.System.MenuType,
+          perms: btn.code,
+          icon: 'material-symbols:smart-button-outline',
+          parentId: menu.id!,
+          children: [],
+          // CommonRecord required fields (placeholder values for display nodes)
+          createBy: '',
+          createTime: '',
+          updateBy: '',
+          updateTime: '',
+          // Menu required fields (placeholder values)
+          menuId: btn.id,
+          menuName: btn.label,
+          orderNum: btn.orderNum,
+          path: '',
+          component: '',
+          queryParam: '',
+          isFrame: '1' as Api.System.IsMenuFrame,
+          isCache: '1' as Api.Common.EnableStatus,
+          visible: '0' as Api.Common.VisibleStatus,
+          status: '0' as Api.Common.EnableStatus,
+          parentName: ''
+        }));
+
+        node.children = [...(menu.children || []), ...buttonNodes];
+      }
+    }
+
+    if (node.children && node.children.length > 0) {
+      node.children = buildTreeWithButtons(node.children);
+    }
+
+    return node;
+  });
 }
 
 async function loadAllModules() {
@@ -133,6 +199,21 @@ function renderLabel({ option }: { option: TreeOption }) {
   if (label?.startsWith('route.') || label?.startsWith('menu.')) {
     label = $t(label as App.I18n.I18nKey);
   }
+
+  // 按钮节点显示权限字符作为 tooltip
+  if (option.menuType === 'F') {
+    return (
+      <div class="flex items-center gap-4px">
+        <NTooltip>
+          {{
+            trigger: () => label,
+            default: () => option.perms || ''
+          }}
+        </NTooltip>
+      </div>
+    );
+  }
+
   // 禁用的菜单显示红色（status='0'表示停用）
   if (option.status === '0') {
     return (
@@ -155,6 +236,11 @@ function renderLabel({ option }: { option: TreeOption }) {
 }
 
 function renderPrefix({ option }: { option: TreeOption }) {
+  // 按钮节点使用按钮图标
+  if (option.menuType === 'F') {
+    return <SvgIcon icon="material-symbols:smart-button-outline" class="text-primary" />;
+  }
+
   const renderLocalIcon = String(option.icon).startsWith('local-icon-');
   let icon = renderLocalIcon ? undefined : String(option.icon ?? 'material-symbols:buttons-alt-outline-rounded');
   const localIcon = renderLocalIcon ? String(option.icon).replace('local-icon-', 'menu-') : undefined;
@@ -267,8 +353,46 @@ watch(cascade, () => {
   checkedKeys.value = getCheckedMenuIds(true);
 });
 
+/** 根据ID在树中查找节点 */
+function findNodeById(id: CommonType.IdType, tree: Api.System.MenuList): Api.System.Menu | null {
+  for (const node of tree) {
+    if (node.id === id) return node;
+    if (node.children) {
+      const found = findNodeById(id, node.children);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/** 从选中的ID中筛选出按钮节点ID */
+function filterButtonIds(ids: CommonType.IdType[], tree: Api.System.MenuList): CommonType.IdType[] {
+  const result: CommonType.IdType[] = [];
+  for (const id of ids) {
+    const node = findNodeById(id, tree);
+    if (node && node.menuType === 'F') {
+      result.push(id);
+    }
+  }
+  return result;
+}
+
+/** 获取勾选的按钮ID列表 */
+function getCheckedButtonIds(): CommonType.IdType[] {
+  const allIds: CommonType.IdType[] = [];
+
+  // 从 checkedKeys 中筛选出按钮节点
+  const buttonIdsFromTree = filterButtonIds(checkedKeys.value, options.value);
+  allIds.push(...buttonIdsFromTree);
+
+  return [...new Set(allIds)];
+}
+
 defineExpose({
   getCheckedMenuIds,
+  getCheckedButtonIds,
+  loadMenuButtons,
+  buildTreeWithButtons,
   refresh,
   setCheckedKeysByModule,
   clearAllCheckedKeys,
