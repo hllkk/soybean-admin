@@ -9,7 +9,8 @@ import {
   fetchGetMenuList,
   fetchCreateButton,
   fetchUpdateButton,
-  fetchDeleteButton
+  fetchDeleteButton,
+  fetchGetMenuButtons
 } from '@/service/api/system';
 import { fetchGetAppList } from '@/service/api/system/app';
 import { useAppStore } from '@/store/modules/app';
