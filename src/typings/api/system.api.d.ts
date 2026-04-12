@@ -82,6 +82,23 @@ declare namespace Api {
       checkedKeys: CommonType.IdType[];
       menus: MenuList;
     }>;
+
+    /** menu tree select item */
+    type MenuTreeSelectItem = {
+      id: CommonType.IdType;
+      label: string;
+      children?: MenuTreeSelectItem[];
+    };
+
+    /** role auth tree response (unified menu + button) */
+    type RoleAuthTreeResponse = {
+      trees: Record<string, MenuTreeSelectItem[]>;
+      checkedKeys: {
+        menus: CommonType.IdType[];
+        buttons: CommonType.IdType[];
+      };
+    };
+
     /** teannt-package menu tree select */
     type TenantPackageMenuTreeSelect = Common.CommonRecord<{
       checkedKeys: CommonType.IdType[];
