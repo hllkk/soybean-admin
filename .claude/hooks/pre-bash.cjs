@@ -4,7 +4,7 @@ const input = JSON.parse(require('fs').readFileSync('/dev/stdin', 'utf8'));
 const cmd = input?.tool_input?.command || '';
 
 const BLOCKED = [
-  /rm\s+-rf\s+[\/~]/, /chmod\s+777/, /curl\s+.*\|\s*(?:bash|sh)/,
+  /rm\s+-rf\s+[/~]/, /chmod\s+777/, /curl\s+.*\|\s*(?:bash|sh)/,
   /wget\s+.*\|\s*(?:bash|sh)/, />\s*\/etc\//, /mkfs\./, /dd\s+if=/,
   /:(){ :\|:& };:/, /fork\s*bomb/i
 ];
