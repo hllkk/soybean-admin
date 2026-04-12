@@ -1,10 +1,11 @@
 <script setup lang="tsx">
-import { computed, onMounted, reactive, ref, watch, watchEffect, useAttrs } from 'vue';
+import { computed, onMounted, reactive, ref, watch, useAttrs } from 'vue';
 import type { TreeOption, TreeSelectInst } from 'naive-ui';
 import { NTooltip } from 'naive-ui';
 import { useBoolean } from '@sa/hooks';
-import { fetchGetMenuTreeSelect, fetchGetMenuButtons } from '@/service/api/system';
+import { fetchGetMenuTreeSelect } from '@/service/api/system';
 import { fetchGetAppList } from '@/service/api/system/app';
+import { fetchGetRoleAuthTree } from '@/service/api/system/role';
 import SvgIcon from '@/components/custom/svg-icon.vue';
 import { $t } from '@/locales';
 
@@ -41,89 +42,15 @@ const moduleMenuOptions = reactive<Record<string, Api.System.MenuList>>({});
 const moduleCheckedKeys = reactive<Record<string, CommonType.IdType[]>>({});
 const moduleLoading = reactive<Record<string, boolean>>({});
 
-// 按钮相关状态
-const buttonsMap = reactive<Record<string, Api.System.ButtonList>>({}); // menuId -> buttons
-const buttonsLoading = ref<boolean>(false);
-
-// 是否显示按钮
-const showButtons = defineModel<boolean>('showButtons', { required: false, default: false });
-
-// 计算属性：根据 showButtons 决定是否转换树数据
+// 计算属性：直接返回 options
 const computedOptions = computed(() => {
-  if (!showButtons.value) {
-    return options.value;
-  }
-  return buildTreeWithButtons(options.value);
+  return options.value;
 });
 
 // 模块模式下的计算属性
 const computedModuleMenuOptions = computed(() => {
-  const result: Record<string, Api.System.MenuList> = {};
-  for (const module of Object.keys(moduleMenuOptions)) {
-    if (!showButtons.value) {
-      result[module] = moduleMenuOptions[module];
-    } else {
-      result[module] = buildTreeWithButtons(moduleMenuOptions[module]);
-    }
-  }
-  return result;
+  return moduleMenuOptions;
 });
-
-// 当 showButtons 变为 true 且树数据已加载时，加载所有按钮
-watchEffect(async () => {
-  if (!showButtons.value || options.value.length === 0 || buttonsLoading.value) return;
-
-  // 检查是否已经有按钮数据（从后端直接获取）
-  const hasButtonsFromBackend = checkTreeHasButtons(options.value);
-  if (hasButtonsFromBackend) return; // 后端已包含按钮，无需再加载
-
-  // 加载所有菜单的按钮
-  buttonsLoading.value = true;
-  const menuIds = getMenuIdsOfTypeC(options.value);
-  await Promise.all(menuIds.map(id => loadMenuButtons(id)));
-  buttonsLoading.value = false;
-});
-
-// 模块模式下，当 showButtons 变为 true 时加载按钮
-watchEffect(async () => {
-  if (!showButtons.value || !props.showModuleTabs || buttonsLoading.value) return;
-
-  // 检查所有模块是否有按钮数据
-  for (const module of Object.keys(moduleMenuOptions)) {
-    const hasButtonsFromBackend = checkTreeHasButtons(moduleMenuOptions[module]);
-    if (!hasButtonsFromBackend) {
-      buttonsLoading.value = true;
-      const menuIds = getMenuIdsOfTypeC(moduleMenuOptions[module]);
-      await Promise.all(menuIds.map(id => loadMenuButtons(id)));
-      buttonsLoading.value = false;
-    }
-  }
-});
-
-/** 检查树中是否已包含按钮节点（从后端获取） */
-function checkTreeHasButtons(menuList: Api.System.MenuList): boolean {
-  for (const menu of menuList) {
-    if (menu.menuType === 'F') return true;
-    if (menu.children && menu.children.length > 0) {
-      if (checkTreeHasButtons(menu.children)) return true;
-    }
-  }
-  return false;
-}
-
-/** 获取所有菜单类型(C)的菜单ID */
-function getMenuIdsOfTypeC(menuList: Api.System.MenuList): CommonType.IdType[] {
-  const ids: CommonType.IdType[] = [];
-  for (const menu of menuList) {
-    if (menu.menuType === 'C') {
-      ids.push(menu.id!);
-    }
-    if (menu.children && menu.children.length > 0) {
-      ids.push(...getMenuIdsOfTypeC(menu.children));
-    }
-  }
-  return ids;
-}
 
 async function getMenuList() {
   loading.value = true;
@@ -166,72 +93,6 @@ async function getModuleMenuList(module: string) {
     }
   ] as Api.System.MenuList;
   moduleLoading[module] = false;
-}
-
-async function loadMenuButtons(menuId: CommonType.IdType) {
-  if (buttonsMap[String(menuId)]) return; // 已加载
-
-  const { data, error } = await fetchGetMenuButtons(menuId);
-  if (error) return;
-
-  buttonsMap[String(menuId)] = data || [];
-}
-
-/** 构建带按钮的树节点 */
-function buildTreeWithButtons(menuList: Api.System.MenuList): Api.System.MenuList {
-  return menuList.map(menu => {
-    const node = { ...menu };
-
-    // 如果是菜单类型(C)且需要显示按钮
-    if (menu.menuType === 'C' && showButtons.value) {
-      // 检查子节点中是否已有按钮节点（从后端获取）
-      const existingButtonNodes = (menu.children || []).filter(child => child.menuType === 'F');
-
-      if (existingButtonNodes.length > 0) {
-        // 后端已包含按钮，直接使用
-        node.children = menu.children || [];
-      } else {
-        // 使用从API加载的按钮数据
-        const buttons = buttonsMap[String(menu.id)] || [];
-        if (buttons.length > 0) {
-          const buttonNodes: Api.System.Menu[] = buttons.map(btn => ({
-            id: btn.id,
-            label: btn.label,
-            menuType: 'F' as Api.System.MenuType,
-            perms: btn.code,
-            icon: 'material-symbols:smart-button-outline',
-            parentId: menu.id!,
-            children: [],
-            // CommonRecord required fields (placeholder values for display nodes)
-            createBy: '',
-            createTime: '',
-            updateBy: '',
-            updateTime: '',
-            // Menu required fields (placeholder values)
-            menuId: btn.id,
-            menuName: btn.label,
-            orderNum: btn.orderNum,
-            path: '',
-            component: '',
-            queryParam: '',
-            isFrame: '1' as Api.System.IsMenuFrame,
-            isCache: '1' as Api.Common.EnableStatus,
-            visible: '0' as Api.Common.VisibleStatus,
-            status: '0' as Api.Common.EnableStatus,
-            parentName: ''
-          }));
-
-          node.children = [...(menu.children || []), ...buttonNodes];
-        }
-      }
-    }
-
-    if (node.children && node.children.length > 0) {
-      node.children = buildTreeWithButtons(node.children);
-    }
-
-    return node;
-  });
 }
 
 async function loadAllModules() {
@@ -450,46 +311,59 @@ function findNodeById(id: CommonType.IdType, tree: Api.System.MenuList): Api.Sys
   return null;
 }
 
-/** 从选中的ID中筛选出按钮节点ID */
-function filterButtonIds(ids: CommonType.IdType[], tree: Api.System.MenuList): CommonType.IdType[] {
-  const result: CommonType.IdType[] = [];
-  for (const id of ids) {
-    const node = findNodeById(id, tree);
-    if (node && node.menuType === 'F') {
-      result.push(id);
-    }
-  }
-  return result;
-}
-
-/** 清除按钮缓存 */
-function clearButtonsCache() {
-  // 使用反射删除属性以避免 ESLint 对动态 delete 的警告
-  Object.keys(buttonsMap).forEach(key => {
-    Reflect.deleteProperty(buttonsMap, key);
-  });
-}
-
 /** 获取勾选的按钮ID列表 */
 function getCheckedButtonIds(): CommonType.IdType[] {
-  const allIds: CommonType.IdType[] = [];
+  const buttonIds: CommonType.IdType[] = [];
 
-  // 从 checkedKeys 中筛选出按钮节点
-  const buttonIdsFromTree = filterButtonIds(checkedKeys.value, options.value);
-  allIds.push(...buttonIdsFromTree);
+  if (props.showModuleTabs) {
+    for (const module of appList.value) {
+      const keys = moduleCheckedKeys[module.appCode] || [];
+      for (const id of keys) {
+        const node = findNodeById(id, moduleMenuOptions[module.appCode] || []);
+        if (node && node.menuType === 'F') {
+          buttonIds.push(id);
+        }
+      }
+    }
+  } else {
+    for (const id of checkedKeys.value) {
+      const node = findNodeById(id, options.value);
+      if (node && node.menuType === 'F') {
+        buttonIds.push(id);
+      }
+    }
+  }
 
-  return [...new Set(allIds)];
+  return [...new Set(buttonIds)];
+}
+
+/** 加载角色完整权限树 */
+async function loadRoleAuthTree(roleId: CommonType.IdType) {
+  const { data, error } = await fetchGetRoleAuthTree(roleId);
+  if (error) return null;
+
+  // 设置各模块的菜单树数据
+  for (const [module, tree] of Object.entries(data.trees)) {
+    moduleMenuOptions[module] = [
+      {
+        id: 0,
+        label: 'menu.root',
+        icon: 'material-symbols:home-outline-rounded',
+        children: tree
+      }
+    ] as Api.System.MenuList;
+  }
+
+  return data.checkedKeys;
 }
 
 defineExpose({
   getCheckedMenuIds,
   getCheckedButtonIds,
-  loadMenuButtons,
-  buildTreeWithButtons,
   refresh,
   setCheckedKeysByModule,
   clearAllCheckedKeys,
-  clearButtonsCache,
+  loadRoleAuthTree,
   getAppList,
   getModuleMenuList,
   get appList() { return appList.value; }
@@ -515,7 +389,7 @@ defineExpose({
           <NCheckbox v-model:checked="cascade" :checked-value="true" :unchecked-value="false">{{ $t('page.system.menu.cascadeDelete') }}</NCheckbox>
         </div>
         <!-- 菜单树 -->
-        <NSpin class="resource h-full w-full py-6px pl-3px" content-class="h-full" :show="moduleLoading[app.appCode] || buttonsLoading">
+        <NSpin class="resource h-full w-full py-6px pl-3px" content-class="h-full" :show="moduleLoading[app.appCode]">
           <NTree
             ref="menuTreeRef"
             v-model:checked-keys="moduleCheckedKeys[app.appCode]"
@@ -527,7 +401,7 @@ defineExpose({
             label-field="label"
             :data="computedModuleMenuOptions[app.appCode] || []"
             :cascade="cascade"
-            :loading="moduleLoading[app.appCode] || buttonsLoading"
+            :loading="moduleLoading[app.appCode]"
             virtual-scroll
             check-strategy="all"
             :render-label="renderLabel"
