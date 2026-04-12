@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { onMounted, reactive, ref, watch, useAttrs } from 'vue';
+import { computed, onMounted, reactive, ref, watch, watchEffect, useAttrs } from 'vue';
 import type { TreeOption, TreeSelectInst } from 'naive-ui';
 import { NTooltip } from 'naive-ui';
 import { useBoolean } from '@sa/hooks';
@@ -43,9 +43,87 @@ const moduleLoading = reactive<Record<string, boolean>>({});
 
 // 按钮相关状态
 const buttonsMap = reactive<Record<string, Api.System.ButtonList>>({}); // menuId -> buttons
+const buttonsLoading = ref<boolean>(false);
 
 // 是否显示按钮
 const showButtons = defineModel<boolean>('showButtons', { required: false, default: false });
+
+// 计算属性：根据 showButtons 决定是否转换树数据
+const computedOptions = computed(() => {
+  if (!showButtons.value) {
+    return options.value;
+  }
+  return buildTreeWithButtons(options.value);
+});
+
+// 模块模式下的计算属性
+const computedModuleMenuOptions = computed(() => {
+  const result: Record<string, Api.System.MenuList> = {};
+  for (const module of Object.keys(moduleMenuOptions)) {
+    if (!showButtons.value) {
+      result[module] = moduleMenuOptions[module];
+    } else {
+      result[module] = buildTreeWithButtons(moduleMenuOptions[module]);
+    }
+  }
+  return result;
+});
+
+// 当 showButtons 变为 true 且树数据已加载时，加载所有按钮
+watchEffect(async () => {
+  if (!showButtons.value || options.value.length === 0 || buttonsLoading.value) return;
+
+  // 检查是否已经有按钮数据（从后端直接获取）
+  const hasButtonsFromBackend = checkTreeHasButtons(options.value);
+  if (hasButtonsFromBackend) return; // 后端已包含按钮，无需再加载
+
+  // 加载所有菜单的按钮
+  buttonsLoading.value = true;
+  const menuIds = getMenuIdsOfTypeC(options.value);
+  await Promise.all(menuIds.map(id => loadMenuButtons(id)));
+  buttonsLoading.value = false;
+});
+
+// 模块模式下，当 showButtons 变为 true 时加载按钮
+watchEffect(async () => {
+  if (!showButtons.value || !props.showModuleTabs || buttonsLoading.value) return;
+
+  // 检查所有模块是否有按钮数据
+  for (const module of Object.keys(moduleMenuOptions)) {
+    const hasButtonsFromBackend = checkTreeHasButtons(moduleMenuOptions[module]);
+    if (!hasButtonsFromBackend) {
+      buttonsLoading.value = true;
+      const menuIds = getMenuIdsOfTypeC(moduleMenuOptions[module]);
+      await Promise.all(menuIds.map(id => loadMenuButtons(id)));
+      buttonsLoading.value = false;
+    }
+  }
+});
+
+/** 检查树中是否已包含按钮节点（从后端获取） */
+function checkTreeHasButtons(menuList: Api.System.MenuList): boolean {
+  for (const menu of menuList) {
+    if (menu.menuType === 'F') return true;
+    if (menu.children && menu.children.length > 0) {
+      if (checkTreeHasButtons(menu.children)) return true;
+    }
+  }
+  return false;
+}
+
+/** 获取所有菜单类型(C)的菜单ID */
+function getMenuIdsOfTypeC(menuList: Api.System.MenuList): CommonType.IdType[] {
+  const ids: CommonType.IdType[] = [];
+  for (const menu of menuList) {
+    if (menu.menuType === 'C') {
+      ids.push(menu.id!);
+    }
+    if (menu.children && menu.children.length > 0) {
+      ids.push(...getMenuIdsOfTypeC(menu.children));
+    }
+  }
+  return ids;
+}
 
 async function getMenuList() {
   loading.value = true;
@@ -104,38 +182,47 @@ function buildTreeWithButtons(menuList: Api.System.MenuList): Api.System.MenuLis
   return menuList.map(menu => {
     const node = { ...menu };
 
-    // 如果是菜单类型(C)且有按钮，添加按钮作为子节点
+    // 如果是菜单类型(C)且需要显示按钮
     if (menu.menuType === 'C' && showButtons.value) {
-      const buttons = buttonsMap[String(menu.id)] || [];
-      if (buttons.length > 0) {
-        const buttonNodes: Api.System.Menu[] = buttons.map(btn => ({
-          id: btn.id,
-          label: btn.label,
-          menuType: 'F' as Api.System.MenuType,
-          perms: btn.code,
-          icon: 'material-symbols:smart-button-outline',
-          parentId: menu.id!,
-          children: [],
-          // CommonRecord required fields (placeholder values for display nodes)
-          createBy: '',
-          createTime: '',
-          updateBy: '',
-          updateTime: '',
-          // Menu required fields (placeholder values)
-          menuId: btn.id,
-          menuName: btn.label,
-          orderNum: btn.orderNum,
-          path: '',
-          component: '',
-          queryParam: '',
-          isFrame: '1' as Api.System.IsMenuFrame,
-          isCache: '1' as Api.Common.EnableStatus,
-          visible: '0' as Api.Common.VisibleStatus,
-          status: '0' as Api.Common.EnableStatus,
-          parentName: ''
-        }));
+      // 检查子节点中是否已有按钮节点（从后端获取）
+      const existingButtonNodes = (menu.children || []).filter(child => child.menuType === 'F');
 
-        node.children = [...(menu.children || []), ...buttonNodes];
+      if (existingButtonNodes.length > 0) {
+        // 后端已包含按钮，直接使用
+        node.children = menu.children || [];
+      } else {
+        // 使用从API加载的按钮数据
+        const buttons = buttonsMap[String(menu.id)] || [];
+        if (buttons.length > 0) {
+          const buttonNodes: Api.System.Menu[] = buttons.map(btn => ({
+            id: btn.id,
+            label: btn.label,
+            menuType: 'F' as Api.System.MenuType,
+            perms: btn.code,
+            icon: 'material-symbols:smart-button-outline',
+            parentId: menu.id!,
+            children: [],
+            // CommonRecord required fields (placeholder values for display nodes)
+            createBy: '',
+            createTime: '',
+            updateBy: '',
+            updateTime: '',
+            // Menu required fields (placeholder values)
+            menuId: btn.id,
+            menuName: btn.label,
+            orderNum: btn.orderNum,
+            path: '',
+            component: '',
+            queryParam: '',
+            isFrame: '1' as Api.System.IsMenuFrame,
+            isCache: '1' as Api.Common.EnableStatus,
+            visible: '0' as Api.Common.VisibleStatus,
+            status: '0' as Api.Common.EnableStatus,
+            parentName: ''
+          }));
+
+          node.children = [...(menu.children || []), ...buttonNodes];
+        }
       }
     }
 
@@ -377,8 +464,9 @@ function filterButtonIds(ids: CommonType.IdType[], tree: Api.System.MenuList): C
 
 /** 清除按钮缓存 */
 function clearButtonsCache() {
+  // 使用反射删除属性以避免 ESLint 对动态 delete 的警告
   Object.keys(buttonsMap).forEach(key => {
-    delete buttonsMap[key];
+    Reflect.deleteProperty(buttonsMap, key);
   });
 }
 
@@ -427,7 +515,7 @@ defineExpose({
           <NCheckbox v-model:checked="cascade" :checked-value="true" :unchecked-value="false">{{ $t('page.system.menu.cascadeDelete') }}</NCheckbox>
         </div>
         <!-- 菜单树 -->
-        <NSpin class="resource h-full w-full py-6px pl-3px" content-class="h-full" :show="moduleLoading[app.appCode]">
+        <NSpin class="resource h-full w-full py-6px pl-3px" content-class="h-full" :show="moduleLoading[app.appCode] || buttonsLoading">
           <NTree
             ref="menuTreeRef"
             v-model:checked-keys="moduleCheckedKeys[app.appCode]"
@@ -437,9 +525,9 @@ defineExpose({
             :selectable="false"
             key-field="id"
             label-field="label"
-            :data="moduleMenuOptions[app.appCode] || []"
+            :data="computedModuleMenuOptions[app.appCode] || []"
             :cascade="cascade"
-            :loading="moduleLoading[app.appCode]"
+            :loading="moduleLoading[app.appCode] || buttonsLoading"
             virtual-scroll
             check-strategy="all"
             :render-label="renderLabel"
@@ -474,7 +562,7 @@ defineExpose({
           :selectable="false"
           key-field="id"
           label-field="label"
-          :data="options"
+          :data="computedOptions"
           :cascade="cascade"
           :loading="loading"
           virtual-scroll
