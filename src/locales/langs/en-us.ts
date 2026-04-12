@@ -310,7 +310,8 @@ const local: App.I18n.Schema = {
     manage_post: 'Post Management',
     manage_role: 'Role Management',
     manage_settings: 'Settings Management',
-    manage_user: 'User Management'
+    manage_user: 'User Management',
+    manage_notice: 'Notice Management'
   },
   menu: {
     root: 'Root',

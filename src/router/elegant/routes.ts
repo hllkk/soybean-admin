@@ -190,6 +190,17 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
+        name: 'manage_notice',
+        path: '/manage/notice',
+        component: 'view.manage_notice',
+        meta: {
+          title: 'manage_notice',
+          i18nKey: 'route.manage_notice',
+          icon: 'carbon-notifications-paused',
+          order: 7
+        }
+      },
+      {
         name: 'manage_post',
         path: '/manage/post',
         component: 'view.manage_post',

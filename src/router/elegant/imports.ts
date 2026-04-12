@@ -31,6 +31,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   manage_dept: () => import("@/views/manage/dept/index.vue"),
   manage_dict: () => import("@/views/manage/dict/index.vue"),
   manage_menu: () => import("@/views/manage/menu/index.vue"),
+  manage_notice: () => import("@/views/manage/notice/index.vue"),
   manage_post: () => import("@/views/manage/post/index.vue"),
   manage_role: () => import("@/views/manage/role/index.vue"),
   manage_settings: () => import("@/views/manage/settings/index.vue"),

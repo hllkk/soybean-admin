@@ -306,7 +306,8 @@ const local: App.I18n.Schema = {
     manage_post: '岗位管理',
     manage_role: '角色管理',
     manage_settings: '项目设置',
-    manage_user: '用户管理'
+    manage_user: '用户管理',
+    manage_notice: '通知公告'
   },
   menu: {
     root: '根目录',
