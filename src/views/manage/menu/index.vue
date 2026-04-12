@@ -210,14 +210,15 @@ async function getBtnMenuList() {
   if (!currentMenu.value?.menuId) {
     return;
   }
-  controller.abort();
-  controller = new AbortController();
   startBtnLoading();
   btnData.value = [];
 
   // 使用正确的 API 获取按钮数据
   const { data, error } = await fetchGetMenuButtons(currentMenu.value.menuId);
-  if (error) return;
+  if (error) {
+    endBtnLoading();
+    return;
+  }
 
   // 将 Button 类型转换为 Menu 格式以适配表格列
   btnData.value = (data || []).map(btn => ({
