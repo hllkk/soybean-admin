@@ -43,8 +43,6 @@ const moduleLoading = reactive<Record<string, boolean>>({});
 
 // 按钮相关状态
 const buttonsMap = reactive<Record<string, Api.System.ButtonList>>({}); // menuId -> buttons
-const buttonIds = defineModel<CommonType.IdType[]>('buttonIds', { required: false, default: [] });
-const moduleButtonCheckedKeys = reactive<Record<string, CommonType.IdType[]>>({});
 
 // 是否显示按钮
 const showButtons = defineModel<boolean>('showButtons', { required: false, default: false });
@@ -377,6 +375,13 @@ function filterButtonIds(ids: CommonType.IdType[], tree: Api.System.MenuList): C
   return result;
 }
 
+/** 清除按钮缓存 */
+function clearButtonsCache() {
+  Object.keys(buttonsMap).forEach(key => {
+    delete buttonsMap[key];
+  });
+}
+
 /** 获取勾选的按钮ID列表 */
 function getCheckedButtonIds(): CommonType.IdType[] {
   const allIds: CommonType.IdType[] = [];
@@ -396,6 +401,7 @@ defineExpose({
   refresh,
   setCheckedKeysByModule,
   clearAllCheckedKeys,
+  clearButtonsCache,
   getAppList,
   getModuleMenuList,
   get appList() { return appList.value; }
