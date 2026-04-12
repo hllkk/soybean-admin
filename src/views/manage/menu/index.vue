@@ -214,12 +214,38 @@ async function getBtnMenuList() {
   controller = new AbortController();
   startBtnLoading();
   btnData.value = [];
-  const { data, error } = await fetchGetMenuList(
-    { parentId: currentMenu.value?.menuId, menuType: 'F' },
-    controller.signal
-  );
+
+  // 使用正确的 API 获取按钮数据
+  const { data, error } = await fetchGetMenuButtons(currentMenu.value.menuId);
   if (error) return;
-  btnData.value = data || [];
+
+  // 将 Button 类型转换为 Menu 格式以适配表格列
+  btnData.value = (data || []).map(btn => ({
+    menuId: btn.id,
+    menuName: btn.label,
+    perms: btn.code,
+    orderNum: btn.orderNum,
+    menuType: 'F' as const,
+    status: '1' as const,
+    parentId: currentMenu.value?.menuId || 0,
+    path: '',
+    component: '',
+    queryParam: '',
+    isFrame: '1' as const,
+    isCache: '1' as const,
+    visible: '0' as const,
+    icon: '',
+    parentName: '',
+    children: [],
+    id: btn.id,
+    label: btn.label,
+    // CommonRecord required fields
+    createBy: '',
+    createTime: btn.createdAt || '',
+    updateBy: '',
+    updateTime: btn.updatedAt || ''
+  }) as Api.System.Menu);
+
   endBtnLoading();
 }
 
