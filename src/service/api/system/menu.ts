@@ -104,3 +104,23 @@ export function fetchDeleteButton(id: CommonType.IdType) {
     method: 'delete'
   });
 }
+
+/** 获取菜单下的按钮列表 */
+export function fetchGetMenuButtons(menuId: CommonType.IdType) {
+  return request<Api.System.ButtonList>({
+    url: `/system/menu/buttons/${menuId}`,
+    method: 'get'
+  });
+}
+
+/** 获取角色按钮权限 */
+export function fetchGetRoleButtonTreeSelect(roleId: CommonType.IdType, module?: string) {
+  return request<{
+    checkedKeys: CommonType.IdType[];
+    buttons: Api.System.Button[];
+  }>({
+    url: `/system/role/buttons/${roleId}`,
+    method: 'get',
+    params: module ? { module } : undefined
+  });
+}
