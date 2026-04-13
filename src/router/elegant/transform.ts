@@ -168,7 +168,11 @@ const routeMap: RouteMap = {
   "500": "/500",
   "about": "/about",
   "admin": "/admin",
+  "adminNoticeUser": "/admin/notice-user",
+  "adminUserCenter": "/admin/user-center",
   "disk": "/disk",
+  "diskNoticeUser": "/disk/notice-user",
+  "diskUserCenter": "/disk/user-center",
   "iframe-page": "/iframe-page/:url",
   "init": "/init",
   "log": "/log",
@@ -184,6 +188,7 @@ const routeMap: RouteMap = {
   "manage_role": "/manage/role",
   "manage_settings": "/manage/settings",
   "manage_user": "/manage/user",
+  "notice-user": "/notice-user",
   "user-center": "/user-center"
 };
 

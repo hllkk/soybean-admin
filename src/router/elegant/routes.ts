@@ -249,6 +249,16 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'notice-user',
+    path: '/notice-user',
+    component: 'layout.base$view.notice-user',
+    meta: {
+      title: 'notice-user',
+      i18nKey: 'route.notice-user',
+      hideInMenu: true
+    }
+  },
+  {
     name: 'user-center',
     path: '/user-center',
     component: 'layout.base$view.user-center',

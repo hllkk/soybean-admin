@@ -1,46 +1,79 @@
 import { reactive } from 'vue';
 import { defineStore } from 'pinia';
 import { SetupStoreId } from '@/enum';
+import { fetchGetMyNoticeList, fetchGetMyNoticeDetail, fetchGetUnreadCount } from '@/service/api/system/notice';
 
 interface NoticeItem {
-  title?: string;
+  noticeId: number;
+  noticeTitle: string;
+  noticeType: string;
+  createTime: string;
   read: boolean;
-  message: any;
-  time: string;
+  readCount: number;
+  topFlag: string;
 }
 
 export const useNoticeStore = defineStore(SetupStoreId.Notice, () => {
-  const state: { notices: NoticeItem[] } = reactive({
-    notices: []
+  const state = reactive({
+    notices: [] as NoticeItem[],
+    unreadCount: 0
   });
 
-  const addNotice = (notice: NoticeItem) => {
-    state.notices.push(notice);
+  // 获取用户公告列表
+  const fetchMyNotices = async () => {
+    const { error, data } = await fetchGetMyNoticeList();
+    if (!error) {
+      state.notices = (data.rows as NoticeItem[]) || [];
+    }
   };
 
-  const removeNotice = (notice: NoticeItem) => {
-    state.notices.splice(state.notices.indexOf(notice), 1);
+  // 获取未读数量
+  const fetchUnreadCount = async () => {
+    const { error, data } = await fetchGetUnreadCount();
+    if (!error) {
+      state.unreadCount = data || 0;
+    }
   };
 
-  const readNotice = (notice: NoticeItem) => {
-    state.notices[state.notices.indexOf(notice)].read = true;
+  // 查看公告详情（自动标记已读）
+  const readNotice = async (noticeId: number) => {
+    const { error } = await fetchGetMyNoticeDetail(noticeId);
+    if (!error) {
+      // 更新本地状态
+      const notice = state.notices.find(n => n.noticeId === noticeId);
+      if (notice) {
+        notice.read = true;
+        notice.readCount++;
+      }
+      if (state.unreadCount > 0) {
+        state.unreadCount--;
+      }
+    }
   };
 
-  // 实现全部已读
-  const readAll = () => {
-    state.notices.forEach((item: any) => {
-      item.read = true;
+  // 全部已读
+  const readAll = async () => {
+    // 批量标记所有未读公告为已读
+    const unreadNotices = state.notices.filter(n => !n.read);
+    for (const notice of unreadNotices) {
+      await fetchGetMyNoticeDetail(notice.noticeId);
+    }
+    state.notices.forEach(n => {
+      n.read = true;
     });
+    state.unreadCount = 0;
   };
 
+  // 清空通知
   const clearNotice = () => {
     state.notices = [];
+    state.unreadCount = 0;
   };
 
   return {
     state,
-    addNotice,
-    removeNotice,
+    fetchMyNotices,
+    fetchUnreadCount,
     readNotice,
     readAll,
     clearNotice

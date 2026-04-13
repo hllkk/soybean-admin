@@ -224,6 +224,11 @@ function handleInitModel() {
   layoutType.value = '0';
   model.value = createDefaultModel();
 
+  // 新增模式下初始化 moduleCodes 为空数组
+  if (props.operateType === 'add') {
+    model.value.moduleCodes = [];
+  }
+
   if (props.operateType === 'edit' && props.rowData) {
     Object.assign(model.value, jsonClone(props.rowData));
     const component = model.value.component;
@@ -235,10 +240,9 @@ function handleInitModel() {
     }
     iconType.value = model.value.icon?.startsWith('local-icon-') ? '2' : '1';
 
-    // 初始化 moduleCodes
-    if (!model.value.moduleCodes) {
-      model.value.moduleCodes = [];
-    }
+    // 编辑模式下：保持 moduleCodes 原值
+    // 如果 moduleCodes 为 undefined，提交时不传递此字段，后端不会更新模块关联
+    // 如果 moduleCodes 为数组（包括空数组），保持原值
 
     if (model.value.isFrame === '1') {
       const queryObj: { [key: string]: string } = JSON.parse(model.value.queryParam || '{}');
@@ -357,7 +361,7 @@ async function handleSubmit() {
     icon: icon || defaultIcon,
     component: processComponent(component),
     remark,
-    moduleCodes: moduleCodes || []
+    moduleCodes: moduleCodes ?? undefined
   };
 
   const { error } =

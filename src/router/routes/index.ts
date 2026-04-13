@@ -33,6 +33,30 @@ const customRoutes: ElegantConstRoute[] = [
       constant: true,
       module: 'disk'
     }
+  } as ElegantConstRoute,
+  {
+    name: 'adminNoticeUser',
+    path: '/admin/notice-user',
+    component: 'layout.base$view.notice-user',
+    meta: {
+      title: 'notice-user',
+      i18nKey: 'route.notice-user',
+      hideInMenu: true,
+      constant: true,
+      module: 'admin'
+    }
+  } as ElegantConstRoute,
+  {
+    name: 'diskNoticeUser',
+    path: '/disk/notice-user',
+    component: 'layout.disk$view.notice-user',
+    meta: {
+      title: 'notice-user',
+      i18nKey: 'route.notice-user',
+      hideInMenu: true,
+      constant: true,
+      module: 'disk'
+    }
   } as ElegantConstRoute
 ];
 
@@ -43,7 +67,8 @@ const customRoutes: ElegantConstRoute[] = [
 const routeLayoutMap: Record<string, string> = {
   login: "blank",
   disk: 'disk',
-  'diskUserCenter': 'disk'
+  'diskUserCenter': 'disk',
+  'diskNoticeUser': 'disk'
 };
 
 /**

@@ -2,7 +2,9 @@
 import { useFullscreen } from '@vueuse/core';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
+import GlobalBreadcrumb from '../../modules/global-breadcrumb/index.vue';
 import UserAvatar from '../../modules/global-header/components/user-avatar.vue';
+import MessageButton from '../../modules/global-header/components/message-button.vue';
 
 defineOptions({
   name: 'DiskHeader'
@@ -15,8 +17,11 @@ const { isFullscreen, toggle } = useFullscreen();
 
 <template>
   <DarkModeContainer class="h-full flex-y-center px-12px shadow-header">
-    <div class="h-full flex-y-center flex-1-hidden" />
+    <div class="h-full flex-y-center flex-1-hidden">
+      <GlobalBreadcrumb v-if="!appStore.isMobile" class="ml-12px" />
+    </div>
     <div class="h-full flex-y-center justify-end">
+      <MessageButton />
       <FullScreen v-if="!appStore.isMobile" :full="isFullscreen" @click="toggle" />
       <LangSwitch
         v-if="themeStore.header.multilingual.visible"

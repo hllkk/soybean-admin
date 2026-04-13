@@ -105,10 +105,7 @@ declare namespace Api {
     /** role auth tree response (unified menu + button) */
     type RoleAuthTreeResponse = {
       trees: Record<string, MenuTreeSelectItem[]>;
-      checkedKeys: {
-        menus: CommonType.IdType[];
-        buttons: CommonType.IdType[];
-      };
+      checkedKeys: Record<string, { menus: CommonType.IdType[]; buttons: CommonType.IdType[] }>;
     };
 
     /** teannt-package menu tree select */
@@ -706,24 +703,125 @@ declare namespace Api {
       noticeContent: string;
       /** 公告状态 */
       status: Common.EnableStatus;
+      /** 是否全员可见 */
+      isAll: Common.EnableStatus;
+      /** 是否置顶 */
+      topFlag: Common.EnableStatus;
+      /** 置顶截止时间 */
+      topEndTime?: string;
+      /** 生效时间 */
+      effectiveTime?: string;
+      /** 失效时间 */
+      expireTime?: string;
       /** 创建者 */
       createByName: string;
       /** 备注 */
-      remark: string;
+      remark?: string;
     }>;
 
     /** notice search params */
     type NoticeSearchParams = CommonType.RecordNullable<
-      Pick<Api.System.Notice, 'noticeTitle' | 'noticeType'> & Api.Common.CommonSearchParams
+      Pick<Api.System.Notice, 'noticeTitle' | 'noticeType' | 'status'> & Api.Common.CommonSearchParams
     >;
 
     /** notice operate params */
     type NoticeOperateParams = CommonType.RecordNullable<
-      Pick<Api.System.Notice, 'noticeId' | 'noticeTitle' | 'noticeType' | 'noticeContent' | 'status'>
+      Pick<Api.System.Notice, 'noticeId' | 'noticeTitle' | 'noticeContent'> & {
+        /** 公告类型 */
+        noticeType?: string;
+        /** 公告状态 */
+        status?: string;
+        /** 是否全员可见 */
+        isAll?: string;
+        /** 用户ID列表 */
+        userIds?: CommonType.IdType[];
+        /** 角色ID列表 */
+        roleIds?: CommonType.IdType[];
+        /** 部门ID列表 */
+        deptIds?: CommonType.IdType[];
+        /** 是否置顶 */
+        topFlag?: string;
+        /** 置顶截止时间 */
+        topEndTime?: string;
+        /** 生效时间 */
+        effectiveTime?: string;
+        /** 失效时间 */
+        expireTime?: string;
+      }
     >;
 
     /** notice list */
     type NoticeList = Api.Common.PaginatingQueryRecord<Notice>;
+
+    /** notice detail response */
+    type NoticeDetailResponse = {
+      noticeId: CommonType.IdType;
+      noticeTitle: string;
+      noticeType: string;
+      noticeContent: string;
+      status: string;
+      isAll: string;
+      topFlag: string;
+      topEndTime?: string;
+      effectiveTime?: string;
+      expireTime?: string;
+      createByName: string;
+      createTime: string;
+      userIds: CommonType.IdType[];
+      roleIds: CommonType.IdType[];
+      deptIds: CommonType.IdType[];
+    };
+
+    /** notice read record */
+    type NoticeReadRecord = {
+      userId: CommonType.IdType;
+      userName: string;
+      nickName: string;
+      firstReadTime: string;
+      lastReadTime: string;
+      readCount: number;
+    };
+
+    /** notice read stats response */
+    type NoticeReadStatsResponse = {
+      totalReaders: number;
+      totalUnreaders: number;
+      readRecords: NoticeReadRecord[];
+    };
+
+    /** my notice search params */
+    type MyNoticeSearchParams = CommonType.RecordNullable<
+      {
+        noticeTitle?: string;
+        noticeType?: string;
+        readStatus?: string; // '0' 未读, '1' 已读
+      } & Api.Common.CommonSearchParams
+    >;
+
+    /** my notice item */
+    type MyNoticeItem = {
+      noticeId: CommonType.IdType;
+      noticeTitle: string;
+      noticeType: string;
+      createTime: string;
+      read: boolean;
+      readCount: number;
+      topFlag: string;
+    };
+
+    /** my notice list */
+    type MyNoticeList = Api.Common.PaginatingQueryRecord<MyNoticeItem>;
+
+    /** my notice detail */
+    type MyNoticeDetail = {
+      noticeId: CommonType.IdType;
+      noticeTitle: string;
+      noticeType: string;
+      noticeContent: string;
+      createTime: string;
+      createByName: string;
+      readCount: number;
+    };
 
     /** 授权类型 */
     type GrantType = 'password' | 'sms' | 'password' | 'email' | 'xcx' | 'social';

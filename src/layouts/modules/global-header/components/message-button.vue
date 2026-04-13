@@ -1,23 +1,42 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useNoticeStore } from '@/store/modules/notice';
+import { useRouteStore } from '@/store/modules/route';
 
 defineOptions({
   name: 'MessgaeButton'
 });
 
+const router = useRouter();
 const show = ref(false);
 const noticeStore = useNoticeStore();
+const routeStore = useRouteStore();
 const { state } = storeToRefs(noticeStore);
+const { currentModule } = storeToRefs(routeStore);
 
 const noticeNum = computed(() => {
-  return state.value.notices.filter(notice => !notice.read).length || 0;
+  return state.value.unreadCount || 0;
 });
 
-const toGitee = () => {
-  window.open('https://gitee.com/xlsea/ruoyi-plus-soybean', '_blank');
+// 查看全部公告（根据当前模块动态跳转）
+const viewAllNotices = () => {
+  show.value = false;
+  const path = currentModule.value === 'disk' ? '/disk/notice-user' : '/admin/notice-user';
+  router.push(path);
 };
+
+// 点击通知查看详情
+const handleNoticeClick = (notice: any) => {
+  noticeStore.readNotice(notice.noticeId);
+};
+
+// 初始化时获取未读数量
+onMounted(() => {
+  noticeStore.fetchUnreadCount();
+  noticeStore.fetchMyNotices();
+});
 </script>
 
 <template>
@@ -65,17 +84,20 @@ const toGitee = () => {
       </template>
       <NScrollbar class="h-260px">
         <template v-if="state?.notices?.length">
-          <template v-for="(message, index) in state?.notices" :key="index">
+          <template v-for="(notice, index) in state?.notices" :key="notice.noticeId">
             <NDivider v-show="index !== 0" />
-            <div class="flex cursor-pointer" @click="() => noticeStore.readNotice(message)">
+            <div class="flex cursor-pointer" @click="() => handleNoticeClick(notice)">
               <div class="flex-col justify-between gap-3px">
-                <NEllipsis class="w-260px">{{ message.message }}</NEllipsis>
+                <NEllipsis class="w-260px">
+                  <NTag v-if="notice.topFlag === '1'" type="warning" size="small" class="mr-4px">置顶</NTag>
+                  {{ notice.noticeTitle }}
+                </NEllipsis>
                 <span class="text-#898989">
-                  {{ message.time }}
+                  {{ notice.createTime }}
                 </span>
               </div>
               <div>
-                <NTag :type="message.read ? 'success' : 'error'">{{ message.read ? '已读' : '未读' }}</NTag>
+                <NTag :type="notice.read ? 'success' : 'error'">{{ notice.read ? '已读' : '未读' }}</NTag>
               </div>
             </div>
           </template>
@@ -84,7 +106,7 @@ const toGitee = () => {
       </NScrollbar>
       <template #footer>
         <div class="flex items-center justify-end">
-          <NButton type="primary" size="small" @click="toGitee">前往 Gitee</NButton>
+          <NButton type="primary" size="small" @click="viewAllNotices">查看全部公告</NButton>
         </div>
       </template>
     </NCard>

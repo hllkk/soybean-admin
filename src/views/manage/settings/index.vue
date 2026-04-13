@@ -9,6 +9,7 @@ import LdapSetting from './modules/ldap-setting.vue';
 import DiskSetting from './modules/disk-setting.vue';
 import NotifySetting from './modules/notify-setting.vue';
 import AuthSetting from './modules/auth-setting.vue';
+import { useAuth } from '@/hooks/business/auth';
 
 defineOptions({
   name: 'SettingsPage'
@@ -16,6 +17,7 @@ defineOptions({
 
 const loading = ref(false);
 const activeKey = ref('general');
+const { hasAuth } = useAuth();
 
 const breakpoints = useBreakpoints(breakpointsTailwind);
 const isMobile = breakpoints.smaller('lg');
@@ -138,7 +140,7 @@ async function handleSave() {
 
         <div class="flex justify-between items-center mb-16px">
           <div class="text-16px font-600">{{ currentTitle }}</div>
-          <NButton type="primary" :loading="loading" @click="handleSave">保存</NButton>
+          <NButton v-if="hasAuth('system:setting:save')" type="primary" :loading="loading" @click="handleSave">保存</NButton>
         </div>
 
         <div class="overflow-auto" style="height: calc(100% - 180px)">

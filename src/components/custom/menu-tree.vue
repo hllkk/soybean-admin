@@ -388,11 +388,18 @@ async function loadRoleAuthTree(roleId: CommonType.IdType) {
     ] as Api.System.MenuList;
   }
 
-  // 直接在这里设置选中状态，而不是等外部调用 setCheckedKeysByModule
-  // 这样可以确保数据一致性
-  const allCheckedKeys = [...data.checkedKeys.menus, ...data.checkedKeys.buttons];
+  // 使用后端返回的按模块分组的 checkedKeys 设置选中状态
+  // checkedKeys 现在是 Record<string, { menus: [], buttons: [] }>
   for (const app of appList.value) {
-    moduleCheckedKeys[app.appCode] = [...allCheckedKeys];
+    const moduleCheckedKeysData = data.checkedKeys[app.appCode];
+    if (moduleCheckedKeysData) {
+      // 合并该模块的菜单和按钮选中状态
+      const moduleKeys = [...moduleCheckedKeysData.menus, ...moduleCheckedKeysData.buttons];
+      moduleCheckedKeys[app.appCode] = moduleKeys;
+    } else {
+      // 如果该模块没有数据，设置为空数组
+      moduleCheckedKeys[app.appCode] = [];
+    }
   }
 
   return data.checkedKeys;

@@ -22,7 +22,11 @@ declare module "@elegant-router/types" {
     "500": "/500";
     "about": "/about";
     "admin": "/admin";
+    "adminNoticeUser": "/admin/notice-user";
+    "adminUserCenter": "/admin/user-center";
     "disk": "/disk";
+    "diskNoticeUser": "/disk/notice-user";
+    "diskUserCenter": "/disk/user-center";
     "iframe-page": "/iframe-page/:url";
     "init": "/init";
     "log": "/log";
@@ -38,6 +42,7 @@ declare module "@elegant-router/types" {
     "manage_role": "/manage/role";
     "manage_settings": "/manage/settings";
     "manage_user": "/manage/user";
+    "notice-user": "/notice-user";
     "user-center": "/user-center";
   };
 
@@ -75,12 +80,17 @@ declare module "@elegant-router/types" {
     | "500"
     | "about"
     | "admin"
+    | "adminNoticeUser"
+    | "adminUserCenter"
     | "disk"
+    | "diskNoticeUser"
+    | "diskUserCenter"
     | "iframe-page"
     | "init"
     | "log"
     | "login"
     | "manage"
+    | "notice-user"
     | "user-center"
   >;
 
@@ -104,7 +114,12 @@ declare module "@elegant-router/types" {
     | "iframe-page"
     | "init"
     | "login"
+    | "notice-user"
     | "user-center"
+    | "adminNoticeUser"
+    | "adminUserCenter"
+    | "diskNoticeUser"
+    | "diskUserCenter"
     | "about"
     | "admin"
     | "disk"
