@@ -43,7 +43,7 @@ const {
 } = useNaiveTreeTable({
   keyField: 'deptId',
   api: () => fetchGetDeptList(searchParams.value),
-  transform: response => treeTransform(response, { idField: 'deptId' }),
+  transform: response => treeTransform(response, { idField: 'deptId', parentIdField: 'parentId' }),
   columns: () => [
     {
       key: 'deptName',

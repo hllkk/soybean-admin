@@ -483,7 +483,7 @@ declare namespace Api {
       /** 显示顺序 */
       orderNum: number;
       /** 负责人 */
-      leader: number;
+      leader?: number | null;
       /** 联系电话 */
       phone: string;
       /** 邮箱 */

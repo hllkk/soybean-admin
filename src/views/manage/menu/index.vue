@@ -1,14 +1,12 @@
 <script setup lang="tsx">
 import { computed, ref, watch } from 'vue';
 import type { DataTableColumns, TreeInst, TreeOption } from 'naive-ui';
-import { NButton, NDivider, NIcon, NInput, NPopconfirm, NInputNumber } from 'naive-ui';
+import { NButton, NDivider, NIcon, NPopconfirm } from 'naive-ui';
 import { useBoolean, useLoading } from '@sa/hooks';
 import { menuIsFrameRecord, menuTypeRecord } from '@/constants/business';
 import {
   fetchDeleteMenu,
   fetchGetMenuList,
-  fetchCreateButton,
-  fetchUpdateButton,
   fetchDeleteButton,
   fetchGetMenuButtons
 } from '@/service/api/system';
@@ -58,11 +56,16 @@ const isExternalType = computed(() => currentMenu.value?.isFrame === '0');
 const isIframeType = computed(() => currentMenu.value?.isFrame === '2');
 
 const menuTreeRef = ref<TreeInst>();
-const btnData = ref<Api.System.MenuList>([]);
+const btnData = ref<Api.System.ButtonList>([]);
 
 // 模块相关状态
 const appList = ref<Api.System.AppList>([]);
 const activeModule = ref<string>('');
+
+// 按钮编辑状态
+const editingButtonData = ref<Api.System.Button | null>(null);
+const buttonOperateType = ref<NaiveUI.TableOperateType>('add');
+const operateDataType = ref<'menu' | 'button'>('menu');
 
 const getMeunTree = async () => {
   startLoading();
@@ -102,6 +105,7 @@ async function handleSubmitted(menuType?: Api.System.MenuType) {
 }
 
 function handleAddMenu(pid: CommonType.IdType) {
+  operateDataType.value = 'menu';
   createPid.value = pid;
   createType.value = pid === 0 ? 'M' : 'C';
   operateType.value = 'add';
@@ -109,6 +113,7 @@ function handleAddMenu(pid: CommonType.IdType) {
 }
 
 function handleUpdateMenu() {
+  operateDataType.value = 'menu';
   operateType.value = 'edit';
   editingData.value = currentMenu.value;
   openDrawer();
@@ -213,46 +218,15 @@ async function getBtnMenuList() {
   startBtnLoading();
   btnData.value = [];
 
-  // 使用正确的 API 获取按钮数据
   const { data, error } = await fetchGetMenuButtons(currentMenu.value.menuId);
   if (error) {
     endBtnLoading();
     return;
   }
 
-  // 将 Button 类型转换为 Menu 格式以适配表格列
-  btnData.value = (data || []).map(btn => ({
-    menuId: btn.id,
-    menuName: btn.label,
-    perms: btn.code,
-    orderNum: btn.orderNum,
-    menuType: 'F' as const,
-    status: '1' as const,
-    parentId: currentMenu.value?.menuId || 0,
-    path: '',
-    component: '',
-    queryParam: '',
-    isFrame: '1' as const,
-    isCache: '1' as const,
-    visible: '0' as const,
-    icon: '',
-    parentName: '',
-    children: [],
-    id: btn.id,
-    label: btn.label,
-    // CommonRecord required fields
-    createBy: '',
-    createTime: btn.createdAt || '',
-    updateBy: '',
-    updateTime: btn.updatedAt || ''
-  }) as Api.System.Menu);
-
+  btnData.value = data || [];
   endBtnLoading();
 }
-
-// 按钮权限行内编辑状态
-const editingButtonId = ref<CommonType.IdType | 'new' | null>(null);
-const editingButtonData = ref({ label: '', code: '', orderNum: 0 });
 
 // 获取应用模块列表
 async function getAppList() {
@@ -268,66 +242,18 @@ async function getAppList() {
 getAppList();
 
 function _addBtnMenu() {
-  operateType.value = 'add';
-  createType.value = 'F';
+  operateDataType.value = 'button';
+  buttonOperateType.value = 'add';
+  editingButtonData.value = null;
   createPid.value = currentMenu.value?.menuId || 0;
   openDrawer();
 }
 
-function _handleDeleteBtnMenu(id: CommonType.IdType) {
-  handleDeleteMenu(id);
-}
-
-function _handleUpdateBtnMenu(row: Api.System.Menu) {
-  operateType.value = 'edit';
-  editingData.value = row;
+function _handleUpdateBtnMenu(row: Api.System.Button) {
+  operateDataType.value = 'button';
+  buttonOperateType.value = 'edit';
+  editingButtonData.value = row;
   openDrawer();
-}
-
-
-// 按钮权限行内编辑函数
-function startEditButton(row: Api.System.Menu) {
-  editingButtonId.value = row.menuId!;
-  editingButtonData.value = { label: row.menuName || '', code: row.perms || '', orderNum: row.orderNum || 0 };
-}
-
-function cancelEditButton() {
-  editingButtonId.value = null;
-  editingButtonData.value = { label: '', code: '', orderNum: 0 };
-}
-
-async function saveButton(row?: Api.System.Menu) {
-  if (!editingButtonData.value.label || !editingButtonData.value.code) {
-    window.$message?.warning($t('page.system.menu.form.buttonLabel.invalid'));
-    return;
-  }
-
-  if (editingButtonId.value === 'new') {
-    const { error } = await fetchCreateButton({
-      menuId: currentMenu.value?.menuId,
-      label: editingButtonData.value.label,
-      code: editingButtonData.value.code,
-      orderNum: editingButtonData.value.orderNum
-    });
-    if (error) return;
-    window.$message?.success($t('common.addSuccess'));
-  } else if (editingButtonId.value && row) {
-    const { error } = await fetchUpdateButton({
-      id: row.menuId,
-      label: editingButtonData.value.label,
-      code: editingButtonData.value.code,
-      orderNum: editingButtonData.value.orderNum
-    });
-    if (error) return;
-    window.$message?.success($t('common.updateSuccess'));
-  }
-  cancelEditButton();
-  await getBtnMenuList();
-}
-
-function addNewButtonRow() {
-  editingButtonId.value = 'new';
-  editingButtonData.value = { label: '', code: '', orderNum: 0 };
 }
 
 async function handleDeleteButtonInline(id: CommonType.IdType) {
@@ -337,14 +263,14 @@ async function handleDeleteButtonInline(id: CommonType.IdType) {
   await getBtnMenuList();
 }
 
-const btnColumns: DataTableColumns<Api.System.Menu> = [
+const btnColumns: DataTableColumns<Api.System.Button> = [
   {
     key: 'index',
     width: 64,
     align: 'center',
     title() {
       return (
-        <NButton circle type="primary" size="small" onClick={() => addNewButtonRow()}>
+        <NButton circle type="primary" size="small" onClick={() => _addBtnMenu()}>
           {{
             icon: () => (
               <NIcon>
@@ -355,106 +281,30 @@ const btnColumns: DataTableColumns<Api.System.Menu> = [
         </NButton>
       );
     },
-    render(row, index) {
-      if (editingButtonId.value === 'new' && index === 0) {
-        return '-';
-      }
-      if (editingButtonId.value === row.menuId) {
-        return (
-          <NInputNumber
-            value={editingButtonData.value.orderNum}
-            onUpdateValue={(val: number | null) => {
-              editingButtonData.value.orderNum = val ?? 0;
-            }}
-            size="small"
-            min={0}
-            class="w-60px"
-          />
-        );
-      }
-      return index + 1;
-    }
+    render: (_row, index) => index + 1
   },
   {
-    title: $t('page.system.menu.menuName'),
-    key: 'menuName',
-    minWidth: 120,
-    render(row) {
-      if (editingButtonId.value === 'new') {
-        return (
-          <NInput
-            value={editingButtonData.value.label}
-            onUpdateValue={(val: string) => (editingButtonData.value.label = val)}
-            size="small"
-            placeholder={$t('page.system.menu.form.buttonLabel.required')}
-          />
-        );
-      }
-      if (editingButtonId.value === row.menuId) {
-        return (
-          <NInput
-            value={editingButtonData.value.label}
-            onUpdateValue={(val: string) => (editingButtonData.value.label = val)}
-            size="small"
-            placeholder={$t('page.system.menu.form.buttonLabel.required')}
-          />
-        );
-      }
-      return row.menuName;
-    }
+    title: $t('page.system.menu.buttonLabel'),
+    key: 'label',
+    minWidth: 120
   },
   {
-    title: $t('page.system.menu.perms'),
-    key: 'perms',
+    title: $t('page.system.menu.buttonCode'),
+    key: 'code',
     align: 'center',
-    minWidth: 120,
-    render(row) {
-      if (editingButtonId.value === 'new') {
-        return (
-          <NInput
-            value={editingButtonData.value.code}
-            onUpdateValue={(val: string) => (editingButtonData.value.code = val)}
-            size="small"
-            placeholder={$t('page.system.menu.form.buttonCode.required')}
-          />
-        );
-      }
-      if (editingButtonId.value === row.menuId) {
-        return (
-          <NInput
-            value={editingButtonData.value.code}
-            onUpdateValue={(val: string) => (editingButtonData.value.code = val)}
-            size="small"
-            placeholder={$t('page.system.menu.form.buttonCode.required')}
-          />
-        );
-      }
-      return row.perms;
-    }
+    minWidth: 120
   },
   {
-    title: $t('page.system.menu.status'),
-    key: 'status',
-    minWidth: 80,
+    title: $t('page.system.menu.orderNum'),
+    key: 'orderNum',
     align: 'center',
-    render(row) {
-      if (editingButtonId.value === 'new' || editingButtonId.value === row.menuId) {
-        return '-';
-      }
-      return <DictTag size="small" value={row.status} dictCode="sys_normal_disable" />;
-    }
+    minWidth: 80
   },
   {
     title: $t('page.system.menu.createTime'),
-    key: 'createTime',
+    key: 'createdAt',
     align: 'center',
-    minWidth: 150,
-    render(row) {
-      if (editingButtonId.value === 'new' || editingButtonId.value === row.menuId) {
-        return '-';
-      }
-      return row.createTime;
-    }
+    minWidth: 150
   },
   {
     title: $t('common.action'),
@@ -462,35 +312,6 @@ const btnColumns: DataTableColumns<Api.System.Menu> = [
     width: 120,
     align: 'center',
     render(row) {
-      // 新增行
-      if (editingButtonId.value === 'new') {
-        return (
-          <div class="flex-center gap-8px">
-            <NButton size="small" type="primary" onClick={() => saveButton()}>
-              {$t('common.save')}
-            </NButton>
-            <NButton size="small" onClick={() => cancelEditButton()}>
-              {$t('common.cancel')}
-            </NButton>
-          </div>
-        );
-      }
-
-      // 编辑行
-      if (editingButtonId.value === row.menuId) {
-        return (
-          <div class="flex-center gap-8px">
-            <NButton size="small" type="primary" onClick={() => saveButton(row)}>
-              {$t('common.save')}
-            </NButton>
-            <NButton size="small" onClick={() => cancelEditButton()}>
-              {$t('common.cancel')}
-            </NButton>
-          </div>
-        );
-      }
-
-      // 正常行
       const divider = () => {
         if (!hasAuth('system:menu:edit') || !hasAuth('system:menu:remove')) {
           return null;
@@ -508,7 +329,7 @@ const btnColumns: DataTableColumns<Api.System.Menu> = [
             type="primary"
             icon="material-symbols:drive-file-rename-outline-outline"
             tooltipContent={$t('common.edit')}
-            onClick={() => startEditButton(row)}
+            onClick={() => _handleUpdateBtnMenu(row)}
           />
         );
       };
@@ -524,7 +345,7 @@ const btnColumns: DataTableColumns<Api.System.Menu> = [
             icon="material-symbols:delete-outline"
             tooltipContent={$t('common.delete')}
             popconfirmContent={$t('page.system.menu.confirmDeleteButton')}
-            onPositiveClick={() => handleDeleteButtonInline(row.menuId!)}
+            onPositiveClick={() => handleDeleteButtonInline(row.id!)}
           />
         );
       };
@@ -767,11 +588,13 @@ const renderIframeQuery = (queryParam: string) => {
     </div>
     <MenuOperateDrawer
       v-model:visible="drawerVisible"
-      :operate-type="operateType"
-      :row-data="editingData"
+      :operate-type="operateDataType === 'button' ? buttonOperateType : operateType"
+      :operate-data-type="operateDataType"
+      :row-data="operateDataType === 'menu' ? editingData : null"
+      :button-data="operateDataType === 'button' ? editingButtonData : null"
       :tree-data="treeData"
       :pid="createPid"
-      :menu-type="createType"
+      :menu-type="operateDataType === 'menu' ? createType : undefined"
       @submitted="handleSubmitted"
     />
     <MenuCascadeDeleteModal v-model:visible="cascadeDeleteVisible" @submitted="handleSubmitted" />

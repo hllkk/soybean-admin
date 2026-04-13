@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import type { SelectOption } from 'naive-ui';
 import { jsonClone } from '@sa/utils';
 import { menuIconTypeOptions, menuIsFrameOptions, menuLayoutOptions, menuTypeOptions } from '@/constants/business';
-import { fetchCreateMenu, fetchUpdateMenu } from '@/service/api/system';
+import { fetchCreateMenu, fetchUpdateMenu, fetchCreateButton, fetchUpdateButton } from '@/service/api/system';
 import { fetchGetAppList } from '@/service/api/system/app';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { getLocalMenuIcons } from '@/utils/icon';
@@ -26,6 +26,10 @@ interface Props {
   pid?: string | number;
   /** menu type */
   menuType?: Api.System.MenuType;
+  /** 操作数据类型：'menu' 或 'button' */
+  operateDataType?: 'menu' | 'button';
+  /** 按钮数据（仅 button 类型使用） */
+  buttonData?: Api.System.Button | null;
 }
 
 const props = defineProps<Props>();
@@ -64,6 +68,13 @@ const { createRequiredRule, createNumberRequiredRule } = useFormRules();
 const queryList = ref<{ key: string; value: string }[]>([]);
 
 const drawerTitle = computed(() => {
+  if (props.operateDataType === 'button') {
+    const titles: Record<NaiveUI.TableOperateType, string> = {
+      add: $t('page.system.menu.addButton'),
+      edit: $t('page.system.menu.editButton')
+    };
+    return titles[props.operateType];
+  }
   const titles: Record<NaiveUI.TableOperateType, string> = {
     add: $t('page.system.menu.addMenu'),
     edit: $t('page.system.menu.editMenu')
@@ -74,6 +85,17 @@ const drawerTitle = computed(() => {
 type Model = Api.System.MenuOperateParams;
 
 const model = ref<Model>(createDefaultModel());
+
+// 按钮类型 Model
+type ButtonModel = Api.System.ButtonOperateParams & { status?: Api.Common.EnableStatus };
+
+const buttonModel = ref<ButtonModel>({
+  menuId: 0,
+  label: '',
+  code: '',
+  orderNum: 0,
+  status: '1'
+});
 
 function createDefaultModel(): Model {
   return {
@@ -104,6 +126,15 @@ const rules: Record<RuleKey, App.Global.FormRule> = {
   component: createRequiredRule($t('page.system.menu.form.component.invalid'))
 };
 
+// 按钮验证规则
+type ButtonRuleKey = Extract<keyof ButtonModel, 'label' | 'code' | 'orderNum'>;
+
+const buttonRules: Record<ButtonRuleKey, App.Global.FormRule> = {
+  label: createRequiredRule($t('page.system.menu.form.buttonLabel.invalid')),
+  code: createRequiredRule($t('page.system.menu.form.buttonCode.invalid')),
+  orderNum: createNumberRequiredRule($t('page.system.menu.form.orderNum.invalid'))
+};
+
 // 是否为目录类型
 const isCatalog = computed(() => model.value.menuType === 'M');
 
@@ -112,6 +143,26 @@ const isMenu = computed(() => model.value.menuType === 'C');
 
 // 是否为按钮类型
 const isBtn = computed(() => model.value.menuType === 'F');
+
+// 父菜单名称（用于按钮表单显示）
+const currentMenuName = computed(() => {
+  if (!props.treeData || !props.pid) return '';
+  const findMenu = (menus: Api.System.Menu[], id: CommonType.IdType): string => {
+    for (const menu of menus) {
+      if (menu.menuId === id) {
+        return menu.menuName?.startsWith('route.') || menu.menuName?.startsWith('menu.')
+          ? $t(menu.menuName as App.I18n.I18nKey)
+          : menu.menuName || '';
+      }
+      if (menu.children?.length) {
+        const found = findMenu(menu.children, id);
+        if (found) return found;
+      }
+    }
+    return '';
+  };
+  return findMenu(props.treeData, props.pid);
+});
 
 // 外链类型
 const isExternalType = computed(() => model.value.isFrame === '0');
@@ -144,6 +195,30 @@ const localIconOptions = localIcons.map<SelectOption>(item => ({
 }));
 
 function handleInitModel() {
+  // 按钮类型初始化
+  if (props.operateDataType === 'button') {
+    buttonModel.value = {
+      menuId: props.pid || 0,
+      label: '',
+      code: '',
+      orderNum: 0,
+      status: '1'
+    };
+
+    if (props.operateType === 'edit' && props.buttonData) {
+      Object.assign(buttonModel.value, {
+        id: props.buttonData.id,
+        menuId: props.buttonData.menuId,
+        label: props.buttonData.label,
+        code: props.buttonData.code,
+        orderNum: props.buttonData.orderNum,
+        status: '1'
+      });
+    }
+    return;
+  }
+
+  // 菜单类型初始化
   queryList.value = [];
   iconType.value = '1';
   layoutType.value = '0';
@@ -225,6 +300,28 @@ function processQueryParam(queryParam: string | null | undefined): string {
 }
 
 async function handleSubmit() {
+  // 按钮类型提交
+  if (props.operateDataType === 'button') {
+    await validate();
+
+    const { id, menuId, label, code, orderNum } = buttonModel.value;
+
+    const { error } =
+      props.operateType === 'add'
+        ? await fetchCreateButton({ menuId, label, code, orderNum })
+        : await fetchUpdateButton({ id, menuId, label, code, orderNum });
+
+    if (error) {
+      return;
+    }
+
+    window.$message?.success($t(props.operateType === 'add' ? 'common.addSuccess' : 'common.updateSuccess'));
+    closeDrawer();
+    emit('submitted', 'F');
+    return;
+  }
+
+  // 菜单类型提交
   await validate();
 
   const {
@@ -319,7 +416,34 @@ function onCreate() {
 <template>
   <NDrawer v-model:show="visible" display-directive="show" :width="600" class="max-w-90%">
     <NDrawerContent :title="drawerTitle" :native-scrollbar="false" closable>
-      <NForm ref="formRef" :model="model" :rules="rules">
+      <!-- 按钮类型表单 -->
+      <NForm v-if="operateDataType === 'button'" ref="formRef" :model="buttonModel" :rules="buttonRules">
+        <NGrid responsive="screen" item-responsive>
+          <NFormItemGi :span="24" :label="$t('page.system.menu.parentId')">
+            <NInput :value="currentMenuName" disabled />
+          </NFormItemGi>
+          <NFormItemGi :span="24" :label="$t('page.system.menu.buttonLabel')" path="label">
+            <NInput v-model:value="buttonModel.label" :placeholder="$t('page.system.menu.form.buttonLabel.required')" />
+          </NFormItemGi>
+          <NFormItemGi :span="24" :label="$t('page.system.menu.buttonCode')" path="code">
+            <NInput v-model:value="buttonModel.code" :placeholder="$t('page.system.menu.form.buttonCode.required')" />
+          </NFormItemGi>
+          <NFormItemGi :span="12" path="status">
+            <template #label>
+              <div class="flex-center">
+                <FormTip :content="$t('page.system.menu.statusTip')" />
+                <span>{{ $t('page.system.menu.status') }}</span>
+              </div>
+            </template>
+            <DictRadio v-model:value="buttonModel.status" dict-code="sys_normal_disable" />
+          </NFormItemGi>
+          <NFormItemGi :span="12" :label="$t('page.system.menu.orderNum')" path="orderNum">
+            <NInputNumber v-model:value="buttonModel.orderNum" :placeholder="$t('page.system.menu.form.orderNum.required')" />
+          </NFormItemGi>
+        </NGrid>
+      </NForm>
+      <!-- 菜单类型表单 -->
+      <NForm v-else ref="formRef" :model="model" :rules="rules">
         <NGrid responsive="screen" item-responsive>
           <NFormItemGi :span="24" :label="$t('page.system.menu.parentId')" path="pid">
             <MenuTreeSelect
