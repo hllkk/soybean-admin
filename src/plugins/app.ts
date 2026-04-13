@@ -2,6 +2,8 @@ import { h } from 'vue';
 import type { App } from 'vue';
 import { NButton } from 'naive-ui';
 import { $t } from '@/locales';
+import { useSystemConfigStore } from '@/store/modules/system-config';
+import { setupFavicon } from './favicon';
 
 export function setupAppErrorHandle(app: App) {
   app.config.errorHandler = (err, vm, info) => {
@@ -105,4 +107,14 @@ async function getHtmlBuildTime(): Promise<string | null> {
     window.console.error('getHtmlBuildTime error:', error);
     return null;
   }
+}
+
+/** 初始化系统配置 */
+export async function setupSystemConfig() {
+  const systemConfigStore = useSystemConfigStore();
+  await systemConfigStore.fetchConfig();
+
+  // 设置 favicon
+  const faviconUrl = systemConfigStore.getFaviconUrl();
+  setupFavicon(faviconUrl);
 }
