@@ -66,7 +66,6 @@ try {
 // ── 输出结果 ──
 // Stop hook 语义: exit 0 = 放行停止, exit 2 = 阻断停止(强制继续)
 // stdout 输出会作为 context 注入 Claude
-const allIssues = [...severity.fail, ...severity.rework, ...severity.concerns];
 if (severity.fail.length > 0) {
   process.stderr.write(`[delivery-gate] ❌ FAIL — 严重问题, 必须修复:\n${severity.fail.map(i => `  ✗ ${i}`).join('\n')}\n`);
   if (severity.rework.length) process.stderr.write(`  + REWORK: ${severity.rework.join(', ')}\n`);

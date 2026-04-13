@@ -270,8 +270,8 @@ function setCheckedKeysByModule(module: string, keys: CommonType.IdType[]) {
 }
 
 function clearAllCheckedKeys() {
-  // 重置权限树加载标志，允许下次重新加载
-  hasLoadedAuthTree.value = false;
+  // 不重置 hasLoadedAuthTree 标志，避免竞态条件
+  // 如果需要重新加载权限树，loadRoleAuthTree 会正确设置标志
 
   for (const module of appList.value) {
     moduleCheckedKeys[module.appCode] = [];
@@ -355,11 +355,15 @@ async function loadRoleAuthTree(roleId: CommonType.IdType) {
     await getAppList();
   }
 
-  const { data, error } = await fetchGetRoleAuthTree(roleId);
-  if (error) return null;
-
-  // 标记已加载权限树数据，阻止后续的 getModuleMenuList 覆盖
+  // 在发起 API 请求之前就设置标志，防止竞态条件下 getModuleMenuList 覆盖数据
   hasLoadedAuthTree.value = true;
+
+  const { data, error } = await fetchGetRoleAuthTree(roleId);
+  if (error) {
+    // 如果请求失败，重置标志允许后续重新加载
+    hasLoadedAuthTree.value = false;
+    return null;
+  }
 
   // 清除之前的选中状态，并确保所有模块都有初始值
   for (const module of Object.keys(moduleCheckedKeys)) {

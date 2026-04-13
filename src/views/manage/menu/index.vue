@@ -209,7 +209,7 @@ const tagMap: Record<'0' | '1' | '2', NaiveUI.ThemeColor> = {
   '2': 'primary'
 };
 
-let controller = new AbortController();
+const _controller = new AbortController();
 
 async function getBtnMenuList() {
   if (!currentMenu.value?.menuId) {
