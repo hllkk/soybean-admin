@@ -93,18 +93,12 @@ async function handleUpdateModelWhenEdit() {
     // 等待组件挂载
     await nextTick();
 
+    // 先清除旧的选中状态
+    menuTreeRef.value?.clearAllCheckedKeys();
+
     // 加载完整权限树（包含所有模块的菜单和按钮）
-    const authTree = await menuTreeRef.value?.loadRoleAuthTree(model.value.roleId!);
-
-    if (authTree) {
-      // 合并菜单和按钮的选中ID，设置到各模块
-      const allCheckedKeys = [...authTree.menus, ...authTree.buttons];
-      const apps = menuTreeRef.value?.appList || [];
-
-      for (const app of apps) {
-        menuTreeRef.value?.setCheckedKeysByModule(app.appCode, allCheckedKeys);
-      }
-    }
+    // loadRoleAuthTree 会自动初始化 appList、moduleMenuOptions 和选中状态
+    await menuTreeRef.value?.loadRoleAuthTree(model.value.roleId!);
 
     stopMenuLoading();
   }

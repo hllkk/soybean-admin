@@ -59,7 +59,7 @@ try {
     }
   } catch {}
 
-} catch (e) {
+} catch {
   process.exit(0);
 }
 

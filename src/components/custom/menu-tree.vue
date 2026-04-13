@@ -42,6 +42,9 @@ const moduleMenuOptions = reactive<Record<string, Api.System.MenuList>>({});
 const moduleCheckedKeys = reactive<Record<string, CommonType.IdType[]>>({});
 const moduleLoading = reactive<Record<string, boolean>>({});
 
+// 标志：是否已通过 loadRoleAuthTree 加载了权限数据（用于阻止 loadAllModules 覆盖）
+const hasLoadedAuthTree = ref(false);
+
 // 计算属性：直接返回 options
 const computedOptions = computed(() => {
   return options.value;
@@ -78,6 +81,11 @@ async function getAppList() {
 }
 
 async function getModuleMenuList(module: string) {
+  // 如果已通过 loadRoleAuthTree 加载了权限数据，跳过以避免覆盖
+  if (hasLoadedAuthTree.value) {
+    return;
+  }
+
   moduleLoading[module] = true;
   const { error, data } = await fetchGetMenuTreeSelect(module);
   if (error) {
@@ -262,6 +270,9 @@ function setCheckedKeysByModule(module: string, keys: CommonType.IdType[]) {
 }
 
 function clearAllCheckedKeys() {
+  // 重置权限树加载标志，允许下次重新加载
+  hasLoadedAuthTree.value = false;
+
   for (const module of appList.value) {
     moduleCheckedKeys[module.appCode] = [];
   }
@@ -339,10 +350,29 @@ function getCheckedButtonIds(): CommonType.IdType[] {
 
 /** 加载角色完整权限树 */
 async function loadRoleAuthTree(roleId: CommonType.IdType) {
+  // 先确保 appList 已初始化（避免依赖 loadAllModules 的异步结果）
+  if (appList.value.length === 0) {
+    await getAppList();
+  }
+
   const { data, error } = await fetchGetRoleAuthTree(roleId);
   if (error) return null;
 
-  // 设置各模块的菜单树数据
+  // 标记已加载权限树数据，阻止后续的 getModuleMenuList 覆盖
+  hasLoadedAuthTree.value = true;
+
+  // 清除之前的选中状态，并确保所有模块都有初始值
+  for (const module of Object.keys(moduleCheckedKeys)) {
+    moduleCheckedKeys[module] = [];
+  }
+  // 为新模块初始化选中状态（确保 reactive 属性存在）
+  for (const app of appList.value) {
+    if (!moduleCheckedKeys[app.appCode]) {
+      moduleCheckedKeys[app.appCode] = [];
+    }
+  }
+
+  // 设置各模块的菜单树数据（完全替换，不依赖 loadAllModules）
   for (const [module, tree] of Object.entries(data.trees)) {
     moduleMenuOptions[module] = [
       {
@@ -352,6 +382,13 @@ async function loadRoleAuthTree(roleId: CommonType.IdType) {
         children: tree
       }
     ] as Api.System.MenuList;
+  }
+
+  // 直接在这里设置选中状态，而不是等外部调用 setCheckedKeysByModule
+  // 这样可以确保数据一致性
+  const allCheckedKeys = [...data.checkedKeys.menus, ...data.checkedKeys.buttons];
+  for (const app of appList.value) {
+    moduleCheckedKeys[app.appCode] = [...allCheckedKeys];
   }
 
   return data.checkedKeys;

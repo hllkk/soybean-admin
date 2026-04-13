@@ -47,7 +47,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'about',
       i18nKey: 'route.about',
       icon: 'fluent:book-information-24-regular',
-      order: 99
+      order: 99,
+      module: 'admin'
     }
   },
   {
@@ -106,7 +107,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'log',
       i18nKey: 'route.log',
       icon: 'carbon-cloud-logging',
-      order: 4
+      order: 4,
+      module: 'admin'
     },
     children: [
       {
