@@ -142,6 +142,7 @@ declare module 'vue' {
     TableRowCheckAlert: typeof import('./../components/advanced/table-row-check-alert.vue')['default']
     TableSiderLayout: typeof import('./../components/advanced/table-sider-layout.vue')['default']
     ThemeSchemaSwitch: typeof import('./../components/common/theme-schema-switch.vue')['default']
+    WangEditor: typeof import('./../components/custom/wang-editor.vue')['default']
     WaveBg: typeof import('./../components/custom/wave-bg.vue')['default']
   }
 }
@@ -278,5 +279,6 @@ declare global {
   const TableRowCheckAlert: typeof import('./../components/advanced/table-row-check-alert.vue')['default']
   const TableSiderLayout: typeof import('./../components/advanced/table-sider-layout.vue')['default']
   const ThemeSchemaSwitch: typeof import('./../components/common/theme-schema-switch.vue')['default']
+  const WangEditor: typeof import('./../components/custom/wang-editor.vue')['default']
   const WaveBg: typeof import('./../components/custom/wave-bg.vue')['default']
 }
