@@ -11,7 +11,7 @@ import { transformElegantRoutesToVueRoutes } from '../elegant/transform';
  */
 const customRoutes: ElegantConstRoute[] = [
   {
-    name: 'admin_user-center',
+    name: 'adminUserCenter',
     path: '/admin/user-center',
     component: 'layout.base$view.user-center',
     meta: {
@@ -23,7 +23,7 @@ const customRoutes: ElegantConstRoute[] = [
     }
   } as ElegantConstRoute,
   {
-    name: 'disk_user-center',
+    name: 'diskUserCenter',
     path: '/disk/user-center',
     component: 'layout.disk$view.user-center',
     meta: {
@@ -43,7 +43,7 @@ const customRoutes: ElegantConstRoute[] = [
 const routeLayoutMap: Record<string, string> = {
   login: "blank",
   disk: 'disk',
-  'disk_user-center': 'disk'
+  'diskUserCenter': 'disk'
 };
 
 /**
@@ -64,8 +64,8 @@ const routeModuleMap: Record<string, RouteModule> = {
   manage_log_operation: 'admin',
   manage_log_login: 'admin',
   manage_settings: 'admin',
-  'admin_user-center': 'admin',
-  'disk_user-center': 'disk'
+  'adminUserCenter': 'admin',
+  'diskUserCenter': 'disk'
 };
 
 /**
