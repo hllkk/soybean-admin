@@ -183,7 +183,8 @@ const routeMap: RouteMap = {
   "manage_post": "/manage/post",
   "manage_role": "/manage/role",
   "manage_settings": "/manage/settings",
-  "manage_user": "/manage/user"
+  "manage_user": "/manage/user",
+  "user-center": "/user-center"
 };
 
 /**

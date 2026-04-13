@@ -7,3 +7,4 @@ export * from "./menu";
 export * from "./app";
 export * from "./dict-data";
 export * from "./log";
+export * from "./social";

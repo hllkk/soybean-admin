@@ -25,6 +25,8 @@ declare namespace Api {
       role: string;
       roles: string[];
       buttons: string[];
+      deptName?: string;
+      createTime?: string;
     }
   }
 }
