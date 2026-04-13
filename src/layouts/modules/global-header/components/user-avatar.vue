@@ -133,8 +133,12 @@ function logout() {
 }
 
 function handleUserCenter() {
-  window.$message?.destroyAll();
-  window.$message?.info($t('common.userCenter') + ' - 功能开发中');
+  // 根据当前页面跳转到对应布局的个人中心
+  if (isDiskPage.value) {
+    router.push('/disk/user-center');
+  } else {
+    router.push('/admin/user-center');
+  }
 }
 
 function handleSwitchRole() {
