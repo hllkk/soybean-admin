@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { $t } from '@/locales';
+import { computed } from 'vue';
+import { useSystemConfigStore } from '@/store/modules/system-config';
 
 defineOptions({
   name: 'GlobalLogo'
@@ -13,13 +14,22 @@ interface Props {
 withDefaults(defineProps<Props>(), {
   showTitle: true
 });
+
+const systemConfigStore = useSystemConfigStore();
+
+const systemName = computed(() => systemConfigStore.getSystemName());
+const logoUrl = computed(() => systemConfigStore.getLogoUrl());
 </script>
 
 <template>
   <RouterLink to="/" class="w-full flex-center nowrap-hidden">
-    <SystemLogo class="size-32px" />
+    <!-- 有自定义 Logo 时显示图片 -->
+    <img v-if="logoUrl" :src="logoUrl" class="size-32px" alt="logo" />
+    <!-- 否则显示默认 SVG Logo -->
+    <SystemLogo v-else class="size-32px" />
+    <!-- 系统名称 -->
     <h2 v-show="showTitle" class="pl-8px text-16px text-primary font-bold transition duration-300 ease-in-out">
-      {{ $t('system.title') }}
+      {{ systemName }}
     </h2>
   </RouterLink>
 </template>
