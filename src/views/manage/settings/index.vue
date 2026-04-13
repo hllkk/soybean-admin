@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 import type { SettingConfig } from './types';
 import SettingMenu from './modules/setting-menu.vue';
@@ -10,6 +10,7 @@ import DiskSetting from './modules/disk-setting.vue';
 import NotifySetting from './modules/notify-setting.vue';
 import AuthSetting from './modules/auth-setting.vue';
 import { useAuth } from '@/hooks/business/auth';
+import { fetchGetSystemSettings, fetchUpdateSystemSettings } from '@/service/api/system/setting';
 
 defineOptions({
   name: 'SettingsPage'
@@ -111,18 +112,61 @@ const menuTitleMap: Record<string, string> = {
 
 const currentTitle = computed(() => menuTitleMap[activeKey.value]);
 
+// 初始化时加载配置
+async function loadConfig() {
+  try {
+    const response = await fetchGetSystemSettings();
+    const settings = response.data;
+    if (settings?.general) {
+      config.value.general = {
+        systemName: settings.general.systemName || 'OPS管理系统',
+        systemDescription: settings.general.systemDescription || '企业运维管理平台',
+        logoUrl: settings.general.logoUrl || '',
+        faviconUrl: settings.general.faviconUrl || '',
+        userDefaultPassword: settings.general.userDefaultPassword || '',
+        userDefaultRole: settings.general.userDefaultRole || null,
+        enableVerifyCode: settings.general.enableVerifyCode || false,
+        verifyCodeType: settings.general.verifyCodeType || 'click',
+        verifyInaccuracy: settings.general.verifyInaccuracy || 5
+      };
+    }
+  } catch (error) {
+    console.error('加载配置失败:', error);
+  }
+}
+
 async function handleSave() {
   loading.value = true;
   try {
-    // TODO: Call API to save settings
-    await new Promise(resolve => setTimeout(resolve, 500));
-    window.$message?.success('保存成功');
+    // 构建后端需要的 Settings 结构
+    const settings: Api.SystemManage.Settings = {
+      general: {
+        systemName: config.value.general.systemName,
+        systemDescription: config.value.general.systemDescription,
+        logoUrl: config.value.general.logoUrl,
+        faviconUrl: config.value.general.faviconUrl,
+        userDefaultPassword: config.value.general.userDefaultPassword,
+        userDefaultRole: config.value.general.userDefaultRole,
+        enableVerifyCode: config.value.general.enableVerifyCode,
+        verifyCodeType: config.value.general.verifyCodeType,
+        verifyInaccuracy: config.value.general.verifyInaccuracy
+      }
+      // 其他模块配置根据需要添加
+    };
+
+    await fetchUpdateSystemSettings(settings);
+    window.$message?.success('配置已保存，刷新页面后生效');
   } catch {
     window.$message?.error('保存失败');
   } finally {
     loading.value = false;
   }
 }
+
+// 页面加载时获取配置
+onMounted(() => {
+  loadConfig();
+});
 </script>
 
 <template>
@@ -168,7 +212,7 @@ async function handleSave() {
           <template #header>
             <div class="flex justify-between items-center">
               <div class="text-16px font-600">{{ currentTitle }}</div>
-              <NButton type="primary" :loading="loading" @click="handleSave">保存</NButton>
+              <NButton v-if="hasAuth('system:setting:save')" type="primary" :loading="loading" @click="handleSave">保存</NButton>
             </div>
           </template>
 
