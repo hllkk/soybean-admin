@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import './plugins/assets';
 import { setupVueRootValidator } from 'vite-plugin-vue-transition-root-validator/client';
-import { setupAppVersionNotification, setupDayjs, setupIconifyOffline, setupLoading, setupNProgress } from './plugins';
+import { setupAppVersionNotification, setupDayjs, setupIconifyOffline, setupLoading, setupNProgress, setupSystemConfig } from './plugins';
 import { setupStore } from './store';
 import { setupRouter } from './router';
 import { getLocale, setupI18n } from './locales';
@@ -19,6 +19,8 @@ async function setupApp() {
   const app = createApp(App);
 
   setupStore(app);
+
+  await setupSystemConfig();
 
   await setupRouter(app);
 
