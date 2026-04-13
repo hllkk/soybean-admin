@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAppStore } from '@/store/modules/app';
+import { useSystemConfigStore } from '@/store/modules/system-config';
 import { $t } from '@/locales';
 import pkg from '~/package.json';
 
 const appStore = useAppStore();
+const systemConfigStore = useSystemConfigStore();
 
 const column = computed(() => (appStore.isMobile ? 1 : 2));
 
@@ -39,6 +41,8 @@ const pkgJson: PkgJson = {
 
 const latestBuildTime = BUILD_TIME;
 
+const systemDescription = computed(() => systemConfigStore.getSystemDescription());
+
 function toLink(url: string) {
   window.open(url, '_blank');
 }
@@ -69,6 +73,7 @@ function toLink(url: string) {
         </div>
       </template>
       <p>{{ $t('page.about.introduction') }}</p>
+      <p v-if="systemDescription" class="mt-12px text-gray-500">{{ systemDescription }}</p>
     </NCard>
     <NCard :title="$t('page.about.projectInfo.title')" :bordered="false" size="small" segmented class="card-wrapper">
       <NDescriptions label-placement="left" bordered size="small" :column="column">

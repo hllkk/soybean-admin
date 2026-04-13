@@ -5,7 +5,7 @@ import { getPaletteColorByNumber, mixColor } from '@sa/color';
 import { loginModuleRecord } from '@/constants/app';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
-import { $t } from '@/locales';
+import { useSystemConfigStore } from '@/store/modules/system-config';
 import PwdLogin from './modules/pwd-login.vue';
 import CodeLogin from './modules/code-login.vue';
 import Register from './modules/register.vue';
@@ -21,6 +21,7 @@ const props = defineProps<Props>();
 
 const appStore = useAppStore();
 const themeStore = useThemeStore();
+const systemConfigStore = useSystemConfigStore();
 
 interface LoginModule {
   label: App.I18n.I18nKey;
@@ -48,6 +49,9 @@ const bgColor = computed(() => {
 
   return mixColor(COLOR_WHITE, themeStore.themeColor, ratio);
 });
+
+const systemName = computed(() => systemConfigStore.getSystemName());
+const logoUrl = computed(() => systemConfigStore.getLogoUrl());
 </script>
 
 <template>
@@ -56,8 +60,9 @@ const bgColor = computed(() => {
     <NCard :bordered="false" class="relative z-4 w-auto rd-12px">
       <div class="w-400px lt-sm:w-300px">
         <header class="flex-y-center justify-between">
-          <SystemLogo class="size-64px lt-sm:size-48px" />
-          <h3 class="text-28px text-primary font-500 lt-sm:text-22px">{{ $t('system.title') }}</h3>
+          <img v-if="logoUrl" :src="logoUrl" class="size-64px lt-sm:size-48px" alt="logo" />
+          <SystemLogo v-else class="size-64px lt-sm:size-48px" />
+          <h3 class="text-28px text-primary font-500 lt-sm:text-22px">{{ systemName }}</h3>
           <div class="i-flex-col">
             <ThemeSchemaSwitch
               :theme-schema="themeStore.themeScheme"
