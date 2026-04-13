@@ -144,23 +144,124 @@ declare namespace Api {
       createdAt: string;
     }
 
-    // 系统设置
+    // 系统设置 - GeneralSettings
+    interface GeneralSettings {
+      systemName: string;
+      systemDescription: string;
+      logoUrl: string;
+      faviconUrl: string;
+      userDefaultPassword?: string;
+      userDefaultRole?: number | null;
+      enableVerifyCode?: boolean;
+      verifyCodeType?: 'click' | 'slide' | 'drag' | 'rotate';
+      verifyInaccuracy?: number;
+    }
+
+    // 系统设置 - 完整聚合
     interface Settings {
-      siteName: string;
-      siteDescription: string;
-      logo: string;
-      favicon: string;
-      passwordMinLength: number;
-      passwordRequireSpecial: boolean;
-      loginFailLockCount: number;
-      loginFailLockTime: number;
-      maxUploadSize: number;
-      allowFileTypes: string;
-      smtpHost: string;
-      smtpPort: number;
-      smtpUser: string;
-      smtpPassword: string;
-      smtpFrom: string;
+      general?: GeneralSettings;
+      authentication?: AuthenticationSettings;
+      ldap?: LdapSettings;
+      security?: SecuritySettings;
+      channels?: ChannelsSettings;
+      disk?: DiskSettings;
+    }
+
+    interface AuthenticationSettings {
+      wecom?: WecomSettings;
+      wechat?: WechatSettings;
+      gitee?: GiteeSettings;
+    }
+
+    interface WecomSettings {
+      enableWecom?: boolean;
+      validateDomainFileName?: string;
+      validateDomainFileContent?: string;
+    }
+
+    interface WechatSettings {
+      enableWechat?: boolean;
+    }
+
+    interface GiteeSettings {
+      enableGitee?: boolean;
+    }
+
+    interface SecuritySettings {
+      totp?: boolean;
+      ip_check?: boolean;
+      ip_check_mode?: number;
+      ip_black_list?: string[];
+      ip_white_list?: string[];
+    }
+
+    interface LdapSettings {
+      config?: LdapConfigInfo;
+      sync?: LdapSyncInfo;
+    }
+
+    interface LdapConfigInfo {
+      enable?: boolean;
+      hosts?: string[];
+      user?: string;
+      password?: string;
+      base_ou?: string;
+      paged_size?: number;
+      attributes?: LdapAttributes;
+    }
+
+    interface LdapAttributes {
+      username?: string;
+      nickname?: string;
+      email?: string;
+      phone?: string;
+    }
+
+    interface LdapSyncInfo {
+      enable?: boolean;
+      interval?: number;
+      default_status?: boolean;
+      sync_rule?: number;
+    }
+
+    interface ChannelsSettings {
+      email?: MailSettings;
+    }
+
+    interface MailSettings {
+      MAIL_FROM?: string;
+      MAIL_PORT?: number;
+      MAIL_SERVER?: string;
+      MAIL_SSL_TLS?: boolean;
+      MAIL_PASSWORD?: string;
+      MAIL_STARTTLS?: boolean;
+      MAIL_USERNAME?: string;
+      MAIL_FROM_NAME?: string;
+      VALIDATE_CERTS?: boolean;
+      USE_CREDENTIALS?: boolean;
+    }
+
+    interface DiskSettings {
+      diskName?: string;
+      maxUploadSize?: number;
+      allowedExtensions?: string[];
+      trashRetentionDays?: number;
+      onlyOffice?: OnlyOfficeSettings;
+      videoTranscode?: VideoTranscodeSettings;
+    }
+
+    interface OnlyOfficeSettings {
+      enable?: boolean;
+      serverUrl?: string;
+      tokenSecret?: string;
+      callbackUrl?: string;
+    }
+
+    interface VideoTranscodeSettings {
+      enable?: boolean;
+      ffmpegPath?: string;
+      threads?: number;
+      preset?: string;
     }
 
     // 通用分页请求

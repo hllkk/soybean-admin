@@ -8,15 +8,15 @@ export interface SettingMenuItem {
 
 /** 常规配置 */
 export interface GeneralSettingConfig {
-  siteName: string;
-  siteDescription: string;
-  logo: string;
-  favicon: string;
-  defaultPassword: string;
-  defaultRole: string;
-  captchaEnabled: boolean;
-  captchaType: 'click' | 'slide' | 'drag' | 'rotate';
-  captchaTolerance: number;
+  systemName: string;
+  systemDescription: string;
+  logoUrl: string;
+  faviconUrl: string;
+  userDefaultPassword: string;
+  userDefaultRole: number | null;
+  enableVerifyCode: boolean;
+  verifyCodeType: 'click' | 'slide' | 'drag' | 'rotate';
+  verifyInaccuracy: number;
 }
 
 /** 安全配置 */

@@ -25,15 +25,15 @@ const isMobile = breakpoints.smaller('lg');
 // Config data with all default values
 const config = ref<SettingConfig>({
   general: {
-    siteName: 'OPS管理系统',
-    siteDescription: '企业运维管理平台',
-    logo: '',
-    favicon: '',
-    defaultPassword: '',
-    defaultRole: 'user',
-    captchaEnabled: false,
-    captchaType: 'click',
-    captchaTolerance: 5
+    systemName: 'OPS管理系统',
+    systemDescription: '企业运维管理平台',
+    logoUrl: '',
+    faviconUrl: '',
+    userDefaultPassword: '',
+    userDefaultRole: null,
+    enableVerifyCode: false,
+    verifyCodeType: 'click',
+    verifyInaccuracy: 5
   },
   security: {
     passwordMinLength: 6,
