@@ -8,3 +8,4 @@ export * from "./app";
 export * from "./dict-data";
 export * from "./log";
 export * from "./social";
+export * from "./setting";
