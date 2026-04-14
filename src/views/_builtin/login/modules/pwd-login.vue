@@ -6,6 +6,7 @@ import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { localStg } from '@/utils/storage';
 import { $t } from '@/locales';
 import { fetchCheckDB } from '@/service/api/init';
+import { fetchGetCaptchaStatus } from '@/service/api/system/setting';
 import ClickCaptcha from '@/components/captcha/ClickCaptcha.vue';
 
 defineOptions({
@@ -33,6 +34,9 @@ const REMEMBERED_USER_KEY = 'remembered_user';
 
 // 是否显示初始化按钮
 const showInitButton = ref(true);
+
+// 验证码是否开启（默认开启，防止API失败时无法登录）
+const captchaEnabled = ref(true);
 
 // checkDB 缓存 Key
 const CHECK_DB_CACHE_KEY = 'check_db_result';
@@ -80,6 +84,12 @@ onMounted(async () => {
       timestamp: now
     } as CheckDBCache);
   }
+
+  // 获取验证码状态
+  const captchaResult = await fetchGetCaptchaStatus();
+  if (captchaResult.data) {
+    captchaEnabled.value = captchaResult.data.enabled;
+  }
 });
 
 const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
@@ -97,7 +107,13 @@ const captchaRef = ref<InstanceType<typeof ClickCaptcha> | null>(null);
 
 async function handleSubmit() {
   await validate();
-  showCaptcha.value = true;
+  if (captchaEnabled.value) {
+    // 验证码开启，触发验证码弹窗
+    showCaptcha.value = true;
+  } else {
+    // 验证码关闭，直接登录
+    handleCaptchaSuccess('');
+  }
 }
 
 function handleCaptchaSuccess(captchaToken: string) {

@@ -8,6 +8,14 @@ export function fetchGetSystemSettings() {
   });
 }
 
+/** 获取验证码状态（公开接口） */
+export function fetchGetCaptchaStatus() {
+  return request<{ enabled: boolean; type: string }>({
+    url: '/system/settings/captchaStatus',
+    method: 'get'
+  });
+}
+
 /** 更新系统设置 */
 export function fetchUpdateSystemSettings(settings: Api.SystemManage.Settings) {
   return request<void>({

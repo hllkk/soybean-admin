@@ -130,6 +130,9 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
       const pass = await loginByToken(loginToken);
 
       if (pass) {
+        // 初始化动态路由，获取用户授权菜单和首页设置
+        await routeStore.initAuthRoute();
+
         // Check if the tab needs to be cleared
         const isClear = checkTabClear();
         let needRedirect = redirect;

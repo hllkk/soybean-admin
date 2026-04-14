@@ -1,9 +1,46 @@
 import type { LocationQueryRaw, RouteLocationNormalized, RouteLocationRaw, Router } from 'vue-router';
-import type { RouteKey, RoutePath } from '@elegant-router/types';
+import type { ElegantConstRoute, RouteKey, RoutePath } from '@elegant-router/types';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
 import { localStg } from '@/utils/storage';
 import { getRouteName } from '@/router/elegant/transform';
+
+/**
+ * Flatten route names from auth routes
+ *
+ * @param routes Auth routes
+ * @returns Array of route names
+ */
+function flattenRouteNames(routes: ElegantConstRoute[]): string[] {
+  const names: string[] = [];
+  routes.forEach(route => {
+    names.push(route.name as string);
+    if (route.children?.length) {
+      names.push(...flattenRouteNames(route.children));
+    }
+  });
+  return names;
+}
+
+/**
+ * Check if route is authorized for current user
+ *
+ * @param to Target route
+ * @param routeStore Route store instance
+ * @returns Whether the route is authorized
+ */
+function isRouteAuthorized(to: RouteLocationNormalized, routeStore: ReturnType<typeof useRouteStore>): boolean {
+  // Constant routes are always accessible
+  if (to.meta.constant) {
+    return true;
+  }
+
+  // Check if route name is in authorized routes
+  const authorizedNames = flattenRouteNames(routeStore.authRoutes);
+  const routeName = to.name as string;
+
+  return authorizedNames.includes(routeName);
+}
 
 /**
  * create route guard
@@ -19,6 +56,7 @@ export function createRouteGuard(router: Router) {
     }
 
     const authStore = useAuthStore();
+    const routeStore = useRouteStore();
 
     const rootRoute: RouteKey = 'root';
     const loginRoute: RouteKey = 'login';
@@ -48,6 +86,11 @@ export function createRouteGuard(router: Router) {
 
     // if the user is logged in but does not have authorization, then switch to the 403 page
     if (!hasAuth) {
+      return { name: noAuthorizationRoute };
+    }
+
+    // check if route is in user's authorized route list (dynamic route mode)
+    if (routeStore.isInitAuthRoute && !isRouteAuthorized(to, routeStore)) {
       return { name: noAuthorizationRoute };
     }
 

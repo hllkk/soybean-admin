@@ -2,6 +2,7 @@ import { useRouter } from 'vue-router';
 import type { RouteLocationRaw } from 'vue-router';
 import type { RouteKey } from '@elegant-router/types';
 import { router as globalRouter } from '@/router';
+import { useRouteStore } from '@/store/modules/route';
 
 /**
  * Router push
@@ -50,7 +51,14 @@ export function useRouterPush(inSetup = true) {
   }
 
   async function toHome() {
-    return routerPushByKey('root');
+    // 使用 routeStore 中设置的首页路由（动态路由返回的 home）
+    const routeStore = useRouteStore();
+    const homeRoute = routeStore.routeHome;
+    if (homeRoute) {
+      return routerPushByKey(homeRoute as RouteKey);
+    }
+    // 降级：跳转到 root
+    return routerPushByKey('disk');
   }
 
   /**

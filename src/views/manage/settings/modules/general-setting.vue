@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import type { GeneralSettingConfig } from '../types';
 import { fetchUploadLogo, fetchUploadFavicon } from '@/service/api/system/setting';
+import RoleSelect from '@/components/custom/role-select.vue';
 
 defineOptions({
   name: 'GeneralSetting'
@@ -17,13 +18,8 @@ const configModel = defineModel<GeneralSettingConfig>('config', { required: true
 const captchaTypeOptions = [
   { label: '点选式', value: 'click' },
   { label: '滑动式', value: 'slide' },
-  { label: '拖拽式', value: 'drag' },
+  { label: '拖拽式', value: 'dragdrop' },
   { label: '旋转式', value: 'rotate' }
-];
-
-const roleOptions = [
-  { label: '普通用户', value: 1 },
-  { label: '管理员', value: 2 }
 ];
 
 const logoUploading = ref(false);
@@ -135,14 +131,16 @@ function clearFavicon() {
               上传 Logo
             </NButton>
           </NUpload>
-          <NInput v-model:value="configModel.logoUrl" placeholder="或直接输入 URL" class="max-w-300px" />
           <NButton v-if="configModel.logoUrl" quaternary size="small" @click="clearLogo">
             <template #icon>
               <icon-ic-outline-close class="text-icon" />
             </template>
           </NButton>
-          <!-- Logo 预览 -->
-          <img v-if="configModel.logoUrl" :src="configModel.logoUrl" class="size-32px" alt="logo preview" />
+          <!-- Logo 展示框 -->
+          <div v-if="configModel.logoUrl" class="logo-preview-box">
+            <img :src="configModel.logoUrl" class="max-h-48px max-w-200px" alt="logo preview" />
+          </div>
+          <NText v-else depth="3" class="text-14px">未设置</NText>
         </div>
       </NFormItem>
       <NFormItem label="Favicon" path="faviconUrl">
@@ -161,14 +159,16 @@ function clearFavicon() {
               上传 Favicon
             </NButton>
           </NUpload>
-          <NInput v-model:value="configModel.faviconUrl" placeholder="或直接输入 URL" class="max-w-300px" />
           <NButton v-if="configModel.faviconUrl" quaternary size="small" @click="clearFavicon">
             <template #icon>
               <icon-ic-outline-close class="text-icon" />
             </template>
           </NButton>
-          <!-- Favicon 预览 -->
-          <img v-if="configModel.faviconUrl" :src="configModel.faviconUrl" class="size-32px" alt="favicon preview" />
+          <!-- Favicon 展示框 -->
+          <div v-if="configModel.faviconUrl" class="favicon-preview-box">
+            <img :src="configModel.faviconUrl" class="size-32px" alt="favicon preview" />
+          </div>
+          <NText v-else depth="3" class="text-14px">未设置</NText>
         </div>
       </NFormItem>
       <NFormItem label="用户默认密码" path="userDefaultPassword">
@@ -181,12 +181,11 @@ function clearFavicon() {
         />
       </NFormItem>
       <NFormItem label="默认角色" path="userDefaultRole">
-        <NSelect
+        <RoleSelect
           v-model:value="configModel.userDefaultRole"
-          :options="roleOptions"
-          placeholder="请选择默认角色"
           class="max-w-200px"
           clearable
+          :max-tag-count="1"
         />
       </NFormItem>
     </NForm>
@@ -198,14 +197,31 @@ function clearFavicon() {
       <NFormItem label="开启验证码登录" path="enableVerifyCode">
         <NSwitch v-model:value="configModel.enableVerifyCode" />
       </NFormItem>
-      <NFormItem label="验证码类型" path="verifyCodeType">
-        <NSelect v-model:value="configModel.verifyCodeType" :options="captchaTypeOptions" class="max-w-200px" />
-      </NFormItem>
-      <NFormItem label="验证码误差配置" path="verifyInaccuracy">
-        <NInputNumber v-model:value="configModel.verifyInaccuracy" :min="0" :max="50" class="max-w-200px">
-          <template #suffix>像素</template>
-        </NInputNumber>
-      </NFormItem>
+      <template v-if="configModel.enableVerifyCode">
+        <NFormItem label="验证码类型" path="verifyCodeType">
+          <NSelect v-model:value="configModel.verifyCodeType" :options="captchaTypeOptions" class="max-w-200px" />
+        </NFormItem>
+        <NFormItem label="验证码长度" path="verifyCodeLen">
+          <NInputNumber v-model:value="configModel.verifyCodeLen" :min="2" :max="8" class="max-w-200px">
+            <template #suffix>字符</template>
+          </NInputNumber>
+        </NFormItem>
+        <NFormItem label="验证码过期时间" path="verifyCodeExp">
+          <NInputNumber v-model:value="configModel.verifyCodeExp" :min="1" :max="60" class="max-w-200px">
+            <template #suffix>分钟</template>
+          </NInputNumber>
+        </NFormItem>
+        <NFormItem label="Token过期时间" path="verifyCodeTokenExp">
+          <NInputNumber v-model:value="configModel.verifyCodeTokenExp" :min="1" :max="60" class="max-w-200px">
+            <template #suffix>分钟</template>
+          </NInputNumber>
+        </NFormItem>
+        <NFormItem label="验证码误差配置" path="verifyInaccuracy">
+          <NInputNumber v-model:value="configModel.verifyInaccuracy" :min="0" :max="50" class="max-w-200px">
+            <template #suffix>像素</template>
+          </NInputNumber>
+        </NFormItem>
+      </template>
     </NForm>
   </div>
 </template>
@@ -216,5 +232,16 @@ function clearFavicon() {
   color: #333;
   font-size: 15px;
   margin-bottom: 16px;
+}
+
+.logo-preview-box,
+.favicon-preview-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #fafafa;
 }
 </style>

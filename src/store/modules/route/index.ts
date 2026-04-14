@@ -362,6 +362,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     onRouteSwitchWhenLoggedIn,
     onRouteSwitchWhenNotLoggedIn,
     currentModule,
-    setCurrentModule
+    setCurrentModule,
+    authRoutes
   };
 });

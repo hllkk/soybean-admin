@@ -14,9 +14,13 @@ export interface GeneralSettingConfig {
   faviconUrl: string;
   userDefaultPassword: string;
   userDefaultRole: number | null;
+  // 验证码配置 - 完整版
   enableVerifyCode: boolean;
-  verifyCodeType: 'click' | 'slide' | 'drag' | 'rotate';
-  verifyInaccuracy: number;
+  verifyCodeType: 'click' | 'slide' | 'dragdrop' | 'rotate'; // 修正 drag -> dragdrop
+  verifyCodeLen: number;       // 验证码长度
+  verifyCodeExp: number;       // 过期时间(分钟)
+  verifyCodeTokenExp: number;  // Token过期时间(分钟)
+  verifyInaccuracy: number;    // 误差范围(像素)
 }
 
 /** 安全配置 */

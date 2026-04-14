@@ -34,7 +34,10 @@ const config = ref<SettingConfig>({
     userDefaultRole: null,
     enableVerifyCode: false,
     verifyCodeType: 'click',
-    verifyInaccuracy: 5
+    verifyCodeLen: 4,
+    verifyCodeExp: 5,
+    verifyCodeTokenExp: 5,
+    verifyInaccuracy: 40
   },
   security: {
     passwordMinLength: 6,
@@ -127,7 +130,10 @@ async function loadConfig() {
         userDefaultRole: settings.general.userDefaultRole || null,
         enableVerifyCode: settings.general.enableVerifyCode || false,
         verifyCodeType: settings.general.verifyCodeType || 'click',
-        verifyInaccuracy: settings.general.verifyInaccuracy || 5
+        verifyCodeLen: settings.general.verifyCodeLen || 4,
+        verifyCodeExp: settings.general.verifyCodeExp || 5,
+        verifyCodeTokenExp: settings.general.verifyCodeTokenExp || 5,
+        verifyInaccuracy: settings.general.verifyInaccuracy || 40
       };
     }
   } catch (error) {
@@ -149,6 +155,9 @@ async function handleSave() {
         userDefaultRole: config.value.general.userDefaultRole,
         enableVerifyCode: config.value.general.enableVerifyCode,
         verifyCodeType: config.value.general.verifyCodeType,
+        verifyCodeLen: config.value.general.verifyCodeLen,
+        verifyCodeExp: config.value.general.verifyCodeExp,
+        verifyCodeTokenExp: config.value.general.verifyCodeTokenExp,
         verifyInaccuracy: config.value.general.verifyInaccuracy
       }
       // 其他模块配置根据需要添加

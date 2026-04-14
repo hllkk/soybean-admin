@@ -66,6 +66,10 @@ const customRoutes: ElegantConstRoute[] = [
  */
 const routeLayoutMap: Record<string, string> = {
   login: "blank",
+  '403': 'blank',
+  '404': 'blank',
+  '500': 'blank',
+  init: 'blank',
   disk: 'disk',
   'diskUserCenter': 'disk',
   'diskNoticeUser': 'disk'

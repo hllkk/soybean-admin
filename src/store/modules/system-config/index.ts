@@ -57,7 +57,22 @@ export const useSystemConfigStore = defineStore('system-config', () => {
 
   /** 获取验证码误差 */
   function getVerifyInaccuracy(): number {
-    return config.value?.verifyInaccuracy || 5;
+    return config.value?.verifyInaccuracy || 40;
+  }
+
+  /** 获取验证码长度 */
+  function getVerifyCodeLen(): number {
+    return config.value?.verifyCodeLen || 4;
+  }
+
+  /** 获取验证码过期时间 */
+  function getVerifyCodeExp(): number {
+    return config.value?.verifyCodeExp || 5;
+  }
+
+  /** 获取验证码Token过期时间 */
+  function getVerifyCodeTokenExp(): number {
+    return config.value?.verifyCodeTokenExp || 5;
   }
 
   return {
@@ -69,6 +84,9 @@ export const useSystemConfigStore = defineStore('system-config', () => {
     getSystemDescription,
     isVerifyCodeEnabled,
     getVerifyCodeType,
-    getVerifyInaccuracy
+    getVerifyInaccuracy,
+    getVerifyCodeLen,
+    getVerifyCodeExp,
+    getVerifyCodeTokenExp
   };
 });
