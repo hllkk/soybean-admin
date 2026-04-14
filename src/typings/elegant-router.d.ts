@@ -22,11 +22,7 @@ declare module "@elegant-router/types" {
     "500": "/500";
     "about": "/about";
     "admin": "/admin";
-    "adminNoticeUser": "/admin/notice-user";
-    "adminUserCenter": "/admin/user-center";
     "disk": "/disk";
-    "diskNoticeUser": "/disk/notice-user";
-    "diskUserCenter": "/disk/user-center";
     "iframe-page": "/iframe-page/:url";
     "init": "/init";
     "log": "/log";
@@ -80,11 +76,7 @@ declare module "@elegant-router/types" {
     | "500"
     | "about"
     | "admin"
-    | "adminNoticeUser"
-    | "adminUserCenter"
     | "disk"
-    | "diskNoticeUser"
-    | "diskUserCenter"
     | "iframe-page"
     | "init"
     | "log"
@@ -116,10 +108,6 @@ declare module "@elegant-router/types" {
     | "login"
     | "notice-user"
     | "user-center"
-    | "adminNoticeUser"
-    | "adminUserCenter"
-    | "diskNoticeUser"
-    | "diskUserCenter"
     | "about"
     | "admin"
     | "disk"
