@@ -111,10 +111,14 @@ async function getHtmlBuildTime(): Promise<string | null> {
 
 /** 初始化系统配置 */
 export async function setupSystemConfig() {
-  const systemConfigStore = useSystemConfigStore();
-  await systemConfigStore.fetchConfig();
+  try {
+    const systemConfigStore = useSystemConfigStore();
+    await systemConfigStore.fetchConfig();
 
-  // 设置 favicon
-  const faviconUrl = systemConfigStore.getFaviconUrl();
-  setupFavicon(faviconUrl);
+    // 设置 favicon
+    const faviconUrl = systemConfigStore.getFaviconUrl();
+    setupFavicon(faviconUrl);
+  } catch {
+    // 系统配置获取失败不应阻塞应用启动，使用默认值即可
+  }
 }

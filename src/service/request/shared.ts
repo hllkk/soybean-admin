@@ -22,7 +22,15 @@ async function handleRefreshToken() {
     return true;
   }
 
-  resetStore();
+  // 清除认证信息，resetStore 内部会尝试跳转登录页
+  // 使用 try-catch 防止路由未就绪时导致 Promise 挂起
+  try {
+    await resetStore();
+  } catch {
+    // 路由未就绪时 resetStore 可能失败，手动清除认证信息
+    localStg.remove('token');
+    localStg.remove('refreshToken');
+  }
 
   return false;
 }
