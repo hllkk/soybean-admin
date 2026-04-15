@@ -1,5 +1,6 @@
 import type { Router } from 'vue-router';
 import type { LastLevelRouteKey, RouteKey, RouteMap } from '@elegant-router/types';
+import type { RouteModule } from '@/typings/router.d.ts';
 import { $t } from '@/locales';
 import { getRoutePath } from '@/router/elegant/transform';
 
@@ -78,10 +79,33 @@ export function getTabByRoute(route: App.Global.TabRoute) {
     fixedIndex: fixedIndexInTab,
     icon,
     localIcon,
-    i18nKey
+    i18nKey,
+    module: getRouteModule(route)
   };
 
   return tab;
+}
+
+/**
+ * Determine a route's module from its meta.
+ * - meta.module (static mode) → direct
+ * - meta.modules (dynamic mode, single-element array) → that element
+ * - meta.modules (multi-element) or no module info → undefined (global route)
+ */
+function getRouteModule(route: App.Global.TabRoute): RouteModule | undefined {
+  const { module, modules } = route.meta ?? {};
+  if (module) return module;
+  if (modules?.length === 1) return modules[0] as RouteModule;
+  return undefined;
+}
+
+/**
+ * Check if a tab belongs to the specified module.
+ * Tabs with no module info (global routes) are always shown.
+ */
+export function isTabForModule(tab: App.Global.Tab, module: RouteModule): boolean {
+  if (!tab.module) return true;
+  return tab.module === module;
 }
 
 /**

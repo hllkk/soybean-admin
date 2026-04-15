@@ -66,8 +66,10 @@ declare module 'vue-router' {
     multiTab?: boolean | null;
     /** If set, the route will be fixed in tabs, and the value is the order of fixed tabs */
     fixedIndexInTab?: number | null;
-    /** Route module, used for route isolation */
+    /** Route module, used for route isolation (static mode) */
     module?: RouteModule;
+    /** Route modules from backend API (dynamic mode), e.g. ["admin", "disk"] */
+    modules?: string[];
     /** if set query parameters, it will be automatically carried when entering the route */
     query?: { key: string; value: string }[] | null;
   }

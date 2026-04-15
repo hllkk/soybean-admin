@@ -31,7 +31,15 @@ function flattenRouteNames(routes: ElegantConstRoute[]): string[] {
  */
 function isRouteAuthorized(to: RouteLocationNormalized, routeStore: ReturnType<typeof useRouteStore>): boolean {
   // Constant routes are always accessible
+  // Check to.meta (merged from parent+child in Vue Router)
   if (to.meta.constant) {
+    return true;
+  }
+
+  // Also check all matched route records for constant flag
+  // (handles single-level routes where parent meta doesn't have constant)
+  const isConstantInMatched = to.matched.some(record => record.meta?.constant);
+  if (isConstantInMatched) {
     return true;
   }
 

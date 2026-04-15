@@ -349,17 +349,27 @@ export function filterRoutesByModule(routes: ElegantConstRoute[], module: RouteM
 /**
  * Filter route by module
  *
+ * Supports two formats:
+ * - Static mode: meta.module (string, e.g. 'admin')
+ * - Dynamic mode: meta.modules (array, e.g. ['admin', 'disk'])
+ *
  * @param route Route
  * @param module Current module
  */
 function filterRouteByModule(route: ElegantConstRoute, module: RouteModule): ElegantConstRoute[] {
-  const routeModule = route.meta?.module;
+  const { module: routeModule, modules: routeModules } = route.meta ?? {};
 
-  // If no module specified, include in all modules (like login, 404, etc.)
-  const isGlobalRoute = !routeModule;
+  // Static mode: meta.module is a single string
+  const hasModuleMatch = routeModule === module;
 
-  // If route module matches current module
-  const isCurrentModule = routeModule === module;
+  // Dynamic mode: meta.modules is an array from backend API
+  const hasModulesMatch = routeModules?.includes(module) ?? false;
+
+  // If neither module nor modules is specified, it's a global route (login, 404, etc.)
+  const isGlobalRoute = !routeModule && !(routeModules && routeModules.length > 0);
+
+  // Check if route belongs to current module via either format
+  const isCurrentModule = hasModuleMatch || hasModulesMatch;
 
   const filterRoute = { ...route };
 

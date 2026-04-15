@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import type { VNode } from 'vue';
 import { useBoolean } from '@sa/hooks';
 import { useAuthStore } from '@/store/modules/auth';
-import { useRouterPush } from '@/hooks/common/router';
+import { useRouterPush, useSharedPageNav } from '@/hooks/common/router';
 import { useSvgIcon } from '@/hooks/common/icon';
 import defaultAvatar from '@/assets/imgs/soybean.jpg';
 import { $t } from '@/locales';
@@ -13,11 +13,11 @@ defineOptions({
   name: 'UserAvatar'
 });
 
-const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const { toLogin } = useRouterPush();
 const { SvgIconVNode } = useSvgIcon();
+const { navigateToSharedPage, currentModule } = useSharedPageNav();
 
 const { bool: avatarError, setTrue: setError, setFalse: clearError } = useBoolean(false);
 
@@ -46,11 +46,9 @@ type DropdownOption =
       key: string;
     };
 
-// 判断是否在 disk 页面
-const isDiskPage = computed(() => route.path.startsWith('/disk'));
-
-// 判断是否在 admin/manage 页面
-const isAdminPage = computed(() => route.path.startsWith('/admin') || route.path.startsWith('/manage'));
+// 判断当前模块
+const isDiskPage = computed(() => currentModule.value === 'disk');
+const isAdminPage = computed(() => currentModule.value === 'admin');
 
 // 判断用户是否有 admin 权限
 const hasAdminPermission = computed(() => {
@@ -133,12 +131,7 @@ function logout() {
 }
 
 function handleUserCenter() {
-  // 根据当前页面跳转到对应布局的个人中心
-  if (isDiskPage.value) {
-    router.push('/disk/user-center');
-  } else {
-    router.push('/admin/user-center');
-  }
+  navigateToSharedPage('user-center');
 }
 
 function handleSwitchRole() {
@@ -147,11 +140,11 @@ function handleSwitchRole() {
 }
 
 function goToAdmin() {
-  router.push('/admin');
+  router.push({ name: 'admin' });
 }
 
 function goToDisk() {
-  router.push('/disk');
+  router.push({ name: 'disk' });
 }
 
 function handleDropdown(key: DropdownKey) {

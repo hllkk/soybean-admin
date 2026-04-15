@@ -1,8 +1,10 @@
 import { useRouter } from 'vue-router';
 import type { RouteLocationRaw } from 'vue-router';
 import type { RouteKey } from '@elegant-router/types';
+import { storeToRefs } from 'pinia';
 import { router as globalRouter } from '@/router';
 import { useRouteStore } from '@/store/modules/route';
+import type { RouteModule } from '@/typings/router.d.ts';
 
 /**
  * Router push
@@ -120,4 +122,28 @@ export function useRouterPush(inSetup = true) {
     toggleLoginModule,
     redirectFromLogin
   };
+}
+
+/**
+ * Shared page navigation composable
+ *
+ * Provides navigation helpers for cross-module shared pages (e.g. user-center, notice-user).
+ * Uses the route store's currentModule to resolve the correct module-prefixed path.
+ */
+export function useSharedPageNav() {
+  const router = useRouter();
+  const routeStore = useRouteStore();
+  const { currentModule } = storeToRefs(routeStore);
+
+  function navigateToSharedPage(pageName: string, module?: RouteModule) {
+    const targetModule = module ?? currentModule.value;
+    return router.push(`/${targetModule}/${pageName}`);
+  }
+
+  function getSharedPath(pageName: string, module?: RouteModule): string {
+    const targetModule = module ?? currentModule.value;
+    return `/${targetModule}/${pageName}`;
+  }
+
+  return { navigateToSharedPage, getSharedPath, currentModule };
 }

@@ -292,6 +292,8 @@ declare namespace App {
       localIcon?: string;
       /** I18n key */
       i18nKey?: I18n.I18nKey | null;
+      /** Route module for tab filtering */
+      module?: RouteModule;
     };
 
     /** Form rule */

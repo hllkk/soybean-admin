@@ -3,62 +3,7 @@ import type { RouteModule } from '@/typings/router';
 import { generatedRoutes } from '../elegant/routes';
 import { layouts, views } from '../elegant/imports';
 import { transformElegantRoutesToVueRoutes } from '../elegant/transform';
-
-/**
- * custom routes
- *
- * @link https://github.com/soybeanjs/elegant-router?tab=readme-ov-file#custom-route
- */
-const customRoutes: ElegantConstRoute[] = [
-  {
-    name: 'adminUserCenter',
-    path: '/admin/user-center',
-    component: 'layout.base$view.user-center',
-    meta: {
-      title: 'user-center',
-      i18nKey: 'route.user-center',
-      hideInMenu: true,
-      constant: true,
-      module: 'admin'
-    }
-  } as ElegantConstRoute,
-  {
-    name: 'diskUserCenter',
-    path: '/disk/user-center',
-    component: 'layout.disk$view.user-center',
-    meta: {
-      title: 'user-center',
-      i18nKey: 'route.user-center',
-      hideInMenu: true,
-      constant: true,
-      module: 'disk'
-    }
-  } as ElegantConstRoute,
-  {
-    name: 'adminNoticeUser',
-    path: '/admin/notice-user',
-    component: 'layout.base$view.notice-user',
-    meta: {
-      title: 'notice-user',
-      i18nKey: 'route.notice-user',
-      hideInMenu: true,
-      constant: true,
-      module: 'admin'
-    }
-  } as ElegantConstRoute,
-  {
-    name: 'diskNoticeUser',
-    path: '/disk/notice-user',
-    component: 'layout.disk$view.notice-user',
-    meta: {
-      title: 'notice-user',
-      i18nKey: 'route.notice-user',
-      hideInMenu: true,
-      constant: true,
-      module: 'disk'
-    }
-  } as ElegantConstRoute
-];
+import { generateSharedRoutes, SHARED_PAGE_CONFIGS, expandAutoLayoutRoutes } from './shared-pages';
 
 /**
  * 指定路由使用的 layout（覆盖默认的 base layout）
@@ -70,9 +15,7 @@ const routeLayoutMap: Record<string, string> = {
   '404': 'blank',
   '500': 'blank',
   init: 'blank',
-  disk: 'disk',
-  'diskUserCenter': 'disk',
-  'diskNoticeUser': 'disk'
+  disk: 'disk'
 };
 
 /**
@@ -92,9 +35,7 @@ const routeModuleMap: Record<string, RouteModule> = {
   manage_log: 'admin',
   manage_log_operation: 'admin',
   manage_log_login: 'admin',
-  manage_settings: 'admin',
-  'adminUserCenter': 'admin',
-  'diskUserCenter': 'disk'
+  manage_settings: 'admin'
 };
 
 /**
@@ -131,10 +72,13 @@ export function createStaticRoutes() {
 
   const authRoutes: ElegantRoute[] = [];
 
+  // Generate shared page routes from the registry
+  const sharedRoutes = generateSharedRoutes(SHARED_PAGE_CONFIGS);
+
   // 转换路由 layout 和 module
   const transformedRoutes = transformRouteLayout(generatedRoutes).map(route => {
-    // 隐藏原始 user-center 路由（不在菜单中显示）
-    if (route.name === 'user-center') {
+    // 隐藏原始 user-center/notice-user 路由（通过模块前缀路径访问）
+    if (route.name === 'user-center' || route.name === 'notice-user') {
       route.meta = {
         ...route.meta,
         hideInMenu: true,
@@ -144,7 +88,7 @@ export function createStaticRoutes() {
     return route;
   });
 
-  [...customRoutes, ...transformedRoutes].forEach(item => {
+  [...sharedRoutes, ...transformedRoutes].forEach(item => {
     if (item.meta?.constant) {
       constantRoutes.push(item as ElegantRoute);
     } else {
@@ -161,8 +105,11 @@ export function createStaticRoutes() {
 /**
  * Get auth vue routes
  *
+ * Expands layout.auto routes into module-specific variants before transformation.
+ *
  * @param routes Elegant routes
  */
 export function getAuthVueRoutes(routes: ElegantConstRoute[]) {
-  return transformElegantRoutesToVueRoutes(routes, layouts, views);
+  const expanded = expandAutoLayoutRoutes(routes);
+  return transformElegantRoutesToVueRoutes(expanded, layouts, views);
 }

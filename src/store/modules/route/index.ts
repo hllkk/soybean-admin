@@ -8,6 +8,7 @@ import { router } from '@/router';
 import { fetchGetConstantRoutes, fetchGetUserRoutes, fetchIsRouteExist } from '@/service/api';
 import { SetupStoreId } from '@/enum';
 import { createStaticRoutes, getAuthVueRoutes } from '@/router/routes';
+import { expandAutoLayoutRoutes, setRouterForSharedPages } from '@/router/routes/shared-pages';
 import { ROOT_ROUTE } from '@/router/routes/builtin';
 import { getRouteName, getRoutePath } from '@/router/elegant/transform';
 import { useAuthStore } from '../auth';
@@ -29,6 +30,9 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   const authStore = useAuthStore();
   const tabStore = useTabStore();
   const { bool: isInitConstantRoute, setBool: setIsInitConstantRoute } = useBoolean();
+
+  // Initialize shared pages router reference for path resolution
+  setRouterForSharedPages(router);
   const { bool: isInitAuthRoute, setBool: setIsInitAuthRoute } = useBoolean();
 
   /**
@@ -177,7 +181,9 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
       const { data, error } = await fetchGetConstantRoutes();
 
       if (!error) {
-        addConstantRoutes(data);
+        // Expand layout.auto routes into per-module variants
+        const expandedData = expandAutoLayoutRoutes(data);
+        addConstantRoutes(expandedData);
       } else {
         // if fetch constant routes failed, use static constant routes
         addConstantRoutes(staticRoute.constantRoutes);
@@ -231,7 +237,10 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     if (!error) {
       const { routes, home } = data;
 
-      addAuthRoutes(routes);
+      // Expand layout.auto routes into per-module variants
+      const expandedRoutes = expandAutoLayoutRoutes(routes);
+
+      addAuthRoutes(expandedRoutes);
 
       handleConstantAndAuthRoutes();
 

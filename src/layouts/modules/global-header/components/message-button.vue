@@ -1,20 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useNoticeStore } from '@/store/modules/notice';
-import { useRouteStore } from '@/store/modules/route';
+import { useSharedPageNav } from '@/hooks/common/router';
 
 defineOptions({
   name: 'MessgaeButton'
 });
 
-const router = useRouter();
 const show = ref(false);
 const noticeStore = useNoticeStore();
-const routeStore = useRouteStore();
+const { navigateToSharedPage } = useSharedPageNav();
 const { state } = storeToRefs(noticeStore);
-const { currentModule } = storeToRefs(routeStore);
 
 const noticeNum = computed(() => {
   return state.value.unreadCount || 0;
@@ -23,8 +20,7 @@ const noticeNum = computed(() => {
 // 查看全部公告（根据当前模块动态跳转）
 const viewAllNotices = () => {
   show.value = false;
-  const path = currentModule.value === 'disk' ? '/disk/notice-user' : '/admin/notice-user';
-  router.push(path);
+  navigateToSharedPage('notice-user');
 };
 
 // 点击通知查看详情

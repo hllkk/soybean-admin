@@ -1,8 +1,9 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useEventListener } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import type { RouteKey } from '@elegant-router/types';
 import { router } from '@/router';
+import { MODULE_HOME_MAP } from '@/router/routes/shared-pages';
 import { useRouteStore } from '@/store/modules/route';
 import { useRouterPush } from '@/hooks/common/router';
 import { localStg } from '@/utils/storage';
@@ -17,6 +18,7 @@ import {
   getFixedTabIds,
   getTabByRoute,
   getTabIdByRoute,
+  isTabForModule,
   isTabInTabs,
   reorderFixedTabs,
   updateTabByI18nKey,
@@ -34,25 +36,39 @@ export const useTabStore = defineStore(SetupStoreId.Tab, () => {
   /** Get active tab */
   const homeTab = ref<App.Global.Tab>();
 
-  /** Init home tab */
-  function initHomeTab() {
-    homeTab.value = getDefaultHomeTab(router, routeStore.routeHome);
-  }
-
-  /** Get all tabs */
-  const allTabs = computed(() => getAllTabs(tabs.value, homeTab.value));
-
   /** Active tab id */
   const activeTabId = ref<string>('');
 
-  /**
-   * Set active tab id
-   *
-   * @param id Tab id
-   */
+  /** Set active tab id */
   function setActiveTabId(id: string) {
     activeTabId.value = id;
   }
+
+  /** Init home tab based on current module */
+  function initHomeTab() {
+    const module = routeStore.currentModule;
+    const homeRouteName = (MODULE_HOME_MAP[module] || routeStore.routeHome) as import('@elegant-router/types').LastLevelRouteKey;
+    homeTab.value = getDefaultHomeTab(router, homeRouteName);
+  }
+
+  /** Watch module changes to update home tab */
+  watch(
+    () => routeStore.currentModule,
+    () => {
+      initHomeTab();
+      // Set active tab to the new module's home tab
+      if (homeTab.value) {
+        setActiveTabId(homeTab.value.id);
+      }
+    }
+  );
+
+  /** Get all tabs filtered by current module */
+  const allTabs = computed(() => {
+    const module = routeStore.currentModule;
+    const filtered = tabs.value.filter(tab => isTabForModule(tab, module));
+    return getAllTabs(filtered, homeTab.value);
+  });
 
   /**
    * Init tab store
