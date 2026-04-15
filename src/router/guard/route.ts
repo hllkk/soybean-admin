@@ -4,6 +4,53 @@ import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
 import { localStg } from '@/utils/storage';
 import { getRouteName } from '@/router/elegant/transform';
+import { fetchCheckDB } from '@/service/api/init';
+
+// 初始化状态缓存配置
+const CHECK_DB_CACHE_KEY = 'check_db_result';
+const CHECK_DB_CACHE_EXPIRE = 5 * 60 * 1000; // 5分钟缓存
+
+interface CheckDBCache {
+  needInit: boolean;
+  timestamp: number;
+}
+
+// 初始化状态（内存缓存，避免路由守卫频繁调用 API）
+let initStatusCache: { needInit: boolean; timestamp: number } | null = null;
+
+/**
+ * 检查系统初始化状态（带缓存）
+ */
+async function checkInitStatus(): Promise<boolean> {
+  const now = Date.now();
+
+  // 优先使用内存缓存
+  if (initStatusCache && (now - initStatusCache.timestamp) < CHECK_DB_CACHE_EXPIRE) {
+    return initStatusCache.needInit;
+  }
+
+  // 使用 localStorage 缓存
+  const cache = localStg.get(CHECK_DB_CACHE_KEY) as CheckDBCache | null;
+  if (cache && (now - cache.timestamp) < CHECK_DB_CACHE_EXPIRE) {
+    initStatusCache = cache;
+    return cache.needInit;
+  }
+
+  // 调用 API 检查
+  const { data, error } = await fetchCheckDB();
+  if (!error && data) {
+    const result = {
+      needInit: data.needInit,
+      timestamp: now
+    };
+    initStatusCache = result;
+    localStg.set(CHECK_DB_CACHE_KEY, result);
+    return data.needInit;
+  }
+
+  // API 调用失败，默认已初始化
+  return false;
+}
 
 /**
  * Flatten route names from auth routes
@@ -116,7 +163,10 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
   const routeStore = useRouteStore();
 
   const notFoundRoute: RouteKey = 'not-found';
+  const initRouteName: RouteKey = 'init';
+  const loginRouteName: RouteKey = 'login';
   const isNotFoundRoute = to.name === notFoundRoute;
+  const isInitRoute = to.name === initRouteName;
 
   // if the constant route is not initialized, then initialize the constant route
   if (!routeStore.isInitConstantRoute) {
@@ -133,6 +183,21 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
     };
 
     return location;
+  }
+
+  // 检查系统初始化状态（在常量路由初始化完成后）
+  if (!isNotFoundRoute) {
+    const needInit = await checkInitStatus();
+
+    // 系统未初始化，访问非初始化页面时跳转到初始化页
+    if (needInit && !isInitRoute) {
+      return { name: initRouteName };
+    }
+
+    // 系统已初始化，访问初始化页面时跳转到登录页
+    if (!needInit && isInitRoute) {
+      return { name: loginRouteName };
+    }
   }
 
   const isLogin = Boolean(localStg.get('token'));

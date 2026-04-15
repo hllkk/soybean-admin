@@ -5,7 +5,11 @@ import { getPaletteColorByNumber, mixColor } from '@sa/color';
 import { fetchCheckDB, fetchInitDB } from '@/service/api/init';
 import { useNaiveForm } from '@/hooks/common/form';
 import { useThemeStore } from '@/store/modules/theme';
+import { localStg } from '@/utils/storage';
 import WaveBg from '@/components/custom/wave-bg.vue';
+
+// 初始化状态缓存 Key（与路由守卫保持一致）
+const CHECK_DB_CACHE_KEY = 'check_db_result';
 
 defineOptions({
   name: 'InitPage'
@@ -156,10 +160,8 @@ async function checkDBStatus() {
   if (!error && data) {
     needInit.value = data.needInit;
     if (!data.needInit) {
-      // 已经初始化过，跳转到登录页
-      window.$message?.destroyAll();
-      window.$message?.info('数据库已初始化，请登录');
-      router.push('/login/pwd-login');
+      // 已经初始化过，直接跳转到登录页（不显示提示）
+      router.replace('/login/pwd-login');
     }
   }
   // 如果有错误，框架会自动显示错误消息，needInit 保持 false
@@ -221,16 +223,18 @@ async function handleSubmit() {
   loading.value = false;
 
   if (!error && data) {
+    // 清除初始化状态缓存，确保跳转到登录页后不会被重定向回来
+    localStg.remove(CHECK_DB_CACHE_KEY);
     window.$message?.destroyAll();
     window.$message?.success('初始化成功，请登录');
-    router.push('/login/pwd-login');
+    router.replace('/login/pwd-login');
   }
   // 如果有错误，框架会自动显示错误消息
 }
 
 // 返回登录
 function goToLogin() {
-  router.push('/login/pwd-login');
+  router.replace('/login/pwd-login');
 }
 
 // 初始化检查

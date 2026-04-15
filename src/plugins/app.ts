@@ -3,7 +3,18 @@ import type { App } from 'vue';
 import { NButton } from 'naive-ui';
 import { $t } from '@/locales';
 import { useSystemConfigStore } from '@/store/modules/system-config';
+import { fetchCheckDB } from '@/service/api/init';
+import { localStg } from '@/utils/storage';
 import { setupFavicon } from './favicon';
+
+// 初始化状态缓存配置
+const CHECK_DB_CACHE_KEY = 'check_db_result';
+const CHECK_DB_CACHE_EXPIRE = 5 * 60 * 1000; // 5分钟缓存
+
+interface CheckDBCache {
+  needInit: boolean;
+  timestamp: number;
+}
 
 export function setupAppErrorHandle(app: App) {
   app.config.errorHandler = (err, vm, info) => {
@@ -111,6 +122,28 @@ async function getHtmlBuildTime(): Promise<string | null> {
 
 /** 初始化系统配置 */
 export async function setupSystemConfig() {
+  // 先检查系统是否需要初始化
+  const cache = localStg.get(CHECK_DB_CACHE_KEY) as CheckDBCache | null;
+  const now = Date.now();
+
+  // 如果缓存有效且需要初始化，跳过配置获取
+  if (cache && (now - cache.timestamp) < CHECK_DB_CACHE_EXPIRE && cache.needInit) {
+    return;
+  }
+
+  // 调用 API 检查初始化状态
+  const { data, error } = await fetchCheckDB();
+  if (!error && data?.needInit) {
+    // 缓存结果
+    localStg.set(CHECK_DB_CACHE_KEY, {
+      needInit: true,
+      timestamp: now
+    } as CheckDBCache);
+    // 需要初始化，跳过配置获取
+    return;
+  }
+
+  // 系统已初始化，正常获取配置
   try {
     const systemConfigStore = useSystemConfigStore();
     await systemConfigStore.fetchConfig();

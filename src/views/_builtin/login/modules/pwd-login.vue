@@ -32,8 +32,8 @@ const rememberMe = ref(false);
 const REMEMBER_ME_KEY = 'login_remember_me';
 const REMEMBERED_USER_KEY = 'remembered_user';
 
-// 是否显示初始化按钮
-const showInitButton = ref(true);
+// 是否显示初始化按钮（默认隐藏，只有需要初始化时才显示）
+const showInitButton = ref(false);
 
 // 验证码是否开启（默认开启，防止API失败时无法登录）
 const captchaEnabled = ref(true);
@@ -70,17 +70,11 @@ onMounted(async () => {
 
   // 检查是否需要初始化（使用扁平响应模式）
   const { data, error } = await fetchCheckDB();
-  if (!error && data?.needInit) {
-    showInitButton.value = true;
+  if (!error && data) {
+    showInitButton.value = data.needInit;
     // 缓存结果
     localStg.set(CHECK_DB_CACHE_KEY, {
-      needInit: true,
-      timestamp: now
-    } as CheckDBCache);
-  } else if (!error) {
-    // 缓存不需要初始化的结果
-    localStg.set(CHECK_DB_CACHE_KEY, {
-      needInit: false,
+      needInit: data.needInit,
       timestamp: now
     } as CheckDBCache);
   }
