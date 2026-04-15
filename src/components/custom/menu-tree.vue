@@ -425,16 +425,16 @@ defineExpose({
       <NTabPane v-for="app in appList" :key="app.appCode" :name="app.appCode" :tab="$t(`modules.${app.appCode}`)">
         <!-- 操作栏 -->
         <div v-if="showHeader" class="w-full flex-center mb-12px">
-          <NCheckbox v-model:checked="expandAll" :checked-value="true" :unchecked-value="false">{{ $t('common.expandColumn') }}</NCheckbox>
+          <NCheckbox v-model:checked="expandAll" :checked-value="true" :unchecked-value="false">展开/折叠</NCheckbox>
           <NCheckbox
             v-model:checked="checkAll"
             :checked-value="true"
             :unchecked-value="false"
             @update:checked="handleCheckedTreeNodeAll"
           >
-            {{ $t('common.check') }}
+            全选/反选
           </NCheckbox>
-          <NCheckbox v-model:checked="cascade" :checked-value="true" :unchecked-value="false">{{ $t('page.system.menu.cascadeDelete') }}</NCheckbox>
+          <NCheckbox v-model:checked="cascade" :checked-value="true" :unchecked-value="false">父子联动</NCheckbox>
         </div>
         <!-- 菜单树 -->
         <NSpin class="resource h-full w-full py-6px pl-3px" content-class="h-full" :show="moduleLoading[app.appCode]">

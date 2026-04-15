@@ -60,7 +60,8 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
       {
         type: 'selection',
         align: 'center',
-        width: 48
+        width: 48,
+        disabled: (row: Api.System.User) => isSuperAdmin(row)
       },
       {
         key: 'userName',
@@ -294,6 +295,10 @@ function handleResetSearch() {
   selectedKeys.value = [];
   getDataByPage();
 }
+
+function getRowProps(row: Api.System.User) {
+  return isSuperAdmin(row) ? { style: 'opacity: 0.5;' } : {};
+}
 </script>
 
 <template>
@@ -366,6 +371,7 @@ function handleResetSearch() {
           :loading="loading"
           remote
           :row-key="row => row.userId"
+          :row-props="getRowProps"
           :pagination="mobilePagination"
           class="h-full"
         />
