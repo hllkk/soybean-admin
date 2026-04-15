@@ -533,7 +533,7 @@ const renderIframeQuery = (queryParam: string) => {
             <NDescriptionsItem
               :label="!isExternalType ? $t('page.system.menu.path') : $t('page.system.menu.externalPath')"
             >
-              {{ currentMenu.path }}
+              {{ currentMenu.path?.startsWith('/') ? currentMenu.path.slice(1) : currentMenu.path }}
             </NDescriptionsItem>
             <NDescriptionsItem v-if="isMenu && !isExternalType && !isIframeType" :label="$t('page.system.menu.query')">
               {{ currentMenu.queryParam }}

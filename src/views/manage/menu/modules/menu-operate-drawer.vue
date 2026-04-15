@@ -179,8 +179,8 @@ const isIframeType = computed(() => model.value.isFrame === '2');
 // 本地图标类型
 const isLocalIcon = computed(() => iconType.value === '2');
 
-// 布局类型禁用
-const layoutDisabled = computed(() => !(isMenu.value && model.value.parentId === 0));
+// 布局类型禁用：只有菜单类型(C)才能选择布局方式
+const layoutDisabled = computed(() => !isMenu.value);
 
 // 本地图标
 const localIcons = getLocalMenuIcons();
@@ -232,12 +232,26 @@ function handleInitModel() {
   if (props.operateType === 'edit' && props.rowData) {
     Object.assign(model.value, jsonClone(props.rowData));
     const component = model.value.component;
+
+    // 处理路由路径的显示格式：去掉 / 前缀
+    // 数据库存储格式: /manage/user
+    // 显示格式: manage/user
+    if (model.value.path?.startsWith('/')) {
+      model.value.path = model.value.path.slice(1);
+    }
+
+    // 处理组件路径的显示格式
+    // 数据库格式: view.manage_user 或 layout.blank$view.manage_user
+    // 显示格式: manage/user
     if (component?.startsWith('layout.blank$view.')) {
       layoutType.value = '1';
-      model.value.component = component?.slice(18, component.length)?.replaceAll('_', '/');
-    } else if (isMenu.value && isInternalType.value) {
-      model.value.component = component?.slice(0, -6);
+      // 去掉前缀并替换 _ 为 /
+      model.value.component = component.slice(18).replaceAll('_', '/');
+    } else if (component?.startsWith('view.')) {
+      // 去掉 view. 前缀并替换 _ 为 /
+      model.value.component = component.slice(5).replaceAll('_', '/');
     }
+
     iconType.value = model.value.icon?.startsWith('local-icon-') ? '2' : '1';
 
     // 编辑模式下：保持 moduleCodes 原值
@@ -263,23 +277,31 @@ function closeDrawer() {
 }
 
 // 处理路径
+// 所有菜单路径都存储为绝对路径格式（以 / 开头）
+// Vue Router 会直接使用绝对路径，不会拼接父路径
 function processPath(path: string | null | undefined): string {
-  return path?.startsWith('/') ? path.substring(1) : path || '';
+  if (!path) return '';
+  // 如果用户输入的路径不以 / 开头，自动添加 /
+  return path.startsWith('/') ? path : `/${path}`;
 }
 
 // 处理组件
 function processComponent(component: string | null | undefined): string {
+  // 目录类型：返回 Layout
   if (isCatalog.value && isInternalType.value) {
     return 'Layout';
   }
+  // 外链/iframe类型：返回 FrameView
   if (isIframeType.value || isExternalType.value) {
     return 'FrameView';
   }
+  // 空白布局菜单：添加 layout.blank$view. 前缀
   if (isMenu.value && isBlankLayout.value) {
     return `layout.blank$view.${component?.replaceAll('/', '_')}`;
   }
+  // 普通菜单：添加 view. 前缀，将 / 替换为 _
   if (isMenu.value && isInternalType.value) {
-    return component?.endsWith('/index') ? component : `${component || ''}/index`;
+    return `view.${component?.replaceAll('/', '_')}`;
   }
   return component || '';
 }

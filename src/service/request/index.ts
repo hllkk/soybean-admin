@@ -113,6 +113,12 @@ export const request = createFlatRequest(
         return;
       }
 
+      // when logout codes are received, user will be logged out, no need to show error message
+      const logoutCodes = import.meta.env.VITE_SERVICE_LOGOUT_CODES?.split(',') || [];
+      if (logoutCodes.includes(backendErrorCode)) {
+        return;
+      }
+
       // when the token is expired, refresh token and retry request, so no need to show error message
       const expiredTokenCodes = import.meta.env.VITE_SERVICE_EXPIRED_TOKEN_CODES?.split(',') || [];
       if (expiredTokenCodes.includes(backendErrorCode)) {
