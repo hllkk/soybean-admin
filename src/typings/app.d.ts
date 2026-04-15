@@ -1132,6 +1132,88 @@ declare namespace App {
           prdDep: string;
           devDep: string;
         };
+        disk: {
+          title: string;
+          fileType: {
+            all: string;
+            image: string;
+            document: string;
+            video: string;
+            audio: string;
+            other: string;
+          };
+          toolbar: {
+            upload: string;
+            uploadFile: string;
+            uploadFolder: string;
+            createFolder: string;
+            searchPlaceholder: string;
+            transferList: string;
+            sort: string;
+            view: string;
+            gridView: string;
+            listView: string;
+          };
+          sort: {
+            nameAsc: string;
+            nameDesc: string;
+            sizeAsc: string;
+            sizeDesc: string;
+            timeAsc: string;
+            timeDesc: string;
+            typeAsc: string;
+            typeDesc: string;
+          };
+          breadcrumb: {
+            allFiles: string;
+            loaded: string;
+            total: string;
+          };
+          file: {
+            name: string;
+            folder: string;
+            size: string;
+            type: string;
+            modifyTime: string;
+            noFiles: string;
+          };
+          transfer: {
+            title: string;
+            uploading: string;
+            downloading: string;
+            completed: string;
+            progress: string;
+            speed: string;
+            remaining: string;
+            status: {
+              pending: string;
+              transferring: string;
+              completed: string;
+              failed: string;
+              paused: string;
+            };
+            actions: {
+              clearCompleted: string;
+              pauseAll: string;
+              resume: string;
+              retry: string;
+              cancel: string;
+            };
+          };
+          contextMenu: {
+            open: string;
+            download: string;
+            rename: string;
+            move: string;
+            delete: string;
+            share: string;
+            deleteConfirm: string;
+          };
+          form: {
+            folderName: FormMsg;
+          };
+          createFolder: string;
+        };
       };
       form: {
         required: string;

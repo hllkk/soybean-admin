@@ -1334,6 +1334,91 @@ const local: App.I18n.Schema = {
       },
       prdDep: '生产依赖',
       devDep: '开发依赖'
+    },
+    disk: {
+      title: '文件管理',
+      fileType: {
+        all: '全部',
+        image: '图片',
+        document: '文档',
+        video: '视频',
+        audio: '音频',
+        other: '其它'
+      },
+      toolbar: {
+        upload: '上传',
+        uploadFile: '上传文件',
+        uploadFolder: '上传文件夹',
+        createFolder: '新建文件夹',
+        searchPlaceholder: '搜索文件...',
+        transferList: '传输列表',
+        sort: '排序',
+        view: '视图',
+        gridView: '网格视图',
+        listView: '列表视图'
+      },
+      sort: {
+        nameAsc: '名称 A-Z',
+        nameDesc: '名称 Z-A',
+        sizeAsc: '大小 小到大',
+        sizeDesc: '大小 大到小',
+        timeAsc: '时间 旧到新',
+        timeDesc: '时间 新到旧',
+        typeAsc: '类型 文件优先',
+        typeDesc: '类型 文件夹优先'
+      },
+      breadcrumb: {
+        allFiles: '全部文件',
+        loaded: '已全部加载',
+        total: '共 {count} 个'
+      },
+      file: {
+        name: '名称',
+        folder: '文件夹',
+        size: '大小',
+        type: '类型',
+        modifyTime: '修改时间',
+        noFiles: '暂无文件'
+      },
+      transfer: {
+        title: '传输列表',
+        uploading: '上传中',
+        downloading: '下载中',
+        completed: '已完成',
+        progress: '进度',
+        speed: '速度',
+        remaining: '剩余时间',
+        status: {
+          pending: '等待中',
+          transferring: '传输中',
+          completed: '已完成',
+          failed: '失败',
+          paused: '已暂停'
+        },
+        actions: {
+          clearCompleted: '清空已完成',
+          pauseAll: '全部暂停',
+          resume: '继续',
+          retry: '重试',
+          cancel: '取消'
+        }
+      },
+      contextMenu: {
+        open: '打开',
+        download: '下载',
+        rename: '重命名',
+        move: '移动',
+        delete: '删除',
+        share: '分享',
+        deleteConfirm: '确认删除该文件吗？'
+      },
+      form: {
+        folderName: {
+          required: '请输入文件夹名称',
+          invalid: '文件夹名称不能为空'
+        }
+      },
+      createFolder: '新建文件夹'
     }
   },
   form: {

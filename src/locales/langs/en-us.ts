@@ -1342,6 +1342,91 @@ const local: App.I18n.Schema = {
       },
       prdDep: 'Production Dependency',
       devDep: 'Development Dependency'
+    },
+    disk: {
+      title: 'Disk Management',
+      fileType: {
+        all: 'All',
+        image: 'Image',
+        document: 'Document',
+        video: 'Video',
+        audio: 'Audio',
+        other: 'Other'
+      },
+      toolbar: {
+        upload: 'Upload',
+        uploadFile: 'Upload File',
+        uploadFolder: 'Upload Folder',
+        createFolder: 'New Folder',
+        searchPlaceholder: 'Search files...',
+        transferList: 'Transfer List',
+        sort: 'Sort',
+        view: 'View',
+        gridView: 'Grid View',
+        listView: 'List View'
+      },
+      sort: {
+        nameAsc: 'Name A-Z',
+        nameDesc: 'Name Z-A',
+        sizeAsc: 'Size Smallest',
+        sizeDesc: 'Size Largest',
+        timeAsc: 'Time Oldest',
+        timeDesc: 'Time Newest',
+        typeAsc: 'Type Files First',
+        typeDesc: 'Type Folders First'
+      },
+      breadcrumb: {
+        allFiles: 'All Files',
+        loaded: 'All Loaded',
+        total: 'Total {count} items'
+      },
+      file: {
+        name: 'Name',
+        folder: 'Folder',
+        size: 'Size',
+        type: 'Type',
+        modifyTime: 'Modified Time',
+        noFiles: 'No Files'
+      },
+      transfer: {
+        title: 'Transfer List',
+        uploading: 'Uploading',
+        downloading: 'Downloading',
+        completed: 'Completed',
+        progress: 'Progress',
+        speed: 'Speed',
+        remaining: 'Remaining',
+        status: {
+          pending: 'Pending',
+          transferring: 'Transferring',
+          completed: 'Completed',
+          failed: 'Failed',
+          paused: 'Paused'
+        },
+        actions: {
+          clearCompleted: 'Clear Completed',
+          pauseAll: 'Pause All',
+          resume: 'Resume',
+          retry: 'Retry',
+          cancel: 'Cancel'
+        }
+      },
+      contextMenu: {
+        open: 'Open',
+        download: 'Download',
+        rename: 'Rename',
+        move: 'Move',
+        delete: 'Delete',
+        share: 'Share',
+        deleteConfirm: 'Are you sure to delete this file?'
+      },
+      form: {
+        folderName: {
+          required: 'Please enter folder name',
+          invalid: 'Folder name cannot be empty'
+        }
+      },
+      createFolder: 'New Folder'
     }
   },
   form: {
