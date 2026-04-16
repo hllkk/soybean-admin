@@ -47,83 +47,33 @@ function handleSelect(e: MouseEvent) {
 
 <template>
   <div
-    class="file-card"
-    :class="{ selected: selected }"
+    class="group relative flex flex-col items-center px-8px py-16px rd-8px cursor-pointer transition-all duration-200 hover:bg-primary/10 dark:hover:bg-primary/20"
+    :class="{ 'bg-primary/15 dark:bg-primary/25': selected }"
     @click="handleClick"
     @dblclick="handleDblClick"
   >
-    <div class="file-card-check" @click="handleSelect">
+    <div
+      class="absolute top-8px left-8px opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+      :class="{ 'opacity-100': selected }"
+      @click="handleSelect"
+    >
       <NCheckbox :checked="selected" />
     </div>
-    <div class="file-card-icon">
+    <div class="mb-8px">
       <FileIcon
         :file-type="file.isFolder ? 'folder' : file.fileType"
         :extension="file.fileExtension"
         size="large"
       />
     </div>
-    <div class="file-card-name">
+    <div class="w-full text-center text-13px px-4px">
       <NEllipsis :line-clamp="2">
         {{ file.fileName }}
       </NEllipsis>
     </div>
-    <div class="file-card-type">
+    <div class="text-11px mt-4px" style="color: var(--n-text-color-disabled)">
       {{ fileTypeLabel }}
     </div>
   </div>
 </template>
 
-<style scoped lang="scss">
-.file-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 8px;
-  background: var(--n-color);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: var(--n-color-hover);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  &.selected {
-    background: var(--n-color-pressed);
-    border: 2px solid var(--n-border-color-focus);
-  }
-
-  .file-card-check {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-
-  &:hover .file-card-check,
-  &.selected .file-card-check {
-    opacity: 1;
-  }
-
-  .file-card-icon {
-    margin-bottom: 8px;
-  }
-
-  .file-card-name {
-    width: 100%;
-    text-align: center;
-    font-size: 13px;
-    color: var(--n-text-color);
-    padding: 0 4px;
-  }
-
-  .file-card-type {
-    font-size: 11px;
-    color: var(--n-text-color-disabled);
-    margin-top: 4px;
-  }
-}
-</style>

@@ -62,7 +62,7 @@ const extensionIconMap: Record<string, string> = {
 const iconSizeMap: Record<string, number> = {
   small: 24,
   medium: 40,
-  large: 64
+  large: 96
 };
 
 const icon = computed(() => {
