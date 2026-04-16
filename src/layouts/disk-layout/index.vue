@@ -66,7 +66,7 @@ const siderCollapsedWidth = computed(() => themeStore.sider.mixCollapsedWidth);
     <template #sider>
       <GlobalSider />
     </template>
-    <VerticalMixMenu />
+    <VerticalMixMenu :key="appStore.isMobile ? 'mobile' : 'desktop'" />
     <GlobalContent />
   </AdminLayout>
 </template>
