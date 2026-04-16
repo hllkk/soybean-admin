@@ -1357,13 +1357,27 @@ const local: App.I18n.Schema = {
         upload: 'Upload',
         uploadFile: 'Upload File',
         uploadFolder: 'Upload Folder',
+        create: 'New',
+        createFile: 'New File',
         createFolder: 'New Folder',
-        searchPlaceholder: 'Search files...',
+        search: 'Search',
+        searchPlaceholder: 'Search my files',
+        share: 'Share',
+        batchShare: 'Batch Share',
+        download: 'Download',
+        delete: 'Delete',
+        rename: 'Rename',
+        more: 'More',
+        move: 'Move',
+        copy: 'Copy',
+        info: 'Info',
+        selectedCount: '{count} selected',
         transferList: 'Transfer List',
         sort: 'Sort',
         view: 'View',
         gridView: 'Grid View',
-        listView: 'List View'
+        listView: 'List View',
+        refresh: 'Refresh'
       },
       sort: {
         nameAsc: 'Name A-Z',
@@ -1386,7 +1400,10 @@ const local: App.I18n.Schema = {
         size: 'Size',
         type: 'Type',
         modifyTime: 'Modified Time',
-        noFiles: 'No Files'
+        noFiles: 'No Files',
+        empty: 'No files yet~',
+        emptyWithType: 'No {type} files yet~',
+        emptyUploadTip: 'Click the upload button above to add files'
       },
       transfer: {
         title: 'Transfer List',

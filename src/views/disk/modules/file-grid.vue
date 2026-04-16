@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import FileCard from './file-card.vue';
+import FileEmpty from './file-empty.vue';
 
 defineOptions({
   name: 'FileGrid'
@@ -13,7 +13,7 @@ interface Props {
   loading?: boolean;
 }
 
-const _props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   loading: false
 });
 
@@ -29,6 +29,9 @@ const diskStore = useDiskStore();
 const isSelected = computed(() => (fileId: CommonType.IdType) => {
   return diskStore.selectedFiles.includes(fileId);
 });
+
+// 是否显示空状态
+const showEmpty = computed(() => props.files.length === 0 && !props.loading);
 
 function handleFileClick(file: Api.Disk.FileItem) {
   emit('fileClick', file);
@@ -54,36 +57,26 @@ function handleSelect(file: Api.Disk.FileItem) {
 </script>
 
 <template>
-  <NSpin :show="loading">
-    <div v-if="files.length === 0 && !loading" class="file-grid-empty">
-      <NEmpty :description="$t('page.disk.file.noFiles')" />
-    </div>
-    <div v-else class="file-grid">
-      <FileCard
-        v-for="file in files"
-        :key="file.fileId"
-        :file="file"
-        :selected="isSelected(file.fileId)"
-        @click="handleFileClick(file)"
-        @dblclick="handleFileDblClick(file)"
-        @select="handleSelect(file)"
-      />
-    </div>
-  </NSpin>
+  <div class="h-full">
+    <NSpin :show="loading" class="h-full">
+      <!-- 空状态 -->
+      <FileEmpty v-if="showEmpty" class="h-full" />
+
+      <!-- 文件网格 -->
+      <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-16px p-16px">
+        <FileCard
+          v-for="file in files"
+          :key="file.fileId"
+          :file="file"
+          :selected="isSelected(file.fileId)"
+          @click="handleFileClick(file)"
+          @dblclick="handleFileDblClick(file)"
+          @select="handleSelect(file)"
+        />
+      </div>
+    </NSpin>
+  </div>
 </template>
 
 <style scoped lang="scss">
-.file-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 16px;
-  padding: 16px;
-}
-
-.file-grid-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-}
 </style>

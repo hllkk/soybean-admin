@@ -32,7 +32,12 @@ export function setupUnplugin(viteEnv: Env.ImportMeta) {
       types: [{ from: 'vue-router', names: ['RouterLink', 'RouterView'] }],
       resolvers: [
         NaiveUiResolver(),
-        IconsResolver({ customCollections: [collectionName], componentPrefix: VITE_ICON_PREFIX })
+        IconsResolver({
+        customCollections: [collectionName],
+        componentPrefix: VITE_ICON_PREFIX,
+        // 只处理本地图标集合，不自动导入 iconify 图标（避免生成无效的 TypeScript 声明）
+        enabledCollections: [collectionName]
+      })
       ]
     }),
     createSvgIconsPlugin({

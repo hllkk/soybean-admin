@@ -1349,13 +1349,27 @@ const local: App.I18n.Schema = {
         upload: '上传',
         uploadFile: '上传文件',
         uploadFolder: '上传文件夹',
+        create: '新建',
+        createFile: '新建文件',
         createFolder: '新建文件夹',
-        searchPlaceholder: '搜索文件...',
+        search: '搜索',
+        searchPlaceholder: '搜索我的文件',
+        share: '分享',
+        batchShare: '批量分享',
+        download: '下载',
+        delete: '删除',
+        rename: '重命名',
+        more: '更多',
+        move: '移动',
+        copy: '复制',
+        info: '详情',
+        selectedCount: '已选择 {count} 个',
         transferList: '传输列表',
         sort: '排序',
         view: '视图',
         gridView: '网格视图',
-        listView: '列表视图'
+        listView: '列表视图',
+        refresh: '刷新列表'
       },
       sort: {
         nameAsc: '名称 A-Z',
@@ -1378,7 +1392,10 @@ const local: App.I18n.Schema = {
         size: '大小',
         type: '类型',
         modifyTime: '修改时间',
-        noFiles: '暂无文件'
+        noFiles: '暂无文件',
+        empty: '还没有文件呢~',
+        emptyWithType: '还没有{type}文件呢~',
+        emptyUploadTip: '点击上方上传按钮添加文件'
       },
       transfer: {
         title: '传输列表',

@@ -1146,13 +1146,27 @@ declare namespace App {
             upload: string;
             uploadFile: string;
             uploadFolder: string;
+            create: string;
+            createFile: string;
             createFolder: string;
+            search: string;
             searchPlaceholder: string;
+            share: string;
+            batchShare: string;
+            download: string;
+            delete: string;
+            rename: string;
+            more: string;
+            move: string;
+            copy: string;
+            info: string;
+            selectedCount: string;
             transferList: string;
             sort: string;
             view: string;
             gridView: string;
             listView: string;
+            refresh: string;
           };
           sort: {
             nameAsc: string;
@@ -1176,6 +1190,9 @@ declare namespace App {
             type: string;
             modifyTime: string;
             noFiles: string;
+            empty: string;
+            emptyWithType: string;
+            emptyUploadTip: string;
           };
           transfer: {
             title: string;

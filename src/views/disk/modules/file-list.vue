@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { DataTableColumns } from 'naive-ui';
-import { h } from 'vue';
+import { h, computed } from 'vue';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import FileIcon from './file-icon.vue';
+import FileEmpty from './file-empty.vue';
 import { formatFileSize } from '@/utils/format';
 
 defineOptions({
@@ -15,7 +16,7 @@ interface Props {
   loading?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   loading: false
 });
 
@@ -26,6 +27,9 @@ interface Emits {
 const emit = defineEmits<Emits>();
 
 const diskStore = useDiskStore();
+
+// 是否显示空状态
+const showEmpty = computed(() => props.files.length === 0 && !props.loading);
 
 const columns: DataTableColumns<Api.Disk.FileItem> = [
   {
@@ -102,15 +106,25 @@ function getRowKey(row: Api.Disk.FileItem) {
 </script>
 
 <template>
-  <NDataTable
-    :columns="columns"
-    :data="files"
-    :loading="loading"
-    :checked-row-keys="diskStore.selectedFiles"
-    :row-key="getRowKey"
-    :row-props="getRowProps"
-    size="small"
-    flex-height
-    @update:checked-row-keys="handleCheckedRowKeysChange"
-  />
+  <div class="h-full">
+    <!-- 空状态 -->
+    <FileEmpty v-if="showEmpty" />
+
+    <!-- 文件列表 -->
+    <NDataTable
+      v-else
+      :columns="columns"
+      :data="files"
+      :loading="loading"
+      :checked-row-keys="diskStore.selectedFiles"
+      :row-key="getRowKey"
+      :row-props="getRowProps"
+      size="small"
+      flex-height
+      @update:checked-row-keys="handleCheckedRowKeysChange"
+    />
+  </div>
 </template>
+
+<style scoped lang="scss">
+</style>

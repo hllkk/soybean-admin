@@ -166,33 +166,36 @@ onMounted(() => {
       />
     </template>
 
-    <div class="h-full flex-col-stretch gap-12px overflow-hidden">
-      <!-- Toolbar -->
-      <Toolbar
-        @upload-file="handleUploadFile"
-        @upload-folder="handleUploadFolder"
-        @create-folder="handleCreateFolder"
-        @search="handleSearch"
-        @refresh="handleRefresh"
-      />
-
-      <!-- Breadcrumb -->
-      <Breadcrumb :total-count="totalCount" />
-
+    <div class="h-full flex-col-stretch gap-12px overflow-hidden lt-sm:overflow-auto">
       <!-- File Display Area -->
-      <NCard :bordered="false" size="small" class="card-wrapper flex-1-hidden">
-        <FileGrid
-          v-if="diskStore.viewMode === 'grid'"
-          :files="fileList"
-          :loading="loading"
-          @file-dbl-click="handleFileDblClick"
-        />
-        <FileList
-          v-if="diskStore.viewMode === 'list'"
-          :files="fileList"
-          :loading="loading"
-          @file-dbl-click="handleFileDblClick"
-        />
+      <NCard :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
+        <div class="h-full flex flex-col">
+          <!-- Toolbar -->
+          <Toolbar
+            @upload-file="handleUploadFile"
+            @upload-folder="handleUploadFolder"
+            @create-folder="handleCreateFolder"
+            @search="handleSearch"
+            @refresh="handleRefresh"
+          />
+          <!-- Breadcrumb -->
+          <Breadcrumb :total-count="totalCount" />
+          <!-- File Content -->
+          <div class="flex-1 overflow-hidden">
+            <FileGrid
+              v-if="diskStore.viewMode === 'grid'"
+              :files="fileList"
+              :loading="loading"
+              @file-dbl-click="handleFileDblClick"
+            />
+            <FileList
+              v-if="diskStore.viewMode === 'list'"
+              :files="fileList"
+              :loading="loading"
+              @file-dbl-click="handleFileDblClick"
+            />
+          </div>
+        </div>
       </NCard>
     </div>
 
@@ -248,5 +251,12 @@ onMounted(() => {
 }
 :deep(.n-divider) {
   margin: 0 !important;
+}
+/* 强制 NLayoutContent 高度传递 */
+:deep(.n-layout-content) {
+  height: 100%;
+}
+:deep(.n-layout) {
+  height: 100%;
 }
 </style>
