@@ -225,18 +225,18 @@ function handleRefresh() {
         <NDropdown :options="uploadOptions" trigger="click" @select="handleUploadSelect">
           <NButton type="primary">
             <template #icon>
-              <SvgIcon icon="mdi:cloud-upload" :size="18" />
+              <SvgIcon icon="mdi:cloud-upload" :size="18" class="dark:text-white" />
             </template>
-            <span class="hidden sm:inline">{{ $t('page.disk.toolbar.upload') }}</span>
+            <span class="hidden sm:inline dark:text-white">{{ $t('page.disk.toolbar.upload') }}</span>
           </NButton>
         </NDropdown>
 
         <NDropdown :options="createOptions" trigger="click" @select="handleCreateSelect">
           <NButton type="primary">
             <template #icon>
-              <SvgIcon icon="mdi:plus" :size="18" />
+              <SvgIcon icon="mdi:plus" :size="18" class="dark:text-white" />
             </template>
-            <span class="hidden sm:inline">{{ $t('page.disk.toolbar.create') }}</span>
+            <span class="hidden sm:inline text-white dark:text-white">{{ $t('page.disk.toolbar.create') }}</span>
           </NButton>
         </NDropdown>
 
@@ -245,7 +245,7 @@ function handleRefresh() {
           <NInput v-model:value="searchKeyword" :placeholder="$t('page.disk.toolbar.searchPlaceholder')" clearable />
           <NButton type="primary" @click="handleSearch">
             <template #icon>
-              <SvgIcon icon="mdi:magnify" :size="18" />
+              <SvgIcon icon="mdi:magnify" :size="18" class="dark:text-white" />
             </template>
           </NButton>
         </NInputGroup>

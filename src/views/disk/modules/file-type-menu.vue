@@ -133,17 +133,17 @@ function formatSize(size: number): string {
 
     <!-- 容量显示区域 - 固定在底部 -->
     <div v-if="props.showCapacity" class="mt-auto">
-      <div class="p-12px rd-12px flex gap-16px items-center capacity-bg">
+      <div class="p-12px rd-12px flex gap-16px items-center bg-gradient-to-br from-green-500/8 to-blue-500/8 dark:from-green-500/20 dark:to-blue-500/20 dark:border dark:border-white/10">
         <!-- 科技感容量环 -->
         <div class="relative size-80px">
-          <div class="absolute inset-0 rd-full ring-bg" />
+          <div class="absolute inset-0 rd-full bg-black/8 dark:bg-white/12 shadow-[inset_0_0_10px_rgba(0,0,0,0.15)] dark:shadow-[inset_0_0_10px_rgba(255,255,255,0.15)]" />
           <div
             class="absolute inset-4px rd-full"
             :style="{
               background: `conic-gradient(${capacityColor} 0deg, ${capacityColor} ${capacityData.usedPercent * 3.6}deg, transparent ${capacityData.usedPercent * 3.6}deg, transparent 360deg)`
             }"
           />
-          <div class="absolute inset-12px rd-full flex-center ring-inner">
+          <div class="absolute inset-12px rd-full flex-center bg-[var(--n-color)] shadow-sm dark:shadow-md">
             <div class="flex items-baseline font-600">
               <span class="text-20px text-[var(--n-text-color)]">{{ capacityData.usedPercent }}</span>
               <span class="text-12px text-[var(--n-text-color-3)] ml-2px">%</span>
@@ -173,15 +173,15 @@ function formatSize(size: number): string {
 
           <!-- 进度条 -->
           <div class="relative h-6px rd-3px overflow-hidden">
-            <div class="absolute inset-0 rd-3px bar-bg" />
+            <div class="absolute inset-0 rd-3px bg-black/10 dark:bg-white/20" />
             <div
-              class="absolute left-0 top-0 bottom-0 rd-3px bar-progress"
+              class="absolute left-0 top-0 bottom-0 rd-3px transition-width duration-300"
               :style="{
                 width: `${capacityData.usedPercent}%`,
                 background: capacityColor
               }"
             >
-              <div class="absolute right-0 top--2px bottom--2px w-12px bar-glow" :style="{ background: capacityColor }" />
+              <div class="absolute right-0 top--2px bottom--2px w-12px blur-4px opacity-60 animate-pulse dark:blur-6px dark:opacity-80" :style="{ background: capacityColor }" />
             </div>
           </div>
         </div>
@@ -194,43 +194,6 @@ function formatSize(size: number): string {
 :deep(.n-menu-item-content) {
   .n-menu-item-content__icon {
     width: 48px !important;
-  }
-}
-// 仅保留需要动态样式或复杂效果的 SCSS（渐变、阴影、动画等）
-.capacity-bg {
-  background: linear-gradient(135deg, rgba(18, 160, 88, 0.05) 0%, rgba(32, 80, 240, 0.05) 100%);
-}
-
-.ring-bg {
-  background: rgba(0, 0, 0, 0.05);
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.ring-inner {
-  background: var(--n-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.bar-bg {
-  background: rgba(0, 0, 0, 0.08);
-}
-
-.bar-progress {
-  transition: width 0.3s ease;
-}
-
-.bar-glow {
-  filter: blur(4px);
-  opacity: 0.6;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.8;
   }
 }
 </style>

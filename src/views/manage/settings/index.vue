@@ -193,7 +193,7 @@ onMounted(() => {
 
         <div class="flex justify-between items-center mb-16px">
           <div class="text-16px font-600">{{ currentTitle }}</div>
-          <NButton v-if="hasAuth('system:setting:save')" type="primary" :loading="loading" @click="handleSave">保存</NButton>
+          <NButton v-if="hasAuth('system:setting:save')" type="primary" :loading="loading" class="dark:text-white" @click="handleSave">保存</NButton>
         </div>
 
         <div class="overflow-auto" style="height: calc(100% - 180px)">
