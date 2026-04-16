@@ -106,7 +106,7 @@ function getRowKey(row: Api.Disk.FileItem) {
 </script>
 
 <template>
-  <div class="h-full">
+  <div class="h-full flex flex-col">
     <!-- 空状态 -->
     <FileEmpty v-if="showEmpty" />
 
@@ -121,10 +121,14 @@ function getRowKey(row: Api.Disk.FileItem) {
       :row-props="getRowProps"
       size="small"
       flex-height
+      class="flex-1"
       @update:checked-row-keys="handleCheckedRowKeysChange"
     />
   </div>
 </template>
 
 <style scoped lang="scss">
+.h-full {
+  height: 100%;
+}
 </style>

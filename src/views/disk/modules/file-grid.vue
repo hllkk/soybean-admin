@@ -57,25 +57,23 @@ function handleSelect(file: Api.Disk.FileItem) {
 </script>
 
 <template>
-  <div class="h-full">
-    <NSpin :show="loading" class="h-full">
-      <!-- 空状态 -->
-      <FileEmpty v-if="showEmpty" class="h-full" />
+  <NSpin :show="loading" class="h-full">
+    <!-- 空状态 -->
+    <FileEmpty v-if="showEmpty" />
 
-      <!-- 文件网格 -->
-      <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-16px p-16px">
-        <FileCard
-          v-for="file in files"
-          :key="file.fileId"
-          :file="file"
-          :selected="isSelected(file.fileId)"
-          @click="handleFileClick(file)"
-          @dblclick="handleFileDblClick(file)"
-          @select="handleSelect(file)"
-        />
-      </div>
-    </NSpin>
-  </div>
+    <!-- 文件网格 -->
+    <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-16px p-16px">
+      <FileCard
+        v-for="file in files"
+        :key="file.fileId"
+        :file="file"
+        :selected="isSelected(file.fileId)"
+        @click="handleFileClick(file)"
+        @dblclick="handleFileDblClick(file)"
+        @select="handleSelect(file)"
+      />
+    </div>
+  </NSpin>
 </template>
 
 <style scoped lang="scss">

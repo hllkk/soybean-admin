@@ -274,20 +274,20 @@ function handleRefresh() {
 
         <!-- 选中操作按钮组 -->
         <NButtonGroup>
+          <!-- 分享 -->
+          <NButton round @click="handleShare">
+            <template #icon>
+              <SvgIcon icon="mdi:share-outline" :size="18" />
+            </template>
+            <span class="hidden sm:inline">{{ $t('page.disk.toolbar.share') }}</span>
+          </NButton>
+
           <!-- 批量分享：仅多选时显示 -->
           <NButton v-if="isMultipleSelection" @click="handleBatchShare">
             <template #icon>
               <SvgIcon icon="mdi:share-variant-outline" :size="18" />
             </template>
             <span class="hidden sm:inline">{{ $t('page.disk.toolbar.batchShare') }}</span>
-          </NButton>
-
-          <!-- 分享 -->
-          <NButton @click="handleShare">
-            <template #icon>
-              <SvgIcon icon="mdi:share-outline" :size="18" />
-            </template>
-            <span class="hidden sm:inline">{{ $t('page.disk.toolbar.share') }}</span>
           </NButton>
 
           <!-- 下载 -->
@@ -316,7 +316,7 @@ function handleRefresh() {
 
           <!-- 更多 -->
           <NDropdown :options="moreOptions" trigger="click" @select="handleMoreSelect">
-            <NButton>
+            <NButton round>
               <template #icon>
                 <SvgIcon icon="mdi:dots-horizontal" :size="18" />
               </template>
