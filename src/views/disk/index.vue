@@ -24,6 +24,15 @@ const newFolderName = ref('');
 const uploadFileRef = ref<HTMLInputElement>();
 const uploadFolderRef = ref<HTMLInputElement>();
 
+// 显示容量开关
+const showCapacity = ref(true);
+
+// 容量数据（后续可从 API 获取）
+const capacityInfo = ref({
+  used: 2.5, // GB
+  total: 10 // GB
+});
+
 const searchParams = ref<Api.Disk.FileSearchParams>({
   pageNum: 1,
   pageSize: 100,
@@ -139,9 +148,22 @@ onMounted(() => {
 </script>
 
 <template>
-  <TableSiderLayout sider-title="文件类型">
+  <TableSiderLayout sider-title="文件管理">
+    <template #header-extra>
+      <NTooltip trigger="hover">
+        <template #trigger>
+          <NSwitch v-model:value="showCapacity" :round="false" />
+        </template>
+        显示容量
+      </NTooltip>
+    </template>
     <template #sider>
-      <FileTypeMenu />
+      <NDivider dashed />
+      <FileTypeMenu
+        :show-capacity="showCapacity"
+        :used-capacity="capacityInfo.used"
+        :total-capacity="capacityInfo.total"
+      />
     </template>
 
     <div class="h-full flex-col-stretch gap-12px overflow-hidden">
@@ -223,5 +245,8 @@ onMounted(() => {
 <style scoped lang="scss">
 :deep(.n-card__content) {
   padding: 0 !important;
+}
+:deep(.n-divider) {
+  margin: 0 !important;
 }
 </style>
