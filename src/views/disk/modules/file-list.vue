@@ -128,7 +128,4 @@ function getRowKey(row: Api.Disk.FileItem) {
 </template>
 
 <style scoped lang="scss">
-.h-full {
-  height: 100%;
-}
 </style>
