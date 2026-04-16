@@ -217,11 +217,10 @@ function handleRefresh() {
 </script>
 
 <template>
-  <div class="flex items-center justify-between gap-8px px-8px py-12px sm:gap-16px sm:px-16px">
-    <!-- 左侧区域：根据选中状态切换显示 -->
-    <div class="flex items-center gap-8px flex-wrap flex-1">
-      <!-- 未选中状态：上传、新建、搜索 -->
-      <template v-if="!hasSelection">
+  <div class="flex items-center gap-8px px-8px py-12px flex-wrap sm:gap-16px sm:px-16px">
+    <!-- 未选中状态：上传、新建、搜索 -->
+    <template v-if="!hasSelection">
+      <div class="flex items-center gap-8px flex-1">
         <NDropdown :options="uploadOptions" trigger="click" @select="handleUploadSelect">
           <NButton type="primary">
             <template #icon>
@@ -256,26 +255,26 @@ function handleRefresh() {
             <SvgIcon icon="mdi:magnify" :size="18" />
           </template>
         </NButton>
-      </template>
+      </div>
+    </template>
 
-      <!-- 选中状态：选中数量 + 操作按钮组 -->
-      <template v-else>
-        <!-- 选中数量提示 -->
-        <div class="flex items-center gap-8px">
-          <NTag type="info" round>
-            {{ $t('page.disk.toolbar.selectedCount', { count: selectedCount }) }}
-          </NTag>
-          <NButton quaternary size="small" @click="handleClearSelection">
-            <template #icon>
-              <SvgIcon icon="mdi:close" :size="16" />
-            </template>
-          </NButton>
-        </div>
+    <!-- 选中状态：选中信息 + 操作按钮（手机端同行，桌面端操作按钮 flex-1 撑开推右） -->
+    <template v-else>
+      <div class="flex items-center gap-8px">
+        <NTag type="info" round>
+          {{ $t('page.disk.toolbar.selectedCount', { count: selectedCount }) }}
+        </NTag>
+        <NButton quaternary size="small" @click="handleClearSelection">
+          <template #icon>
+            <SvgIcon icon="mdi:close" :size="16" />
+          </template>
+        </NButton>
+      </div>
 
-        <!-- 选中操作按钮组 -->
+      <div class="flex items-center gap-8px sm:flex-1">
         <NButtonGroup>
           <!-- 分享 -->
-          <NButton round @click="handleShare">
+          <NButton @click="handleShare">
             <template #icon>
               <SvgIcon icon="mdi:share-outline" :size="18" />
             </template>
@@ -316,7 +315,7 @@ function handleRefresh() {
 
           <!-- 更多 -->
           <NDropdown :options="moreOptions" trigger="click" @select="handleMoreSelect">
-            <NButton round>
+            <NButton>
               <template #icon>
                 <SvgIcon icon="mdi:dots-horizontal" :size="18" />
               </template>
@@ -324,11 +323,11 @@ function handleRefresh() {
             </NButton>
           </NDropdown>
         </NButtonGroup>
-      </template>
-    </div>
+      </div>
+    </template>
 
-    <!-- 右侧：功能按钮组 -->
-    <div class="flex items-center gap-4px sm:gap-8px">
+    <!-- 右侧：功能按钮组（未选中时同行右侧，选中时手机端自然换行到第二行） -->
+    <div class="flex items-center gap-4px sm:gap-8px flex-shrink-0">
       <NButtonGroup>
         <!-- 传输列表 -->
         <NTooltip trigger="hover">

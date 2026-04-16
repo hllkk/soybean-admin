@@ -20,6 +20,12 @@ const props = withDefaults(defineProps<Props>(), {
 interface Emits {
   (e: 'fileClick', file: Api.Disk.FileItem): void;
   (e: 'fileDblClick', file: Api.Disk.FileItem): void;
+  (e: 'fileShare', file: Api.Disk.FileItem): void;
+  (e: 'fileDownload', file: Api.Disk.FileItem): void;
+  (e: 'fileDelete', file: Api.Disk.FileItem): void;
+  (e: 'fileRename', file: Api.Disk.FileItem): void;
+  (e: 'fileCopy', file: Api.Disk.FileItem): void;
+  (e: 'fileMove', file: Api.Disk.FileItem): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -54,6 +60,15 @@ function handleSelect(file: Api.Disk.FileItem) {
     diskStore.setSelectedFiles(newSelected);
   }
 }
+
+function handleAction(action: string, file: Api.Disk.FileItem) {
+  if (action === 'share') emit('fileShare', file);
+  else if (action === 'download') emit('fileDownload', file);
+  else if (action === 'delete') emit('fileDelete', file);
+  else if (action === 'rename') emit('fileRename', file);
+  else if (action === 'copy') emit('fileCopy', file);
+  else if (action === 'move') emit('fileMove', file);
+}
 </script>
 
 <template>
@@ -71,10 +86,13 @@ function handleSelect(file: Api.Disk.FileItem) {
         @click="handleFileClick(file)"
         @dblclick="handleFileDblClick(file)"
         @select="handleSelect(file)"
+        @share="handleAction('share', file)"
+        @download="handleAction('download', file)"
+        @delete="handleAction('delete', file)"
+        @rename="handleAction('rename', file)"
+        @copy="handleAction('copy', file)"
+        @move="handleAction('move', file)"
       />
     </div>
   </NSpin>
 </template>
-
-<style scoped lang="scss">
-</style>

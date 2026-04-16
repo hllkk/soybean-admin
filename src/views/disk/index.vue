@@ -321,6 +321,11 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
   }
 }
 
+function handleFileAction(action: string, file: Api.Disk.FileItem) {
+  // TODO: 实现各操作的具体逻辑
+  window.$message?.info(`${action}: ${file.fileName}`);
+}
+
 // Watch file type changes
 watch(() => diskStore.currentFileType, () => {
   getFileList();
@@ -381,6 +386,12 @@ onMounted(() => {
               :files="fileList"
               :loading="loading"
               @file-dbl-click="handleFileDblClick"
+              @file-share="handleFileAction('share', $event)"
+              @file-download="handleFileAction('download', $event)"
+              @file-delete="handleFileAction('delete', $event)"
+              @file-rename="handleFileAction('rename', $event)"
+              @file-copy="handleFileAction('copy', $event)"
+              @file-move="handleFileAction('move', $event)"
             />
             <FileList
               v-if="diskStore.viewMode === 'list'"

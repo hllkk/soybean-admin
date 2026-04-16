@@ -21,3 +21,18 @@ export function formatFileSize(bytes: number): string {
   const decimals = i <= 2 ? 1 : 2;
   return `${size.toFixed(decimals)} ${units[i]}`;
 }
+
+/**
+ * Format date string to "MM-DD HH:mm"
+ *
+ * @param dateStr - ISO date string or date string
+ * @returns Formatted string like "04-16 09:30"
+ */
+export function formatDateShort(dateStr: string): string {
+  const date = new Date(dateStr);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${month}-${day} ${hours}:${minutes}`;
+}

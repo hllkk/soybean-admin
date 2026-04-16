@@ -1,6 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import apkIcon from '@/assets/imgs/file-icons/apk.png';
+import audioIcon from '@/assets/imgs/file-icons/audio.png';
+import btIcon from '@/assets/imgs/file-icons/bt.png';
+import codeIcon from '@/assets/imgs/file-icons/code.png';
+import defaultIcon from '@/assets/imgs/file-icons/default.png';
+import dmgIcon from '@/assets/imgs/file-icons/dmg.png';
+import docIcon from '@/assets/imgs/file-icons/doc.png';
+import exeIcon from '@/assets/imgs/file-icons/exe.png';
+import flvIcon from '@/assets/imgs/file-icons/flv.png';
+import folderIcon from '@/assets/imgs/file-icons/folder.png';
+import imageIcon from '@/assets/imgs/file-icons/image.png';
+import pdfIcon from '@/assets/imgs/file-icons/pdf.png';
+import pptIcon from '@/assets/imgs/file-icons/ppt.png';
+import ttfIcon from '@/assets/imgs/file-icons/ttf.png';
+import txtIcon from '@/assets/imgs/file-icons/txt.png';
+import videoIcon from '@/assets/imgs/file-icons/video.png';
+import xlsIcon from '@/assets/imgs/file-icons/xls.png';
+import zipIcon from '@/assets/imgs/file-icons/zip.png';
+
 defineOptions({
   name: 'FileIcon'
 });
@@ -16,58 +35,96 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'medium'
 });
 
-const iconMap: Record<string, string> = {
-  folder: 'mdi:folder',
-  image: 'mdi:file-image',
-  document: 'mdi:file-document',
-  video: 'mdi:file-video',
-  audio: 'mdi:file-music',
-  other: 'mdi:file'
+/** 扩展名 → 图标映射 */
+const extensionIconMap: Record<string, string> = {
+  // 文档
+  pdf: pdfIcon,
+  doc: docIcon,
+  docx: docIcon,
+  xls: xlsIcon,
+  xlsx: xlsIcon,
+  csv: xlsIcon,
+  ppt: pptIcon,
+  pptx: pptIcon,
+  txt: txtIcon,
+  md: txtIcon,
+  log: txtIcon,
+  // 图片
+  jpg: imageIcon,
+  jpeg: imageIcon,
+  png: imageIcon,
+  gif: imageIcon,
+  webp: imageIcon,
+  svg: imageIcon,
+  bmp: imageIcon,
+  ico: imageIcon,
+  // 视频
+  mp4: videoIcon,
+  avi: videoIcon,
+  mov: videoIcon,
+  mkv: videoIcon,
+  wmv: videoIcon,
+  flv: flvIcon,
+  // 音频
+  mp3: audioIcon,
+  wav: audioIcon,
+  flac: audioIcon,
+  aac: audioIcon,
+  ogg: audioIcon,
+  wma: audioIcon,
+  // 压缩包
+  zip: zipIcon,
+  rar: zipIcon,
+  '7z': zipIcon,
+  tar: zipIcon,
+  gz: zipIcon,
+  // 代码
+  json: codeIcon,
+  js: codeIcon,
+  ts: codeIcon,
+  vue: codeIcon,
+  html: codeIcon,
+  css: codeIcon,
+  py: codeIcon,
+  java: codeIcon,
+  go: codeIcon,
+  xml: codeIcon,
+  yaml: codeIcon,
+  yml: codeIcon,
+  sql: codeIcon,
+  // 安装包 / 可执行
+  apk: apkIcon,
+  exe: exeIcon,
+  msi: exeIcon,
+  dmg: dmgIcon,
+  // 字体
+  ttf: ttfIcon,
+  otf: ttfIcon,
+  woff: ttfIcon,
+  woff2: ttfIcon,
+  // 种子
+  torrent: btIcon
 };
 
-const extensionIconMap: Record<string, string> = {
-  pdf: 'mdi:file-pdf',
-  doc: 'mdi:file-word',
-  docx: 'mdi:file-word',
-  xls: 'mdi:file-excel',
-  xlsx: 'mdi:file-excel',
-  ppt: 'mdi:file-powerpoint',
-  pptx: 'mdi:file-powerpoint',
-  zip: 'mdi:zip',
-  rar: 'mdi:zip',
-  '7z': 'mdi:zip',
-  mp3: 'mdi:file-music',
-  wav: 'mdi:file-music',
-  flac: 'mdi:file-music',
-  mp4: 'mdi:file-video',
-  avi: 'mdi:file-video',
-  mov: 'mdi:file-video',
-  mkv: 'mdi:file-video',
-  jpg: 'mdi:file-image',
-  jpeg: 'mdi:file-image',
-  png: 'mdi:file-image',
-  gif: 'mdi:file-image',
-  webp: 'mdi:file-image',
-  svg: 'mdi:file-image',
-  txt: 'mdi:file-document-outline',
-  md: 'mdi:file-document-outline',
-  json: 'mdi:file-code',
-  js: 'mdi:file-code',
-  ts: 'mdi:file-code',
-  vue: 'mdi:file-code',
-  html: 'mdi:file-code',
-  css: 'mdi:file-code'
+/** 文件类型分类 → 图标映射（扩展名未命中时使用） */
+const fileTypeIconMap: Record<string, string> = {
+  folder: folderIcon,
+  image: imageIcon,
+  document: docIcon,
+  video: videoIcon,
+  audio: audioIcon,
+  other: defaultIcon
 };
 
 const iconSizeMap: Record<string, number> = {
-  small: 24,
+  small: 20,
   medium: 40,
-  large: 96
+  large: 64
 };
 
 const icon = computed(() => {
   if (props.fileType === 'folder') {
-    return iconMap.folder;
+    return folderIcon;
   }
 
   if (props.extension) {
@@ -77,12 +134,12 @@ const icon = computed(() => {
     }
   }
 
-  return iconMap[props.fileType] || iconMap.other;
+  return fileTypeIconMap[props.fileType] || defaultIcon;
 });
 
 const iconSize = computed(() => iconSizeMap[props.size]);
 </script>
 
 <template>
-  <SvgIcon :icon="icon" :size="iconSize" />
+  <img :src="icon" :width="iconSize" :height="iconSize" class="shrink-0 select-none" draggable="false" />
 </template>
