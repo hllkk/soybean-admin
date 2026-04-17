@@ -27,10 +27,51 @@ const allCompleted = computed(() => {
 const isEmpty = computed(() => diskStore.transferList.length === 0);
 
 const overallProgress = computed(() => {
-  const items = activeTransfers.value.filter(item => item.status === 'transferring');
+  const items = diskStore.transferList;
   if (items.length === 0) return 0;
-  const total = items.reduce((sum, item) => sum + item.progress, 0);
-  return Math.round(total / items.length);
+
+  // 计算所有未完成文件的平均进度（包括 pending 和 transferring）
+  const activeItems = items.filter(item => item.status !== 'completed');
+  if (activeItems.length === 0) return 100; // 全部完成时显示 100%
+
+  const total = activeItems.reduce((sum, item) => sum + item.progress, 0);
+  return Math.round(total / activeItems.length);
+});
+
+
+// 水波纹是否可见（有文件在传输或刚完成时显示）
+const showWaves = computed(() => {
+  const items = diskStore.transferList;
+  return items.length > 0 && (overallProgress.value > 0 || items.some(item => item.status === 'transferring'));
+});
+
+// SVG 波浪路径生成
+function generateWavePath(width: number, amplitude: number, offset: number = 0): string {
+  const segments = 40;
+  const points: string[] = [];
+
+  for (let i = 0; i <= segments; i++) {
+    const x = (i / segments) * width;
+    const y = amplitude * Math.sin((i / segments) * Math.PI * 2 + offset) + amplitude;
+    points.push(`${x},${y}`);
+  }
+
+  // 闭合路径：波浪曲线 + 底部填充区域
+  return `M0,${amplitude * 2} L${points.join(' L')} L${width},${amplitude * 2} Z`;
+}
+
+// 波浪路径（前层）
+const wavePathFront = computed(() => generateWavePath(300, 10, 0));
+// 波浪路径（后层）
+const wavePathBack = computed(() => generateWavePath(300, 12, Math.PI / 3));
+
+// 波浪垂直位置（基于进度）
+const waveTranslateY = computed(() => {
+  const sphereHeight = 140;
+  // progress=0 → 波浪在底部以下30px（完全不可见）
+  // progress=100 → 波浪在顶部（完全填充）
+  const offset = sphereHeight + 30 - (sphereHeight + 30) * (overallProgress.value / 100);
+  return offset;
 });
 
 const totalSpeed = computed(() => {
@@ -39,8 +80,6 @@ const totalSpeed = computed(() => {
 });
 
 const activeCount = computed(() => activeTransfers.value.length);
-
-const waveHeight = computed(() => `${Math.max(5, overallProgress.value)}%`);
 
 function showSphere() {
   isVisible.value = true;
@@ -211,7 +250,7 @@ onMounted(() => {
           </div>
 
           <!-- Sphere body -->
-          <div class="sphere-body">
+          <div class="sphere-body" :class="{ 'completed-state': allCompleted }">
             <!-- Matrix rain background -->
             <div class="matrix-rain">
               <span v-for="i in 8" :key="i" class="matrix-col" :style="{ animationDelay: `${i * 0.3}s`, left: `${i * 12}%` }">
@@ -219,12 +258,26 @@ onMounted(() => {
               </span>
             </div>
 
-            <!-- Layered water waves -->
-            <div class="water-container" :style="{ height: waveHeight }">
-              <div class="wave wave-back" />
-              <div class="wave wave-mid" />
-              <div class="wave wave-front" />
-            </div>
+            <!-- SVG 波浪效果 -->
+            <svg
+              v-if="showWaves"
+              class="wave-svg"
+              :class="{ 'completed-state': allCompleted }"
+              viewBox="0 0 300 170"
+              preserveAspectRatio="none"
+              :style="{ '--wave-y-front': `${waveTranslateY - 8}px`, '--wave-y-back': `${waveTranslateY}px` }"
+            >
+              <!-- 后层波浪 - 深色，慢速 -->
+              <path
+                class="wave-path wave-back"
+                :d="wavePathBack"
+              />
+              <!-- 前层波浪 - 浅色，快速 -->
+              <path
+                class="wave-path wave-front"
+                :d="wavePathFront"
+              />
+            </svg>
 
             <!-- Center content -->
             <div class="absolute inset-0 flex flex-col items-center justify-center z-2">
@@ -492,53 +545,63 @@ onMounted(() => {
   white-space: pre;
 }
 
-// ---- Water waves (fixed: all start at 0deg, border-radius 45%) ----
-.water-container {
+// ---- SVG 波浪效果 ----
+.wave-svg {
   position: absolute;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
-  transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100%;
   overflow: hidden;
-  border-radius: 0 0 50% 50%;
+  border-radius: 50%;
 }
 
-.wave {
-  position: absolute;
-  left: -25%;
-  width: 150%;
-  bottom: 0;
-  border-radius: 45%;
-}
+.wave-path {
+  fill-opacity: 1;
+  transition: fill 0.5s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
 
-.wave-back {
-  height: 250%;
-  background: rgba(100, 108, 255, 0.05);
-  animation: waveRotate1 8s linear infinite;
+  // 前层波浪 - 浅色，快速流动
+  &.wave-front {
+    fill: rgba(100, 108, 255, 0.65);
+    animation: waveFlowFront 2.5s linear infinite;
 
-  :root.dark & {
-    background: rgba(100, 108, 255, 0.06);
+    :root.dark & {
+      fill: rgba(140, 150, 255, 0.60);
+    }
+  }
+
+  // 后层波浪 - 深色，慢速流动
+  &.wave-back {
+    fill: rgba(80, 90, 220, 0.35);
+    animation: waveFlowBack 4s linear infinite;
+
+    :root.dark & {
+      fill: rgba(100, 110, 245, 0.30);
+    }
+  }
+
+  // 完成状态 - 绿色
+  .completed-state & {
+    fill: rgba(82, 196, 26, 0.50) !important;
+    animation-play-state: paused !important;
+
+    :root.dark & {
+      fill: rgba(82, 196, 26, 0.45) !important;
+    }
   }
 }
 
-.wave-mid {
-  height: 220%;
-  background: rgba(100, 108, 255, 0.08);
-  animation: waveRotate2 6s linear infinite;
-
-  :root.dark & {
-    background: rgba(110, 120, 255, 0.09);
-  }
+// 波浪横向流动动画
+@keyframes waveFlowFront {
+  0% { transform: translateX(0) translateY(var(--wave-y-front, 70px)) scaleY(1); }
+  50% { transform: translateX(-75px) translateY(var(--wave-y-front, 70px)) scaleY(1.06); }
+  100% { transform: translateX(-150px) translateY(var(--wave-y-front, 70px)) scaleY(1); }
 }
 
-.wave-front {
-  height: 200%;
-  background: rgba(100, 108, 255, 0.12);
-  animation: waveRotate3 4s linear infinite;
-
-  :root.dark & {
-    background: rgba(120, 130, 255, 0.13);
-  }
+@keyframes waveFlowBack {
+  0% { transform: translateX(0) translateY(var(--wave-y-back, 75px)) scaleY(1); }
+  50% { transform: translateX(-75px) translateY(var(--wave-y-back, 75px)) scaleY(1.04); }
+  100% { transform: translateX(-150px) translateY(var(--wave-y-back, 75px)) scaleY(1); }
 }
 
 // ---- Progress ring glow ----
@@ -645,21 +708,6 @@ onMounted(() => {
 @keyframes matrixRain {
   from { transform: translateY(-100%); }
   to { transform: translateY(300%); }
-}
-
-@keyframes waveRotate1 {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes waveRotate2 {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes waveRotate3 {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 @keyframes checkPop {
