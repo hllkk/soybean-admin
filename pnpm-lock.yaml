@@ -50,6 +50,9 @@ importers:
       echarts:
         specifier: 6.0.0
         version: 6.0.0
+      echarts-liquidfill:
+        specifier: ^3.1.0
+        version: 3.1.0(echarts@6.0.0)
       go-captcha-vue:
         specifier: ^2.0.6
         version: 2.0.6(vue@3.5.31(typescript@6.0.2))
@@ -2289,6 +2292,11 @@ packages:
 
   easy-bem@1.1.1:
     resolution: {integrity: sha512-GJRqdiy2h+EXy6a8E6R+ubmqUM08BK0FWNq41k24fup6045biQ8NXxoXimiwegMQvFFV3t1emADdGNL1TlS61A==}
+
+  echarts-liquidfill@3.1.0:
+    resolution: {integrity: sha512-5Dlqs/jTsdTUAsd+K5LPLLTgrbbNORUSBQyk8PSy1Mg2zgHDWm83FmvA4s0ooNepCJojFYRITTQ4GU1UUSKYLw==}
+    peerDependencies:
+      echarts: ^5.0.1
 
   echarts@6.0.0:
     resolution: {integrity: sha512-Tte/grDQRiETQP4xz3iZWSvoHrkCQtwqd6hs+mifXcjrCuo2iKWbajFObuLJVBlDIJlOzgQPd1hsaKt/3+OMkQ==}
@@ -6379,6 +6387,10 @@ snapshots:
   eastasianwidth@0.2.0: {}
 
   easy-bem@1.1.1: {}
+
+  echarts-liquidfill@3.1.0(echarts@6.0.0):
+    dependencies:
+      echarts: 6.0.0
 
   echarts@6.0.0:
     dependencies:

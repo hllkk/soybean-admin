@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch, nextTick } from 'vue';
 import { useDiskStore } from '@/store/modules/disk';
 import FileIcon from './file-icon.vue';
 import { formatFileSize } from '@/utils/format';
+import * as echarts from 'echarts';
+import 'echarts-liquidfill';
 
 defineOptions({
   name: 'TransferPanel'
@@ -12,6 +14,8 @@ const diskStore = useDiskStore();
 
 const isVisible = ref(false);
 const viewMode = ref<'list' | 'sphere'>('sphere');
+const liquidfillChart = ref<echarts.ECharts | null>(null);
+const chartContainerRef = ref<HTMLDivElement | null>(null);
 
 const activeTransfers = computed(() =>
   diskStore.transferList.filter(item => item.status !== 'completed')
@@ -38,41 +42,79 @@ const overallProgress = computed(() => {
   return Math.round(total / activeItems.length);
 });
 
+// 初始化 ECharts liquidfill 图表
+function initLiquidfillChart() {
+  if (!chartContainerRef.value) return;
 
-// 水波纹是否可见（有文件在传输或刚完成时显示）
-const showWaves = computed(() => {
-  const items = diskStore.transferList;
-  return items.length > 0 && (overallProgress.value > 0 || items.some(item => item.status === 'transferring'));
-});
+  liquidfillChart.value = echarts.init(chartContainerRef.value);
 
-// SVG 波浪路径生成
-function generateWavePath(width: number, amplitude: number, offset: number = 0): string {
-  const segments = 40;
-  const points: string[] = [];
+  const progress = overallProgress.value / 100;
+  const isCompleted = allCompleted.value;
 
-  for (let i = 0; i <= segments; i++) {
-    const x = (i / segments) * width;
-    const y = amplitude * Math.sin((i / segments) * Math.PI * 2 + offset) + amplitude;
-    points.push(`${x},${y}`);
-  }
+  const option = {
+    series: [{
+      type: 'liquidFill',
+      radius: '85%',
+      center: ['50%', '50%'],
+      data: [progress, progress - 0.02, progress - 0.04],
+      backgroundStyle: {
+        color: isCompleted ? 'rgba(82, 196, 26, 0.15)' : 'rgba(100, 108, 255, 0.08)'
+      },
+      outline: {
+        show: false
+      },
+      shape: 'circle',
+      color: isCompleted ? [
+        'rgba(82, 196, 26, 0.6)',
+        'rgba(82, 196, 26, 0.5)',
+        'rgba(82, 196, 26, 0.4)'
+      ] : [
+        'rgba(100, 108, 255, 0.6)',
+        'rgba(100, 108, 255, 0.5)',
+        'rgba(100, 108, 255, 0.4)'
+      ],
+      itemStyle: {
+        opacity: 0.85
+      },
+      emphasis: {
+        itemStyle: {
+          opacity: 0.9
+        }
+      },
+      label: {
+        show: false
+      }
+    }]
+  };
 
-  // 闭合路径：波浪曲线 + 底部填充区域
-  return `M0,${amplitude * 2} L${points.join(' L')} L${width},${amplitude * 2} Z`;
+  liquidfillChart.value.setOption(option);
 }
 
-// 波浪路径（前层）
-const wavePathFront = computed(() => generateWavePath(300, 10, 0));
-// 波浪路径（后层）
-const wavePathBack = computed(() => generateWavePath(300, 12, Math.PI / 3));
+// 更新图表数据
+function updateChartProgress() {
+  if (!liquidfillChart.value) return;
 
-// 波浪垂直位置（基于进度）
-const waveTranslateY = computed(() => {
-  const sphereHeight = 140;
-  // progress=0 → 波浪在底部以下30px（完全不可见）
-  // progress=100 → 波浪在顶部（完全填充）
-  const offset = sphereHeight + 30 - (sphereHeight + 30) * (overallProgress.value / 100);
-  return offset;
-});
+  const progress = overallProgress.value / 100;
+  const isCompleted = allCompleted.value;
+
+  liquidfillChart.value.setOption({
+    series: [{
+      data: [progress, progress - 0.02, progress - 0.04],
+      backgroundStyle: {
+        color: isCompleted ? 'rgba(82, 196, 26, 0.15)' : 'rgba(100, 108, 255, 0.08)'
+      },
+      color: isCompleted ? [
+        'rgba(82, 196, 26, 0.6)',
+        'rgba(82, 196, 26, 0.5)',
+        'rgba(82, 196, 26, 0.4)'
+      ] : [
+        'rgba(100, 108, 255, 0.6)',
+        'rgba(100, 108, 255, 0.5)',
+        'rgba(100, 108, 255, 0.4)'
+      ]
+    }]
+  });
+}
 
 const totalSpeed = computed(() => {
   const items = activeTransfers.value.filter(item => item.status === 'transferring');
@@ -120,11 +162,27 @@ function getStatusColor(status: Api.Disk.TransferItem['status']) {
 
 defineExpose({ showSphere, showList });
 
+// 监听进度变化更新图表
+watch(overallProgress, () => {
+  nextTick(() => {
+    updateChartProgress();
+  });
+});
+
+watch(allCompleted, () => {
+  nextTick(() => {
+    updateChartProgress();
+  });
+});
+
 onMounted(() => {
   if (hasActiveTransfers.value) {
     isVisible.value = true;
     viewMode.value = 'sphere';
   }
+  nextTick(() => {
+    initLiquidfillChart();
+  });
 });
 </script>
 
@@ -251,33 +309,12 @@ onMounted(() => {
 
           <!-- Sphere body -->
           <div class="sphere-body" :class="{ 'completed-state': allCompleted }">
-            <!-- Matrix rain background -->
-            <div class="matrix-rain">
-              <span v-for="i in 8" :key="i" class="matrix-col" :style="{ animationDelay: `${i * 0.3}s`, left: `${i * 12}%` }">
-                01001
-              </span>
-            </div>
-
-            <!-- SVG 波浪效果 -->
-            <svg
-              v-if="showWaves"
-              class="wave-svg"
-              :class="{ 'completed-state': allCompleted }"
-              viewBox="0 0 300 170"
-              preserveAspectRatio="none"
-              :style="{ '--wave-y-front': `${waveTranslateY - 8}px`, '--wave-y-back': `${waveTranslateY}px` }"
-            >
-              <!-- 后层波浪 - 深色，慢速 -->
-              <path
-                class="wave-path wave-back"
-                :d="wavePathBack"
-              />
-              <!-- 前层波浪 - 浅色，快速 -->
-              <path
-                class="wave-path wave-front"
-                :d="wavePathFront"
-              />
-            </svg>
+            <!-- ECharts liquidfill 水球图 -->
+            <div
+              v-if="!isEmpty"
+              ref="chartContainerRef"
+              class="liquidfill-container"
+            />
 
             <!-- Center content -->
             <div class="absolute inset-0 flex flex-col items-center justify-center z-2">
@@ -519,89 +556,15 @@ onMounted(() => {
   }
 }
 
-// ---- Matrix rain ----
-.matrix-rain {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  overflow: hidden;
-  opacity: 0.06;
-  pointer-events: none;
-
-  :root.dark & {
-    opacity: 0.08;
-  }
-}
-
-.matrix-col {
-  position: absolute;
-  top: -100%;
-  font-size: 8px;
-  font-family: monospace;
-  color: var(--primary-color);
-  line-height: 1.4;
-  writing-mode: vertical-rl;
-  animation: matrixRain 6s linear infinite;
-  white-space: pre;
-}
-
-// ---- SVG 波浪效果 ----
-.wave-svg {
+// ---- ECharts liquidfill 容器 ----
+.liquidfill-container {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
   border-radius: 50%;
-}
-
-.wave-path {
-  fill-opacity: 1;
-  transition: fill 0.5s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: center;
-
-  // 前层波浪 - 浅色，快速流动
-  &.wave-front {
-    fill: rgba(100, 108, 255, 0.65);
-    animation: waveFlowFront 2.5s linear infinite;
-
-    :root.dark & {
-      fill: rgba(140, 150, 255, 0.60);
-    }
-  }
-
-  // 后层波浪 - 深色，慢速流动
-  &.wave-back {
-    fill: rgba(80, 90, 220, 0.35);
-    animation: waveFlowBack 4s linear infinite;
-
-    :root.dark & {
-      fill: rgba(100, 110, 245, 0.30);
-    }
-  }
-
-  // 完成状态 - 绿色
-  .completed-state & {
-    fill: rgba(82, 196, 26, 0.50) !important;
-    animation-play-state: paused !important;
-
-    :root.dark & {
-      fill: rgba(82, 196, 26, 0.45) !important;
-    }
-  }
-}
-
-// 波浪横向流动动画
-@keyframes waveFlowFront {
-  0% { transform: translateX(0) translateY(var(--wave-y-front, 70px)) scaleY(1); }
-  50% { transform: translateX(-75px) translateY(var(--wave-y-front, 70px)) scaleY(1.06); }
-  100% { transform: translateX(-150px) translateY(var(--wave-y-front, 70px)) scaleY(1); }
-}
-
-@keyframes waveFlowBack {
-  0% { transform: translateX(0) translateY(var(--wave-y-back, 75px)) scaleY(1); }
-  50% { transform: translateX(-75px) translateY(var(--wave-y-back, 75px)) scaleY(1.04); }
-  100% { transform: translateX(-150px) translateY(var(--wave-y-back, 75px)) scaleY(1); }
+  overflow: hidden;
+  z-index: 0;
 }
 
 // ---- Progress ring glow ----
@@ -703,11 +666,6 @@ onMounted(() => {
     opacity: 1;
     box-shadow: 0 0 20px rgba(100, 108, 255, 0.1), 0 0 40px rgba(100, 108, 255, 0.05);
   }
-}
-
-@keyframes matrixRain {
-  from { transform: translateY(-100%); }
-  to { transform: translateY(300%); }
 }
 
 @keyframes checkPop {
