@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch, nextTick } from 'vue';
 import { useDiskStore } from '@/store/modules/disk';
+import { useAppStore } from '@/store/modules/app';
 import FileIcon from './file-icon.vue';
 import { formatFileSize } from '@/utils/format';
 import * as echarts from 'echarts';
@@ -11,9 +12,11 @@ defineOptions({
 });
 
 const diskStore = useDiskStore();
+const appStore = useAppStore();
 
 const isVisible = ref(false);
-const viewMode = ref<'list' | 'sphere'>('sphere');
+// PC端默认list，手机端默认sphere
+const viewMode = ref<'list' | 'sphere'>(appStore.isMobile ? 'sphere' : 'list');
 const liquidfillChart = ref<echarts.ECharts | null>(null);
 const chartContainerRef = ref<HTMLDivElement | null>(null);
 
@@ -134,11 +137,23 @@ function showSphere() {
 
 function showList() {
   isVisible.value = true;
-  viewMode.value = 'list';
+  // 手机端不允许打开list视图，强制使用sphere
+  viewMode.value = appStore.isMobile ? 'sphere' : 'list';
+}
+
+// 根据设备类型显示默认视图（PC端list，手机端sphere）
+function showDefault() {
+  isVisible.value = true;
+  viewMode.value = appStore.isMobile ? 'sphere' : 'list';
 }
 
 function closePanel() {
   isVisible.value = false;
+  // 销毁图表实例，防止DOM移除后实例失效
+  if (liquidfillChart.value) {
+    liquidfillChart.value.dispose();
+    liquidfillChart.value = null;
+  }
 }
 
 function switchToSphere() {
@@ -146,6 +161,13 @@ function switchToSphere() {
 }
 
 function switchToList() {
+  // 手机端不允许切换到list视图
+  if (appStore.isMobile) return;
+  // 切换到list时销毁sphere的图表实例
+  if (liquidfillChart.value) {
+    liquidfillChart.value.dispose();
+    liquidfillChart.value = null;
+  }
   viewMode.value = 'list';
 }
 
@@ -164,7 +186,7 @@ function getStatusColor(status: Api.Disk.TransferItem['status']) {
   return map[status] || 'var(--primary-color)';
 }
 
-defineExpose({ showSphere, showList });
+defineExpose({ showSphere, showList, showDefault });
 
 // 监听进度变化更新图表
 watch(overallProgress, () => {
@@ -179,15 +201,29 @@ watch(allCompleted, () => {
   });
 });
 
+// 监听屏幕大小变化，手机端自动切换到sphere视图
+watch(
+  () => appStore.isMobile,
+  (isMobile) => {
+    if (isMobile && viewMode.value === 'list') {
+      viewMode.value = 'sphere';
+    }
+  }
+);
+
 // 监听传输列表变化，在有任务时初始化图表
 watch([isEmpty, isVisible, viewMode], ([empty, visible, mode]) => {
   if (!empty && visible && mode === 'sphere') {
+    // 延迟初始化，确保Transition动画完成后DOM已渲染
+    // out-in模式：leave(200ms) + buffer = 需等待至少250ms
     nextTick(() => {
-      if (!liquidfillChart.value && chartContainerRef.value) {
-        initLiquidfillChart();
-      } else if (liquidfillChart.value) {
-        updateChartProgress();
-      }
+      setTimeout(() => {
+        if (!liquidfillChart.value && chartContainerRef.value) {
+          initLiquidfillChart();
+        } else if (liquidfillChart.value) {
+          updateChartProgress();
+        }
+      }, 300);
     });
   }
 });
@@ -195,15 +231,16 @@ watch([isEmpty, isVisible, viewMode], ([empty, visible, mode]) => {
 onMounted(() => {
   if (hasActiveTransfers.value) {
     isVisible.value = true;
-    viewMode.value = 'sphere';
+    // PC端默认list，手机端默认sphere
+    viewMode.value = appStore.isMobile ? 'sphere' : 'list';
   }
-  // 延迟初始化，确保 DOM 已渲染
+  // 延迟初始化，确保DOM渲染完成
   nextTick(() => {
     setTimeout(() => {
-      if (!isEmpty.value && chartContainerRef.value) {
+      if (!isEmpty.value && chartContainerRef.value && viewMode.value === 'sphere') {
         initLiquidfillChart();
       }
-    }, 100);
+    }, 300);
   });
 });
 </script>
@@ -283,7 +320,8 @@ onMounted(() => {
       <div v-else-if="isVisible && viewMode === 'sphere'" key="sphere" class="flex flex-col items-center gap-8px">
         <!-- Control buttons -->
         <div class="flex justify-end w-160px gap-4px lt-sm:w-130px">
-          <button class="action-btn dark:bg-[rgba(15,18,30,0.92)] bg-white/92 border-1px border-solid border-[var(--primary-color)]/20 backdrop-blur-12px" title="列表视图" @click="switchToList">
+          <!-- PC端才显示列表视图切换按钮 -->
+          <button v-if="!appStore.isMobile" class="action-btn dark:bg-[rgba(15,18,30,0.92)] bg-white/92 border-1px border-solid border-[var(--primary-color)]/20 backdrop-blur-12px" title="列表视图" @click="switchToList">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
               <line x1="8" y1="6" x2="21" y2="6" />
               <line x1="8" y1="12" x2="21" y2="12" />
@@ -408,8 +446,8 @@ onMounted(() => {
 <style scoped lang="scss">
 // ---- Panel card (enlarged) ----
 .panel-card {
-  width: 320px;
-  max-height: 420px;
+  width: 480px;
+  max-height: 500px;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(100, 108, 255, 0.2);
   border-radius: 12px;
@@ -483,7 +521,7 @@ onMounted(() => {
 
 // ---- Transfer list ----
 .transfer-scroll {
-  max-height: 350px;
+  max-height: 480px;
   overflow-y: auto;
   padding: 6px 8px;
 

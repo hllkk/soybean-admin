@@ -450,7 +450,7 @@ onMounted(() => {
             @create-folder="handleCreateFolder"
             @search="handleSearch"
             @refresh="handleRefresh"
-            @show-transfer="transferPanelRef?.showSphere()"
+            @show-transfer="transferPanelRef?.showDefault()"
           />
           <!-- Breadcrumb -->
           <Breadcrumb :total-count="totalCount" />
