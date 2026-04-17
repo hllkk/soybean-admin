@@ -434,7 +434,7 @@ onMounted(() => {
 
         <!-- Bottom info -->
         <div>
-          <span v-if="isEmpty" class="text-10px dark:text-white/30 text-gray-400 tracking-0.5px">等待传输任务</span>
+          <span v-if="isEmpty" class="text-10px dark:text-white/30 text-gray-400 tracking-0.5px">暂无任务</span>
           <span v-else-if="allCompleted" class="text-10px sphere-complete-text tracking-0.5px" style="color: var(--n-success-color)">全部完成</span>
           <span v-else class="text-10px dark:text-white/40 text-gray-400 tracking-0.5px">{{ activeCount }} 个任务传输中</span>
         </div>
