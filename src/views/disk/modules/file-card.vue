@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, h, ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { DropdownOption } from 'naive-ui';
 
 import { $t } from '@/locales';
 import { formatDateShort, formatFileSize } from '@/utils/format';
 
 import FileIcon from './file-icon.vue';
+import { useSvgIcon } from '@/hooks/common/icon';
 
 defineOptions({
   name: 'FileCard'
@@ -34,6 +35,8 @@ interface Emits {
 
 const emit = defineEmits<Emits>();
 
+const { SvgIconVNode } = useSvgIcon();
+
 const moreDropdownShow = ref(false);
 
 const formattedTime = computed(() => formatDateShort(props.file.modifyTime));
@@ -58,27 +61,27 @@ const moreOptions = computed<DropdownOption[]>(() => [
   {
     label: $t('page.disk.contextMenu.delete'),
     key: 'delete',
-    icon: () => h(SvgIcon, { icon: 'mdi:delete-outline', size: 16 })
+    icon: SvgIconVNode({ icon: 'mdi:delete-outline', fontSize: 16 })
   },
   {
     label: $t('page.disk.contextMenu.rename'),
     key: 'rename',
-    icon: () => h(SvgIcon, { icon: 'mdi:pencil-outline', size: 16 })
+    icon: SvgIconVNode({ icon: 'mdi:pencil-outline', fontSize: 16 })
   },
   {
     label: $t('page.disk.toolbar.copy'),
     key: 'copy',
-    icon: () => h(SvgIcon, { icon: 'mdi:content-copy', size: 16 })
+    icon: SvgIconVNode({ icon: 'mdi:content-copy', fontSize: 16 })
   },
   {
     label: $t('page.disk.toolbar.move'),
     key: 'move',
-    icon: () => h(SvgIcon, { icon: 'mdi:folder-move-outline', size: 16 })
+    icon: SvgIconVNode({ icon: 'mdi:folder-move-outline', fontSize: 16 })
   },
   {
     label: $t('page.disk.contextMenu.share'),
     key: 'share',
-    icon: () => h(SvgIcon, { icon: 'mdi:share-outline', size: 16 })
+    icon: SvgIconVNode({ icon: 'mdi:share-outline', fontSize: 16 })
   }
 ]);
 
@@ -116,7 +119,7 @@ function handleMoreSelect(key: string) {
 
 <template>
   <div
-    class="group relative flex flex-col items-center px-8px py-16px rd-8px cursor-pointer overflow-hidden transition-all duration-200 hover:bg-primary/10 dark:hover:bg-primary/20"
+    class="group relative flex flex-col items-center px-8px py-16px rd-8px cursor-pointer overflow-hidden transition-colors duration-200 hover:bg-primary/10 dark:hover:bg-primary/20"
     :class="{ 'bg-primary/15 dark:bg-primary/25': selected }"
     @click="handleClick"
     @dblclick="handleDblClick"
@@ -130,7 +133,7 @@ function handleMoreSelect(key: string) {
       <div class="pointer-events-auto" @click="handleSelect">
         <NCheckbox :checked="selected" />
       </div>
-      <!-- 右侧：操作按钮组（更紧凑） -->
+      <!-- 右侧：操作按钮组 -->
       <div class="flex items-center -mr-2px pointer-events-auto" @click.stop>
         <NTooltip trigger="hover">
           <template #trigger>
@@ -177,27 +180,33 @@ function handleMoreSelect(key: string) {
     </div>
 
     <!-- 名称：外层 div 占满宽度，NTooltip 的 inline span 通过 :deep 改为 block -->
-    <div class="w-full text-center text-13px px-4px">
+    <div class="file-name-tooltip w-full text-center text-13px px-4px">
       <NTooltip trigger="hover" placement="bottom">
         <template #trigger>
-          <NEllipsis :line-clamp="2">
+          <NEllipsis :line-clamp="2" :tooltip="false">
             {{ file.fileName }}
           </NEllipsis>
         </template>
-        <div class="whitespace-pre-line text-12px leading-5">{{ nameTooltipContent }}</div>
+        <div class="whitespace-pre-line text-13px leading-5">{{ nameTooltipContent }}</div>
       </NTooltip>
     </div>
 
     <!-- 时间 -->
-    <div class="text-11px mt-4px" style="color: var(--n-text-color-disabled)">
+    <div class="text-12px mt-4px text-gray-500">
       {{ formattedTime }}
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-/* 修复 NTooltip 外层 inline span 导致 flex-col 宽度不一致 */
-:deep(.n-tooltip-trigger) {
-  width: 100%;
+.file-name-tooltip {
+  :deep(.n-tooltip-trigger) {
+    width: 100%;
+    transition: color 0.2s;
+  }
+
+  &:hover :deep(.n-ellipsis) {
+    color: rgb(var(--primary-color));
+  }
 }
 </style>

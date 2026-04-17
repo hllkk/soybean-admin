@@ -3,7 +3,6 @@ import { computed, ref } from 'vue';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { useSvgIcon } from '@/hooks/common/icon';
-import TransferModal from './transfer-modal.vue';
 import type { DropdownOption } from 'naive-ui';
 
 defineOptions({
@@ -21,6 +20,7 @@ interface Emits {
   (e: 'download'): void;
   (e: 'delete'): void;
   (e: 'rename'): void;
+  (e: 'showTransfer'): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -28,7 +28,6 @@ const emit = defineEmits<Emits>();
 const diskStore = useDiskStore();
 const { SvgIconVNode } = useSvgIcon();
 
-const showTransferModal = ref(false);
 const showMobileSearch = ref(false);
 const searchKeyword = ref('');
 const currentSort = ref<string>('modifyTime-desc');
@@ -39,6 +38,10 @@ const selectedCount = computed(() => diskStore.selectedFiles.length);
 const hasSelection = computed(() => selectedCount.value > 0);
 // 是否多选
 const isMultipleSelection = computed(() => selectedCount.value > 1);
+// 活跃传输数量
+const activeTransferCount = computed(() =>
+  diskStore.transferList.filter(item => item.status !== 'completed').length
+);
 
 // 上传下拉选项
 const uploadOptions = computed<DropdownOption[]>(() => [
@@ -207,7 +210,7 @@ function toggleViewMode() {
 
 // 打开传输列表
 function handleTransferList() {
-  showTransferModal.value = true;
+  emit('showTransfer');
 }
 
 // 刷新列表
@@ -334,7 +337,9 @@ function handleRefresh() {
           <template #trigger>
             <NButton @click="handleTransferList">
               <template #icon>
-                <SvgIcon icon="mdi:swap-vertical" :size="18" />
+                <NBadge :value="activeTransferCount" :max="99" :show="activeTransferCount > 0" :offset="[4, -2]">
+                  <SvgIcon icon="mdi:swap-vertical" :size="18" />
+                </NBadge>
               </template>
             </NButton>
           </template>
@@ -392,8 +397,6 @@ function handleRefresh() {
         </NButton>
       </NInputGroup>
     </NModal>
-
-    <TransferModal v-model:visible="showTransferModal" />
   </div>
 </template>
 

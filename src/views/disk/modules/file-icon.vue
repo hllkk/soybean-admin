@@ -117,9 +117,9 @@ const fileTypeIconMap: Record<string, string> = {
 };
 
 const iconSizeMap: Record<string, number> = {
-  small: 20,
+  small: 30,
   medium: 40,
-  large: 64
+  large: 80
 };
 
 const icon = computed(() => {

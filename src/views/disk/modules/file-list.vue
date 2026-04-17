@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DataTableColumns } from 'naive-ui';
 import { h, computed } from 'vue';
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import FileIcon from './file-icon.vue';
@@ -27,59 +28,70 @@ interface Emits {
 const emit = defineEmits<Emits>();
 
 const diskStore = useDiskStore();
+const breakpoints = useBreakpoints(breakpointsTailwind);
+const isMobile = breakpoints.smaller('sm');
 
 // 是否显示空状态
 const showEmpty = computed(() => props.files.length === 0 && !props.loading);
 
-const columns: DataTableColumns<Api.Disk.FileItem> = [
-  {
-    type: 'selection',
-    align: 'center',
-    width: 48
-  },
-  {
-    key: 'fileName',
-    title: $t('page.disk.file.name'),
-    align: 'left',
-    ellipsis: true,
-    render: row => {
-      return h('div', { class: 'flex items-center gap-8px' }, [
-        h(FileIcon, {
-          fileType: row.isFolder ? 'folder' : row.fileType,
-          extension: row.fileExtension,
-          size: 'small'
-        }),
-        h('span', { class: 'truncate' }, row.fileName)
-      ]);
+const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
+  const cols: DataTableColumns<Api.Disk.FileItem> = [
+    {
+      type: 'selection',
+      align: 'center',
+      width: 48
+    },
+    {
+      key: 'fileName',
+      title: $t('page.disk.file.name'),
+      align: 'left',
+      ellipsis: true,
+      render: row => {
+        return h('div', { class: 'flex items-center gap-8px' }, [
+          h(FileIcon, {
+            fileType: row.isFolder ? 'folder' : row.fileType,
+            extension: row.fileExtension,
+            size: 'small'
+          }),
+          h('span', { class: 'truncate' }, row.fileName)
+        ]);
+      }
     }
-  },
-  {
-    key: 'fileSize',
-    title: $t('page.disk.file.size'),
-    align: 'right',
-    width: 100,
-    render: row => {
-      if (row.isFolder) return '-';
-      return formatFileSize(row.fileSize);
-    }
-  },
-  {
-    key: 'fileType',
-    title: $t('page.disk.file.type'),
-    align: 'center',
-    width: 80,
-    render: row => {
-      if (row.isFolder) return $t('page.disk.file.folder');
-      return row.fileExtension?.toUpperCase() || '-';
-    }
-  },
-  {
-    key: 'modifyTime',
-    title: $t('page.disk.file.modifyTime'),
-    align: 'center',
-    width: 160
+  ];
+
+  if (!isMobile.value) {
+    cols.push(
+      {
+        key: 'fileSize',
+        title: $t('page.disk.file.size'),
+        align: 'right',
+        width: 150,
+        render: row => {
+          if (row.isFolder) return '-';
+          return formatFileSize(row.fileSize);
+        }
+      },
+      {
+        key: 'fileType',
+        title: $t('page.disk.file.type'),
+        align: 'center',
+        width: 150,
+        render: row => {
+          if (row.isFolder) return $t('page.disk.file.folder');
+          return row.fileExtension?.toUpperCase() || '-';
+        }
+      },
+      {
+        key: 'modifyTime',
+        title: $t('page.disk.file.modifyTime'),
+        align: 'center',
+        width: 200
+      }
+    );
   }
-];
+
+  return cols;
+});
 
 function handleCheckedRowKeysChange(keys: CommonType.IdType[]) {
   diskStore.setSelectedFiles(keys);
@@ -120,7 +132,7 @@ function getRowKey(row: Api.Disk.FileItem) {
       :row-key="getRowKey"
       :row-props="getRowProps"
       size="small"
-      flex-height
+      :flex-height="!isMobile"
       class="flex-1"
       @update:checked-row-keys="handleCheckedRowKeysChange"
     />
