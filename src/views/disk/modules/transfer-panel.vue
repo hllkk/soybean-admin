@@ -56,7 +56,8 @@ function initLiquidfillChart() {
       type: 'liquidFill',
       radius: '85%',
       center: ['50%', '50%'],
-      data: [progress, progress - 0.02, progress - 0.04],
+      // 完成时使用静态值 1，不完成时用动态波浪
+      data: isCompleted ? [1] : [progress, progress - 0.02, progress - 0.04],
       backgroundStyle: {
         color: isCompleted ? 'rgba(82, 196, 26, 0.15)' : 'rgba(100, 108, 255, 0.08)'
       },
@@ -64,15 +65,16 @@ function initLiquidfillChart() {
         show: false
       },
       shape: 'circle',
-      color: isCompleted ? [
-        'rgba(82, 196, 26, 0.6)',
-        'rgba(82, 196, 26, 0.5)',
-        'rgba(82, 196, 26, 0.4)'
-      ] : [
+      color: isCompleted ? ['rgba(82, 196, 26, 0.7)'] : [
         'rgba(100, 108, 255, 0.6)',
         'rgba(100, 108, 255, 0.5)',
         'rgba(100, 108, 255, 0.4)'
       ],
+      // 完成时停止波浪动画
+      amplitude: isCompleted ? 0 : 8,
+      waveAnimation: !isCompleted,
+      animationDuration: isCompleted ? 0 : 3000,
+      animationDurationUpdate: isCompleted ? 0 : 300,
       itemStyle: {
         opacity: 0.85
       },
@@ -99,19 +101,21 @@ function updateChartProgress() {
 
   liquidfillChart.value.setOption({
     series: [{
-      data: [progress, progress - 0.02, progress - 0.04],
+      // 完成时使用静态值 1，不完成时用动态波浪
+      data: isCompleted ? [1] : [progress, progress - 0.02, progress - 0.04],
       backgroundStyle: {
         color: isCompleted ? 'rgba(82, 196, 26, 0.15)' : 'rgba(100, 108, 255, 0.08)'
       },
-      color: isCompleted ? [
-        'rgba(82, 196, 26, 0.6)',
-        'rgba(82, 196, 26, 0.5)',
-        'rgba(82, 196, 26, 0.4)'
-      ] : [
+      color: isCompleted ? ['rgba(82, 196, 26, 0.7)'] : [
         'rgba(100, 108, 255, 0.6)',
         'rgba(100, 108, 255, 0.5)',
         'rgba(100, 108, 255, 0.4)'
-      ]
+      ],
+      // 完成时停止波浪动画
+      amplitude: isCompleted ? 0 : 8,
+      waveAnimation: !isCompleted,
+      animationDuration: isCompleted ? 0 : 3000,
+      animationDurationUpdate: isCompleted ? 0 : 300
     }]
   });
 }
@@ -175,13 +179,31 @@ watch(allCompleted, () => {
   });
 });
 
+// 监听传输列表变化，在有任务时初始化图表
+watch([isEmpty, isVisible, viewMode], ([empty, visible, mode]) => {
+  if (!empty && visible && mode === 'sphere') {
+    nextTick(() => {
+      if (!liquidfillChart.value && chartContainerRef.value) {
+        initLiquidfillChart();
+      } else if (liquidfillChart.value) {
+        updateChartProgress();
+      }
+    });
+  }
+});
+
 onMounted(() => {
   if (hasActiveTransfers.value) {
     isVisible.value = true;
     viewMode.value = 'sphere';
   }
+  // 延迟初始化，确保 DOM 已渲染
   nextTick(() => {
-    initLiquidfillChart();
+    setTimeout(() => {
+      if (!isEmpty.value && chartContainerRef.value) {
+        initLiquidfillChart();
+      }
+    }, 100);
   });
 });
 </script>
@@ -335,7 +357,7 @@ onMounted(() => {
                       class="check-bg"
                       cx="40" cy="40" r="36"
                       fill="none"
-                      stroke="var(--n-success-color)"
+                      stroke="#FFFFFF"
                       stroke-width="2"
                       stroke-dasharray="226"
                       stroke-dashoffset="226"
@@ -344,7 +366,7 @@ onMounted(() => {
                       class="check-mark"
                       d="M24 42 L34 52 L56 30"
                       fill="none"
-                      stroke="var(--n-success-color)"
+                      stroke="#FFFFFF"
                       stroke-width="3"
                       stroke-linecap="round"
                       stroke-linejoin="round"
@@ -353,7 +375,6 @@ onMounted(() => {
                     />
                   </svg>
                 </div>
-                <span class="text-11px mt-4px sphere-complete-text" style="color: var(--n-success-color)">传输完成</span>
               </template>
 
               <!-- Active transfer state -->
