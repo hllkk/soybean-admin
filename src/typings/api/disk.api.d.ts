@@ -85,8 +85,8 @@ declare namespace Api {
       fileType: string;
       /** 传输类型 (upload/download) */
       transferType: 'upload' | 'download';
-      /** 传输状态 (pending/transferring/completed/failed/paused) */
-      status: 'pending' | 'transferring' | 'completed' | 'failed' | 'paused';
+      /** 传输状态 */
+      status: 'pending' | 'hashing' | 'checking' | 'uploading' | 'transferring' | 'merging' | 'paused' | 'completed' | 'failed';
       /** 进度百分比 */
       progress: number;
       /** 已传输大小 */
@@ -97,6 +97,8 @@ declare namespace Api {
       speed: number;
       /** 剩余时间 */
       remainingTime: number;
+      /** 分片进度描述 */
+      chunkProgress?: string;
       /** 错误信息 */
       error?: string;
     };

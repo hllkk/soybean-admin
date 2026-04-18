@@ -68,6 +68,9 @@ importers:
       pinia:
         specifier: 3.0.4
         version: 3.0.4(typescript@6.0.2)(vue@3.5.31(typescript@6.0.2))
+      spark-md5:
+        specifier: ^3.0.2
+        version: 3.0.2
       streamsaver:
         specifier: ^2.0.6
         version: 2.0.6
@@ -3870,6 +3873,9 @@ packages:
   source-map@0.6.1:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
+
+  spark-md5@3.0.2:
+    resolution: {integrity: sha512-wcFzz9cDfbuqe0FZzfi2or1sgyIrsDwmPwfZC4hiNidPdPINjeUwNfv5kldczoEAcjl9Y1L3SM7Uz2PUEQzxQw==}
 
   speakingurl@14.0.1:
     resolution: {integrity: sha512-1POYv7uv2gXoyGFpBCmpDVSNV74IfsWlDW216UPjbWufNf+bSU6GdbDsxdcxtfwb4xlI3yxzOTKClUosxARYrQ==}
@@ -8134,6 +8140,8 @@ snapshots:
   source-map@0.5.7: {}
 
   source-map@0.6.1: {}
+
+  spark-md5@3.0.2: {}
 
   speakingurl@14.0.1: {}
 
