@@ -4,6 +4,7 @@ import { useDiskStore } from '@/store/modules/disk';
 import { useAppStore } from '@/store/modules/app';
 import FileIcon from './file-icon.vue';
 import { formatFileSize } from '@/utils/format';
+import { useUploader } from '@/hooks/business/upload/use-uploader';
 import * as echarts from 'echarts';
 import 'echarts-liquidfill';
 
@@ -13,6 +14,7 @@ defineOptions({
 
 const diskStore = useDiskStore();
 const appStore = useAppStore();
+const { pause, resume, cancel, retry, pauseAll, resumeAll } = useUploader();
 
 const isVisible = ref(false);
 // PC端默认list，手机端默认sphere
@@ -172,18 +174,36 @@ function switchToList() {
 }
 
 function cancelTransfer(transferId: string) {
-  diskStore.removeTransferItem(transferId);
+  cancel(transferId);
 }
 
 function getStatusColor(status: Api.Disk.TransferItem['status']) {
   const map: Record<string, string> = {
     pending: '#999',
+    hashing: '#f0a020',
+    checking: '#f0a020',
+    uploading: 'var(--primary-color)',
     transferring: 'var(--primary-color)',
+    merging: 'var(--primary-color)',
     completed: 'var(--n-success-color)',
     failed: 'var(--n-error-color)',
     paused: '#f0a020'
   };
   return map[status] || 'var(--primary-color)';
+}
+
+function getStatusText(item: Api.Disk.TransferItem): string {
+  if (item.status === 'hashing') return '计算文件特征中...';
+  if (item.status === 'checking') return '检测秒传...';
+  if (item.status === 'merging') return '合并分片中...';
+  if (item.status === 'paused') return '已暂停';
+  if (item.status === 'pending') return '等待中';
+  if (item.status === 'failed') return item.error || '上传失败';
+  return '';
+}
+
+function isActiveStatus(status: Api.Disk.TransferItem['status']): boolean {
+  return ['uploading', 'hashing', 'checking', 'merging', 'transferring'].includes(status);
 }
 
 defineExpose({ showSphere, showList, showDefault });
@@ -286,8 +306,44 @@ onMounted(() => {
                 <span class="text-12px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
                   {{ item.progress }}%
                 </span>
+                <!-- Pause button: active statuses -->
                 <button
-                  v-if="item.status === 'pending' || item.status === 'transferring'"
+                  v-if="isActiveStatus(item.status)"
+                  class="cancel-btn"
+                  title="暂停"
+                  @click="pause(item.transferId)"
+                >
+                  <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="10" y1="6" x2="10" y2="18" />
+                    <line x1="14" y1="6" x2="14" y2="18" />
+                  </svg>
+                </button>
+                <!-- Resume button: paused -->
+                <button
+                  v-if="item.status === 'paused'"
+                  class="cancel-btn text-[var(--primary-color)]"
+                  title="继续"
+                  @click="resume(item.transferId)"
+                >
+                  <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor">
+                    <polygon points="8,6 18,12 8,18" />
+                  </svg>
+                </button>
+                <!-- Retry button: failed -->
+                <button
+                  v-if="item.status === 'failed'"
+                  class="cancel-btn text-[var(--n-warning-color)]"
+                  title="重试"
+                  @click="retry(item.transferId)"
+                >
+                  <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="1,4 1,10 7,10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                  </svg>
+                </button>
+                <!-- Cancel button: all non-completed -->
+                <button
+                  v-if="item.status !== 'completed'"
                   class="cancel-btn"
                   title="取消"
                   @click="cancelTransfer(item.transferId)"
@@ -305,7 +361,17 @@ onMounted(() => {
                 :style="{ width: `${item.progress}%`, background: getStatusColor(item.status) }"
               />
             </div>
-            <div v-if="item.status === 'transferring'" class="flex justify-between text-10px dark:text-white/35 text-gray-400 mt-3px tabular-nums">
+            <!-- Enhanced progress info -->
+            <div class="flex justify-between text-10px dark:text-white/35 text-gray-400 mt-3px tabular-nums">
+              <template v-if="isActiveStatus(item.status)">
+                <span>{{ formatFileSize(item.transferredSize) }} / {{ formatFileSize(item.totalSize) }}</span>
+                <span v-if="item.chunkProgress" class="ml-4px">{{ item.chunkProgress }}</span>
+              </template>
+              <template v-else-if="getStatusText(item)">
+                <span :style="{ color: getStatusColor(item.status) }">{{ getStatusText(item) }}</span>
+              </template>
+            </div>
+            <div v-if="isActiveStatus(item.status)" class="flex justify-between text-10px dark:text-white/35 text-gray-400 tabular-nums">
               <span>{{ formatFileSize(item.speed) }}/s</span>
               <span>{{ item.remainingTime }}s</span>
             </div>
@@ -313,6 +379,15 @@ onMounted(() => {
 
           <div v-if="activeTransfers.length === 0" class="text-center text-12px dark:text-white/30 text-gray-400 py-20px">
             暂无传输任务
+          </div>
+        </div>
+
+        <!-- Bottom action bar -->
+        <div v-if="activeTransfers.length > 1" class="flex justify-between items-center px-12px py-8px border-t-1px border-t-solid border-[var(--primary-color)]/10">
+          <span class="text-11px dark:text-white/40 text-gray-400">{{ activeCount }} 个任务</span>
+          <div class="flex gap-8px">
+            <button class="text-11px text-[var(--primary-color)] hover:underline" @click="pauseAll">全部暂停</button>
+            <button class="text-11px text-[var(--primary-color)] hover:underline" @click="resumeAll">全部继续</button>
           </div>
         </div>
       </div>
