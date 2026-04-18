@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { useSvgIcon } from '@/hooks/common/icon';
+import { useUploader } from '@/hooks/business/upload/use-uploader';
 import type { DropdownOption } from 'naive-ui';
 
 defineOptions({
@@ -27,6 +28,7 @@ const emit = defineEmits<Emits>();
 
 const diskStore = useDiskStore();
 const { SvgIconVNode } = useSvgIcon();
+const { triggerFile, triggerFolder } = useUploader();
 
 const showMobileSearch = ref(false);
 const searchKeyword = ref('');
@@ -137,9 +139,9 @@ const moreOptions = computed<DropdownOption[]>(() => [
 // 处理上传选择
 function handleUploadSelect(key: string) {
   if (key === 'uploadFile') {
-    emit('uploadFile');
+    triggerFile();
   } else if (key === 'uploadFolder') {
-    emit('uploadFolder');
+    triggerFolder();
   }
 }
 
@@ -337,7 +339,7 @@ function handleRefresh() {
           <template #trigger>
             <NButton @click="handleTransferList">
               <template #icon>
-                <NBadge :value="activeTransferCount" :max="99" :show="activeTransferCount > 0" :offset="[4, -2]">
+                <NBadge :value="diskStore.uploadingCount" :max="99" :show="diskStore.uploadingCount > 0" :offset="[4, -2]">
                   <SvgIcon icon="mdi:swap-vertical" :size="18" />
                 </NBadge>
               </template>
