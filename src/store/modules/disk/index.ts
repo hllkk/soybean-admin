@@ -116,6 +116,21 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     selectedFiles.value = [];
   }
 
+  // 获取上传中的任务数
+  const uploadingCount = computed(() =>
+    transferList.value.filter(item => item.transferType === 'upload' && item.status !== 'completed').length
+  );
+
+  // 批量添加上传任务
+  function addUploadTasks(items: Api.Disk.TransferItem[]) {
+    transferList.value.push(...items);
+  }
+
+  // 清空所有传输项（包括已完成）
+  function clearAllTransfers() {
+    transferList.value = [];
+  }
+
   // 重置所有状态
   function $reset() {
     currentFileType.value = 'all';
@@ -139,6 +154,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     // computed
     breadcrumbPath,
     hasUploadTask,
+    uploadingCount,
     // actions
     setFileType,
     enterFolder,
@@ -151,6 +167,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     clearCompletedTransfers,
     setSelectedFiles,
     clearSelection,
+    addUploadTasks,
+    clearAllTransfers,
     $reset
   };
 });
