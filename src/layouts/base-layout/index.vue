@@ -12,6 +12,7 @@ import GlobalTab from '../modules/global-tab/index.vue';
 import GlobalContent from '../modules/global-content/index.vue';
 import GlobalFooter from '../modules/global-footer/index.vue';
 import ThemeDrawer from '../modules/theme-drawer/index.vue';
+import UploadTrigger from '@/components/custom/upload-trigger.vue';
 import { provideMixMenuContext } from '../modules/global-menu/context';
 
 defineOptions({
@@ -163,6 +164,7 @@ function getSiderAndCollapsedWidth(isCollapsed: boolean) {
     <GlobalMenu />
     <GlobalContent />
     <ThemeDrawer />
+    <UploadTrigger />
     <template #footer>
       <GlobalFooter />
     </template>
