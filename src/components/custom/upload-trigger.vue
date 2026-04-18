@@ -11,6 +11,11 @@ const { upload } = useUploader();
 const isDragging = ref(false);
 let dragCounter = 0;
 
+function resetDrag() {
+  dragCounter = 0;
+  isDragging.value = false;
+}
+
 function handleDragEnter(e: DragEvent) {
   e.preventDefault();
   if (!e.dataTransfer?.types.includes('Files')) return;
@@ -20,27 +25,32 @@ function handleDragEnter(e: DragEvent) {
 
 function handleDragOver(e: DragEvent) {
   e.preventDefault();
+  e.stopPropagation();
 }
 
 function handleDragLeave(e: DragEvent) {
   e.preventDefault();
   dragCounter--;
   if (dragCounter <= 0) {
-    dragCounter = 0;
-    isDragging.value = false;
+    resetDrag();
   }
 }
 
 function handleDrop(e: DragEvent) {
   e.preventDefault();
-  dragCounter = 0;
-  isDragging.value = false;
+  e.stopPropagation();
+  resetDrag();
 
   if (!e.dataTransfer?.files.length) return;
+  upload(Array.from(e.dataTransfer.files));
+}
 
-  const target = e.target as HTMLElement;
-  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+function handleOverlayDrop(e: DragEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  resetDrag();
 
+  if (!e.dataTransfer?.files.length) return;
   upload(Array.from(e.dataTransfer.files));
 }
 
@@ -60,17 +70,23 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Transition name="upload-overlay">
-    <div
-      v-if="isDragging"
-      class="fixed inset-0 z-9999 flex items-center justify-center bg-[var(--primary-color)]/8 backdrop-blur-4px"
-    >
-      <div class="flex flex-col items-center gap-12px">
-        <SvgIcon icon="material-symbols:cloud-upload-outline" class="text-64px text-[var(--primary-color)]" />
-        <span class="text-18px font-500 text-[var(--primary-color)]">释放文件以上传到网盘</span>
+  <Teleport to="body">
+    <Transition name="upload-overlay">
+      <div
+        v-if="isDragging"
+        class="fixed inset-0 z-9999 flex items-center justify-center bg-[var(--primary-color)]/8 backdrop-blur-4px"
+        @dragover.prevent.stop
+        @dragenter.prevent.stop
+        @dragleave.prevent.stop
+        @drop.prevent.stop="handleOverlayDrop"
+      >
+        <div class="flex flex-col items-center gap-12px">
+          <SvgIcon icon="material-symbols:cloud-upload-outline" class="text-64px text-[var(--primary-color)]" />
+          <span class="text-18px font-500 text-[var(--primary-color)]">释放文件以上传到网盘</span>
+        </div>
       </div>
-    </div>
-  </Transition>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
