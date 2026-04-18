@@ -23,8 +23,6 @@ const transferPanelRef = ref<InstanceType<typeof TransferPanel>>();
 const totalCount = ref(0);
 const showCreateFolderModal = ref(false);
 const newFolderName = ref('');
-const uploadFileRef = ref<HTMLInputElement>();
-const uploadFolderRef = ref<HTMLInputElement>();
 
 // 显示容量开关
 const showCapacity = ref(true);
@@ -257,34 +255,6 @@ async function getFileList() {
   endLoading();
 }
 
-function handleUploadFile() {
-  uploadFileRef.value?.click();
-}
-
-function handleUploadFolder() {
-  uploadFolderRef.value?.click();
-}
-
-async function handleFileUpload(event: Event) {
-  const target = event.target as HTMLInputElement;
-  const files = target.files;
-  if (!files || files.length === 0) return;
-
-  // TODO: Upload logic
-
-  target.value = '';
-}
-
-async function handleFolderUpload(event: Event) {
-  const target = event.target as HTMLInputElement;
-  const files = target.files;
-  if (!files || files.length === 0) return;
-
-  // TODO: Folder upload logic
-
-  target.value = '';
-}
-
 function handleCreateFolder() {
   showCreateFolderModal.value = true;
 }
@@ -445,8 +415,6 @@ onMounted(() => {
         <div class="h-full flex flex-col">
           <!-- Toolbar -->
           <Toolbar
-            @upload-file="handleUploadFile"
-            @upload-folder="handleUploadFolder"
             @create-folder="handleCreateFolder"
             @search="handleSearch"
             @refresh="handleRefresh"
@@ -478,25 +446,6 @@ onMounted(() => {
         </div>
       </NCard>
     </div>
-
-    <!-- Hidden file upload input -->
-    <input
-      ref="uploadFileRef"
-      type="file"
-      multiple
-      style="display: none"
-      @change="handleFileUpload"
-    />
-
-    <!-- Hidden folder upload input -->
-    <input
-      ref="uploadFolderRef"
-      type="file"
-      webkitdirectory
-      directory
-      style="display: none"
-      @change="handleFolderUpload"
-    />
 
     <!-- Create Folder Modal -->
     <NModal
