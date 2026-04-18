@@ -8,6 +8,7 @@ import { useRouteStore } from '@/store/modules/route';
 import GlobalSider from '../modules/global-sider/index.vue';
 import GlobalContent from '../modules/global-content/index.vue';
 import DiskHeader from './components/disk-header.vue';
+import UploadTrigger from '@/components/custom/upload-trigger.vue';
 import { provideMixMenuContext } from '../modules/global-menu/context';
 
 defineOptions({
@@ -68,6 +69,7 @@ const siderCollapsedWidth = computed(() => themeStore.sider.mixCollapsedWidth);
     </template>
     <VerticalMixMenu :key="appStore.isMobile ? 'mobile' : 'desktop'" />
     <GlobalContent />
+    <UploadTrigger />
   </AdminLayout>
 </template>
 
