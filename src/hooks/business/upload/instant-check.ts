@@ -14,7 +14,7 @@ export function computeFileHash(
     const spark = new SparkMD5.ArrayBuffer();
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.addEventListener('load', (e) => {
       if (e.target?.result) {
         spark.append(e.target.result as ArrayBuffer);
       }
@@ -26,9 +26,9 @@ export function computeFileHash(
       } else {
         resolve(spark.end());
       }
-    };
+    });
 
-    reader.onerror = () => reject(new Error('文件读取失败'));
+    reader.addEventListener('error', () => reject(new Error('文件读取失败')));
 
     function loadNext() {
       const start = currentChunk * HASH_CHUNK_SIZE;

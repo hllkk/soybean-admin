@@ -11,8 +11,6 @@ defineOptions({
 });
 
 interface Emits {
-  (e: 'uploadFile'): void;
-  (e: 'uploadFolder'): void;
   (e: 'createFolder'): void;
   (e: 'search'): void;
   (e: 'refresh'): void;
@@ -40,11 +38,6 @@ const selectedCount = computed(() => diskStore.selectedFiles.length);
 const hasSelection = computed(() => selectedCount.value > 0);
 // 是否多选
 const isMultipleSelection = computed(() => selectedCount.value > 1);
-// 活跃传输数量
-const activeTransferCount = computed(() =>
-  diskStore.transferList.filter(item => item.status !== 'completed').length
-);
-
 // 上传下拉选项
 const uploadOptions = computed<DropdownOption[]>(() => [
   {

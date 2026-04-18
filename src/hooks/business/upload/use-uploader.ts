@@ -23,12 +23,12 @@ export function useUploader() {
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
-    input.onchange = (e) => {
+    input.addEventListener('change', (e) => {
       const files = (e.target as HTMLInputElement).files;
       if (files) {
         upload(Array.from(files), parentId);
       }
-    };
+    });
     input.click();
   }
 
@@ -37,12 +37,12 @@ export function useUploader() {
     input.type = 'file';
     input.setAttribute('webkitdirectory', '');
     input.setAttribute('directory', '');
-    input.onchange = (e) => {
+    input.addEventListener('change', (e) => {
       const files = (e.target as HTMLInputElement).files;
       if (files) {
         upload(Array.from(files), parentId);
       }
-    };
+    });
     input.click();
   }
 

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { isCancel } from 'axios';
 import { getToken } from '@/store/modules/auth/shared';
 import { getServiceBaseURL } from '@/utils/service';
 import { fetchMergeChunks, fetchUploadFile } from '@/service/api/disk/file';
@@ -296,7 +296,7 @@ export class UploaderEngine {
       this.finishTask(task.taskId);
     } catch (error: unknown) {
       // Ignore abort errors from pause/cancel
-      if (axios.isCancel(error)) {
+      if (isCancel(error)) {
         return;
       }
 
@@ -476,7 +476,7 @@ export class UploaderEngine {
         this.syncToStore(task);
         return;
       } catch (error: unknown) {
-        if (axios.isCancel(error) || signal.aborted) return;
+        if (isCancel(error) || signal.aborted) return;
 
         lastError = error instanceof Error ? error : new Error('分片上传失败');
 
