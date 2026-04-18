@@ -298,75 +298,6 @@ function handleFileAction(action: string, file: Api.Disk.FileItem) {
   window.$message?.info(`${action}: ${file.fileName}`);
 }
 
-// 测试传输数据
-function addMockTransferData() {
-  const mockTransfers: Api.Disk.TransferItem[] = [
-    {
-      transferId: 't1',
-      fileName: '系统架构设计文档.pdf',
-      fileType: 'document',
-      transferType: 'upload',
-      status: 'transferring',
-      progress: 67,
-      transferredSize: 1376256,
-      totalSize: 2048576,
-      speed: 256000,
-      remainingTime: 3
-    },
-    {
-      transferId: 't2',
-      fileName: '产品宣传视频.mp4',
-      fileType: 'video',
-      transferType: 'download',
-      status: 'transferring',
-      progress: 34,
-      transferredSize: 17825792,
-      totalSize: 52428800,
-      speed: 1024000,
-      remainingTime: 34
-    },
-    {
-      transferId: 't3',
-      fileName: '数据库备份.sql',
-      fileType: 'other',
-      transferType: 'upload',
-      status: 'pending',
-      progress: 0,
-      transferredSize: 0,
-      totalSize: 10485760,
-      speed: 0,
-      remainingTime: 0
-    }
-  ];
-  mockTransfers.forEach(item => {
-    diskStore.addTransferItem(item);
-  });
-}
-
-// 模拟进度更新
-function startMockProgress() {
-  setInterval(() => {
-    diskStore.transferList.forEach(item => {
-      if (item.status === 'transferring' && item.progress < 100) {
-        const increment = Math.floor(Math.random() * 5) + 1;
-        const newProgress = Math.min(100, item.progress + increment);
-        diskStore.updateTransferItem(item.transferId, {
-          progress: newProgress,
-          transferredSize: Math.round(item.totalSize * newProgress / 100),
-          speed: Math.floor(Math.random() * 500000) + 100000,
-          remainingTime: Math.max(0, Math.round((100 - newProgress) / 3)),
-          status: newProgress >= 100 ? 'completed' : 'transferring'
-        });
-      } else if (item.status === 'pending') {
-        diskStore.updateTransferItem(item.transferId, {
-          status: 'transferring',
-          speed: Math.floor(Math.random() * 300000) + 50000
-        });
-      }
-    });
-  }, 1000);
-}
-
 // Watch file type changes
 watch(() => diskStore.currentFileType, () => {
   getFileList();
@@ -384,9 +315,6 @@ watch(() => diskStore.sortSettings, () => {
 
 onMounted(() => {
   getFileList();
-  // TODO: 移除测试数据
-  addMockTransferData();
-  startMockProgress();
 });
 </script>
 
