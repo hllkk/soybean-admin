@@ -9,37 +9,49 @@ defineOptions({
 const { upload } = useUploader();
 
 const isDragging = ref(false);
-let dragCounter = 0;
+let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
-function resetDrag() {
-  dragCounter = 0;
-  isDragging.value = false;
+function showOverlay() {
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    hideTimer = null;
+  }
+  isDragging.value = true;
+}
+
+function hideOverlay() {
+  if (hideTimer) clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => {
+    isDragging.value = false;
+    hideTimer = null;
+  }, 100);
 }
 
 function handleDragEnter(e: DragEvent) {
   e.preventDefault();
   if (!e.dataTransfer?.types.includes('Files')) return;
-  dragCounter++;
-  isDragging.value = true;
+  showOverlay();
 }
 
 function handleDragOver(e: DragEvent) {
   e.preventDefault();
-  e.stopPropagation();
+  if (!e.dataTransfer?.types.includes('Files')) return;
+  showOverlay();
 }
 
 function handleDragLeave(e: DragEvent) {
   e.preventDefault();
-  dragCounter--;
-  if (dragCounter <= 0) {
-    resetDrag();
-  }
+  hideOverlay();
 }
 
 function handleDrop(e: DragEvent) {
   e.preventDefault();
   e.stopPropagation();
-  resetDrag();
+  isDragging.value = false;
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    hideTimer = null;
+  }
 
   if (!e.dataTransfer?.files.length) return;
   upload(Array.from(e.dataTransfer.files));
@@ -48,7 +60,11 @@ function handleDrop(e: DragEvent) {
 function handleOverlayDrop(e: DragEvent) {
   e.preventDefault();
   e.stopPropagation();
-  resetDrag();
+  isDragging.value = false;
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    hideTimer = null;
+  }
 
   if (!e.dataTransfer?.files.length) return;
   upload(Array.from(e.dataTransfer.files));
@@ -66,6 +82,7 @@ onUnmounted(() => {
   document.removeEventListener('dragover', handleDragOver);
   document.removeEventListener('dragleave', handleDragLeave);
   document.removeEventListener('drop', handleDrop);
+  if (hideTimer) clearTimeout(hideTimer);
 });
 </script>
 
@@ -75,9 +92,8 @@ onUnmounted(() => {
       <div
         v-if="isDragging"
         class="fixed inset-0 z-9999 flex items-center justify-center bg-[var(--primary-color)]/8 backdrop-blur-4px"
-        @dragover.prevent.stop
-        @dragenter.prevent.stop
-        @dragleave.prevent.stop
+        @dragover.prevent.stop="showOverlay"
+        @dragleave.prevent.stop="hideOverlay"
         @drop.prevent.stop="handleOverlayDrop"
       >
         <div class="flex flex-col items-center gap-12px">
