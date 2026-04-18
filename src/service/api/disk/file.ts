@@ -67,3 +67,41 @@ export function fetchRenameFile(fileId: CommonType.IdType, newName: string) {
     data: { fileId, newName }
   });
 }
+
+/** 秒传检测 */
+export function fetchCheckFile(data: Api.Disk.FileCheckParams) {
+  return request<Api.Disk.FileCheckResponse>({
+    url: '/disk/file/check',
+    method: 'post',
+    data
+  });
+}
+
+/** 分片上传 */
+export function fetchUploadChunk(data: Api.Disk.ChunkUploadParams) {
+  const formData = new FormData();
+  formData.append('file', data.file);
+  formData.append('fileHash', data.fileHash);
+  formData.append('chunkIndex', String(data.chunkIndex));
+  formData.append('totalChunks', String(data.totalChunks));
+  formData.append('fileName', data.fileName);
+  formData.append('parentId', String(data.parentId));
+
+  return request<boolean>({
+    url: '/disk/file/chunk',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
+
+/** 合并分片 */
+export function fetchMergeChunks(data: Api.Disk.MergeChunksParams) {
+  return request<Api.Disk.MergeChunksResponse>({
+    url: '/disk/file/merge',
+    method: 'post',
+    data
+  });
+}
