@@ -5,7 +5,7 @@ let engineInstance: UploaderEngine | null = null;
 
 function getEngine(): UploaderEngine {
   if (!engineInstance) {
-    engineInstance = new UploaderEngine({ maxConcurrent: 3 });
+    engineInstance = new UploaderEngine(3);
   }
   return engineInstance;
 }
@@ -15,7 +15,7 @@ export function useUploader() {
   const diskStore = useDiskStore();
 
   function upload(files: File[], parentId?: number) {
-    const targetParentId = parentId ?? diskStore.currentParentId ?? 0;
+    const targetParentId = parentId ?? Number(diskStore.currentParentId ?? 0);
     engine.addFiles(files, targetParentId);
   }
 
