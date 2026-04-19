@@ -30,7 +30,15 @@ const { triggerFile, triggerFolder } = useUploader();
 
 const showMobileSearch = ref(false);
 const searchKeyword = ref('');
-const currentSort = ref<string>('modifyTime-desc');
+const currentSort = computed({
+  get: () => {
+    const { field, order } = diskStore.sortSettings;
+    return field ? `${field}-${order}` : '';
+  },
+  set: (val: string) => {
+    // setter is unused but required by computed writable
+  }
+});
 
 // 选中数量
 const selectedCount = computed(() => diskStore.selectedFiles.length);
