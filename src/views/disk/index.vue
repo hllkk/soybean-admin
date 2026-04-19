@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import { fetchGetFileList, fetchCreateFolder } from '@/service/api/disk';
+import { fetchGetFileList, fetchCreateFolder, mapBackendFileList } from '@/service/api/disk';
 import FileTypeMenu from './modules/file-type-menu.vue';
 import Toolbar from './modules/toolbar.vue';
 import Breadcrumb from './modules/breadcrumb.vue';
@@ -16,6 +17,8 @@ defineOptions({
 });
 
 const diskStore = useDiskStore();
+const route = useRoute();
+const router = useRouter();
 const { loading, startLoading, endLoading } = useLoading();
 
 const fileList = ref<Api.Disk.FileItem[]>([]);
@@ -241,10 +244,15 @@ async function getFileList() {
 
   const { data, error } = await fetchGetFileList(searchParams.value);
 
-  if (!error && data && data.rows.length > 0) {
-    // 后端有数据，使用后端数据
-    fileList.value = data.rows;
-    totalCount.value = data.total;
+  if (!error && data) {
+    const mapped = mapBackendFileList(data);
+    if (mapped.rows.length > 0) {
+      fileList.value = mapped.rows;
+      totalCount.value = mapped.total;
+    } else {
+      fileList.value = [];
+      totalCount.value = 0;
+    }
   } else {
     // 后端无数据或请求失败，使用测试数据
     const mockFiles = getMockFilesByType(diskStore.currentFileType);
@@ -253,6 +261,7 @@ async function getFileList() {
   }
 
   endLoading();
+  diskStore.currentFileList = fileList.value;
 }
 
 function handleCreateFolder() {
@@ -313,7 +322,51 @@ watch(() => diskStore.sortSettings, () => {
   getFileList();
 }, { deep: true });
 
-onMounted(() => {
+// Watch upload completions to auto-refresh file list
+let prevCompletedCount = 0;
+watch(
+  () => diskStore.transferList.filter(item => item.transferType === 'upload' && item.status === 'completed').length,
+  completedCount => {
+    if (completedCount > prevCompletedCount) {
+      prevCompletedCount = completedCount;
+      getFileList();
+    }
+  }
+);
+
+// Watch URL path changes (browser back/forward)
+// 支持两种路由格式：path参数(/disk/:path)和query参数(/disk?path=xxx)
+watch(() => route.params.path || route.query.path, async (newPath) => {
+  const currentPathStr = diskStore.getCurrentPathString();
+  // 解码URL路径
+  const decodedNewPath = newPath
+    ? decodeURIComponent(newPath as string)
+    : '/';
+
+  // 只有当URL路径与当前状态不同时才恢复
+  if (decodedNewPath !== currentPathStr) {
+    const success = await diskStore.restoreFromPath(decodedNewPath);
+    if (!success && decodedNewPath !== '/') {
+      // 路径不存在，重定向到根目录
+      window.$message?.warning('路径不存在，已返回根目录');
+      router.replace({ name: 'disk' });
+    }
+    getFileList();
+  }
+});
+
+onMounted(async () => {
+  // 从URL恢复路径状态（支持path参数和query参数）
+  const pathParam = (route.params.path || route.query.path) as string;
+  if (pathParam) {
+    // 解码URL路径
+    const decodedPath = decodeURIComponent(pathParam);
+    const success = await diskStore.restoreFromPath(decodedPath);
+    if (!success) {
+      window.$message?.warning('路径不存在，已返回根目录');
+      router.replace({ name: 'disk' });
+    }
+  }
   getFileList();
 });
 </script>
@@ -408,6 +461,9 @@ onMounted(() => {
 <style scoped lang="scss">
 :deep(.n-card__content) {
   padding: 0 !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 :deep(.n-divider) {
   margin: 0 !important;

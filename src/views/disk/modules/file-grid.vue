@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useDiskStore } from '@/store/modules/disk';
 import FileCard from './file-card.vue';
 import FileEmpty from './file-empty.vue';
@@ -32,12 +32,28 @@ const emit = defineEmits<Emits>();
 
 const diskStore = useDiskStore();
 
+const gridScrollRef = ref<HTMLDivElement>();
+const scrollStyle = ref<Record<string, string>>({});
+
 const isSelected = computed(() => (fileId: CommonType.IdType) => {
   return diskStore.selectedFiles.includes(fileId);
 });
 
-// 是否显示空状态
 const showEmpty = computed(() => props.files.length === 0 && !props.loading);
+
+function updateScrollHeight() {
+  const el = gridScrollRef.value;
+  if (!el) return;
+
+  if (window.innerWidth < 640) {
+    scrollStyle.value = {};
+    return;
+  }
+
+  const top = el.getBoundingClientRect().top;
+  const maxH = window.innerHeight - top - 24;
+  scrollStyle.value = { maxHeight: `${maxH}px` };
+}
 
 function handleFileClick(file: Api.Disk.FileItem) {
   emit('fileClick', file);
@@ -69,30 +85,64 @@ function handleAction(action: string, file: Api.Disk.FileItem) {
   else if (action === 'copy') emit('fileCopy', file);
   else if (action === 'move') emit('fileMove', file);
 }
+
+let resizeObserver: ResizeObserver | undefined;
+
+onMounted(() => {
+  resizeObserver = new ResizeObserver(() => {
+    updateScrollHeight();
+  });
+  resizeObserver.observe(document.documentElement);
+  window.addEventListener('resize', updateScrollHeight);
+});
+
+onUnmounted(() => {
+  resizeObserver?.disconnect();
+  window.removeEventListener('resize', updateScrollHeight);
+});
+
+watch(
+  () => props.files,
+  () => nextTick(updateScrollHeight),
+  { immediate: true }
+);
 </script>
 
 <template>
-  <NSpin :show="loading" class="h-full">
+  <NSpin :show="loading">
     <!-- 空状态 -->
     <FileEmpty v-if="showEmpty" />
 
-    <!-- 文件网格 -->
-    <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-16px p-16px">
-      <FileCard
-        v-for="file in files"
-        :key="file.fileId"
-        :file="file"
-        :selected="isSelected(file.fileId)"
-        @click="handleFileClick(file)"
-        @dblclick="handleFileDblClick(file)"
-        @select="handleSelect(file)"
-        @share="handleAction('share', file)"
-        @download="handleAction('download', file)"
-        @delete="handleAction('delete', file)"
-        @rename="handleAction('rename', file)"
-        @copy="handleAction('copy', file)"
-        @move="handleAction('move', file)"
-      />
+    <!-- 文件网格 - 滚动容器 -->
+    <div
+      v-else
+      ref="gridScrollRef"
+      class="file-grid-scroll overflow-y-auto pr-4px lt-sm:overflow-visible lt-sm:pr-0px"
+      :style="scrollStyle"
+    >
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-16px px-16px pt-16px pb-48px">
+        <FileCard
+          v-for="file in files"
+          :key="file.fileId"
+          :file="file"
+          :selected="isSelected(file.fileId)"
+          @click="handleFileClick(file)"
+          @dblclick="handleFileDblClick(file)"
+          @select="handleSelect(file)"
+          @share="handleAction('share', file)"
+          @download="handleAction('download', file)"
+          @delete="handleAction('delete', file)"
+          @rename="handleAction('rename', file)"
+          @copy="handleAction('copy', file)"
+          @move="handleAction('move', file)"
+        />
+      </div>
     </div>
   </NSpin>
 </template>
+
+<style scoped lang="scss">
+.file-grid-scroll {
+  @include scrollbar();
+}
+</style>

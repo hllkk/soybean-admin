@@ -1392,7 +1392,8 @@ const local: App.I18n.Schema = {
       breadcrumb: {
         allFiles: 'All Files',
         loaded: 'All Loaded',
-        total: 'Total {count} items'
+        total: 'Total {count} items',
+        back: 'Back'
       },
       file: {
         name: 'Name',
@@ -1443,7 +1444,13 @@ const local: App.I18n.Schema = {
           invalid: 'Folder name cannot be empty'
         }
       },
-      createFolder: 'New Folder'
+      createFolder: 'New Folder',
+      duplicateFile: {
+        title: 'File Name Conflict',
+        message: 'A file named "{fileName}" already exists. Choose an action:',
+        overwrite: 'Overwrite',
+        keepBoth: 'Keep Both'
+      }
     }
   },
   form: {

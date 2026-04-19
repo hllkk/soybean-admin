@@ -206,6 +206,102 @@ function isActiveStatus(status: Api.Disk.TransferItem['status']): boolean {
   return ['uploading', 'hashing', 'checking', 'merging', 'transferring'].includes(status);
 }
 
+function isPreparingStatus(status: Api.Disk.TransferItem['status']): boolean {
+  return ['hashing', 'checking'].includes(status);
+}
+
+function getFileTypeCategory(extension: string): string {
+  if (!extension) return 'other';
+  const extToCategory: Record<string, string> = {
+    jpg: 'image', jpeg: 'image', png: 'image', gif: 'image', webp: 'image', svg: 'image', bmp: 'image', ico: 'image',
+    pdf: 'document', doc: 'document', docx: 'document', xls: 'document', xlsx: 'document', csv: 'document',
+    ppt: 'document', pptx: 'document', txt: 'document', md: 'document', log: 'document',
+    mp4: 'video', avi: 'video', mov: 'video', mkv: 'video', wmv: 'video', flv: 'video',
+    mp3: 'audio', wav: 'audio', flac: 'audio', aac: 'audio', ogg: 'audio', wma: 'audio'
+  };
+  return extToCategory[extension.toLowerCase()] || 'other';
+}
+
+// ---- Folder grouping ----
+const expandedFolders = ref<Set<string>>(new Set());
+const expandedDetails = ref<Set<string>>(new Set());
+
+const folderGroups = computed(() => {
+  const groups = new Map<string, { name: string; items: Api.Disk.TransferItem[] }>();
+  for (const item of activeTransfers.value) {
+    if (item.folderId) {
+      let group = groups.get(item.folderId);
+      if (!group) {
+        group = { name: item.folderName || '文件夹', items: [] };
+        groups.set(item.folderId, group);
+      }
+      group.items.push(item);
+    }
+  }
+  return groups;
+});
+
+const ungroupedItems = computed(() =>
+  activeTransfers.value.filter(item => !item.folderId)
+);
+
+function toggleFolder(folderId: string) {
+  const set = new Set(expandedFolders.value);
+  if (set.has(folderId)) {
+    set.delete(folderId);
+  } else {
+    set.add(folderId);
+  }
+  expandedFolders.value = set;
+}
+
+function toggleDetail(transferId: string) {
+  const set = new Set(expandedDetails.value);
+  if (set.has(transferId)) {
+    set.delete(transferId);
+  } else {
+    set.add(transferId);
+  }
+  expandedDetails.value = set;
+}
+
+function getFolderProgress(items: Api.Disk.TransferItem[]): number {
+  if (items.length === 0) return 0;
+  const total = items.reduce((sum, item) => sum + item.progress, 0);
+  return Math.round(total / items.length);
+}
+
+function getFolderStatus(items: Api.Disk.TransferItem[]): Api.Disk.TransferItem['status'] {
+  if (items.every(i => i.status === 'completed')) return 'completed';
+  if (items.every(i => i.status === 'paused')) return 'paused';
+  if (items.some(i => i.status === 'failed')) return 'failed';
+  return 'transferring';
+}
+
+function cancelFolder(folderId: string) {
+  const items = folderGroups.value.get(folderId)?.items;
+  if (!items) return;
+  for (const item of items) {
+    cancel(item.transferId);
+  }
+}
+
+function pauseFolder(folderId: string) {
+  const items = folderGroups.value.get(folderId)?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (isActiveStatus(item.status)) pause(item.transferId);
+  }
+}
+
+function resumeFolder(folderId: string) {
+  const items = folderGroups.value.get(folderId)?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.status === 'paused') resume(item.transferId);
+  }
+}
+
 defineExpose({ showSphere, showList, showDefault });
 
 // 监听进度变化更新图表
@@ -269,7 +365,11 @@ onMounted(() => {
   <div class="fixed right-20px bottom-20px z-1000 flex flex-col items-end gap-8px sm:right-20px sm:bottom-20px lt-sm:right-10px lt-sm:bottom-10px">
     <!-- Unified transition with out-in mode for smooth switching -->
     <Transition name="view-switch" mode="out-in">
-      <div v-if="isVisible && viewMode === 'list'" key="list" class="panel-card">
+      <div
+        v-if="isVisible && viewMode === 'list'" key="list"
+        class="w-480px lt-sm:w-280px max-h-500px bg-[rgba(255,255,255,0.92)] dark:bg-[rgba(15,18,30,0.92)] border-1px border-solid border-[rgba(100,108,255,0.2)] rd-12px backdrop-blur-16px overflow-hidden"
+        :style="{ boxShadow: '0 6px 24px rgba(0,0,0,0.08), 0 0 1px rgba(100,108,255,0.3), inset 0 1px 0 rgba(255,255,255,0.3)' }"
+      >
         <!-- Header -->
         <div class="flex justify-between items-center px-12px py-10px border-b-1px border-b-solid border-[var(--primary-color)]/20">
           <div class="flex items-center gap-6px text-12px font-500 dark:text-white/85 text-gray-800">
@@ -278,14 +378,14 @@ onMounted(() => {
             <span class="text-10px bg-[var(--primary-color)]/15 dark:text-[var(--primary-400)] text-[var(--primary-600)] px-6px rd-6px">{{ activeCount }}</span>
           </div>
           <div class="flex gap-4px">
-            <button class="action-btn text-[var(--primary-color)]" title="球体视图" @click="switchToSphere">
+            <button class="w-24px h-24px border-none rd-6px bg-transparent text-black/40 dark:text-white/50 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[rgba(100,108,255,0.15)] hover:text-[var(--primary-color)]" title="球体视图" @click="switchToSphere">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
                 <circle cx="12" cy="12" r="9" />
                 <ellipse cx="12" cy="12" rx="9" ry="4" />
                 <ellipse cx="12" cy="12" rx="4" ry="9" />
               </svg>
             </button>
-            <button class="action-btn" @click="closePanel">
+            <button class="w-24px h-24px border-none rd-6px bg-transparent text-black/40 dark:text-white/50 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[rgba(100,108,255,0.15)] hover:text-[var(--primary-color)]" @click="closePanel">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -296,24 +396,187 @@ onMounted(() => {
 
         <!-- Transfer list -->
         <div class="transfer-scroll">
-          <div v-for="item in activeTransfers" :key="item.transferId" class="transfer-row">
+          <!-- Folder groups -->
+          <div v-for="[folderId, group] in folderGroups" :key="folderId" class="mb-4px rd-8px border-1px border-solid border-[rgba(100,108,255,0.1)] overflow-hidden dark:border-[rgba(100,108,255,0.15)]">
+            <!-- Folder header -->
+            <div class="flex justify-between items-center p-8px-10px cursor-pointer transition-bg duration-200 hover:bg-[rgba(100,108,255,0.04)] dark:hover:bg-[rgba(100,108,255,0.08)]" @click="toggleFolder(folderId)">
+              <div class="flex items-center gap-6px overflow-hidden flex-1">
+                <svg
+                  class="shrink-0 transition-transform duration-200"
+                  :style="{ transform: expandedFolders.has(folderId) ? 'rotate(90deg)' : 'rotate(0deg)' }"
+                  viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"
+                >
+                  <polyline points="9 6 15 12 9 18" />
+                </svg>
+                <FileIcon file-type="folder" size="small" />
+                <span class="text-12px dark:text-white/80 text-gray-700 whitespace-nowrap truncate">{{ group.name }}</span>
+              </div>
+              <div class="flex items-center gap-6px" @click.stop>
+                <span class="text-11px dark:text-white/40 text-gray-400">
+                  {{ group.items.filter(i => i.status === 'completed').length }}/{{ group.items.length }}
+                </span>
+                <span class="text-12px font-600 tabular-nums" :style="{ color: getStatusColor(getFolderStatus(group.items)) }">
+                  {{ getFolderProgress(group.items) }}%
+                </span>
+                <button
+                  v-if="getFolderStatus(group.items) === 'transferring'"
+                  class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                  title="暂停全部"
+                  @click="pauseFolder(folderId)"
+                >
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="10" y1="6" x2="10" y2="18" />
+                    <line x1="14" y1="6" x2="14" y2="18" />
+                  </svg>
+                </button>
+                <button
+                  v-if="getFolderStatus(group.items) === 'paused'"
+                  class="w-22px h-22px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                  title="继续全部"
+                  @click="resumeFolder(folderId)"
+                >
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                    <polygon points="8,6 18,12 8,18" />
+                  </svg>
+                </button>
+                <button class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]" title="取消全部" @click="cancelFolder(folderId)">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <!-- Folder aggregate progress bar -->
+            <div class="h-4px rd-2px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px mb-2px">
+              <div
+                class="h-full rd-2px transition-width duration-300"
+                :style="{ width: `${getFolderProgress(group.items)}%`, background: getStatusColor(getFolderStatus(group.items)) }"
+              />
+            </div>
+            <!-- Expanded file list -->
+            <div v-if="expandedFolders.has(folderId)" class="p-x-4px pb-4px border-t-1px border-t-solid border-t-[rgba(100,108,255,0.08)] dark:border-t-[rgba(100,108,255,0.12)]">
+              <div v-for="item in group.items" :key="item.transferId" class="p-6px mb-2px rd-6px transition-bg duration-200 hover:bg-[rgba(100,108,255,0.06)] dark:hover:bg-[rgba(100,108,255,0.1)]">
+                <div class="flex justify-between items-center mb-4px">
+                  <div class="flex items-center gap-6px overflow-hidden">
+                    <FileIcon :file-type="getFileTypeCategory(item.fileType)" :extension="item.fileType" size="small" />
+                    <span class="text-11px dark:text-white/80 text-gray-700 whitespace-nowrap truncate max-w-180px">{{ item.fileName }}</span>
+                  </div>
+                  <div class="flex items-center gap-4px">
+                    <span class="text-11px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
+                      {{ isPreparingStatus(item.status) ? getStatusText(item) : item.status === 'failed' ? getStatusText(item) : `${item.progress}%` }}
+                    </span>
+                    <button
+                      v-if="isActiveStatus(item.status)"
+                      class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                      title="暂停"
+                      @click="pause(item.transferId)"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="10" y1="6" x2="10" y2="18" />
+                        <line x1="14" y1="6" x2="14" y2="18" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="item.status === 'paused'"
+                      class="w-22px h-22px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                      title="继续"
+                      @click="resume(item.transferId)"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                        <polygon points="8,6 18,12 8,18" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="item.status === 'failed'"
+                      class="w-22px h-22px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--n-warning-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                      title="重试"
+                      @click="retry(item.transferId)"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="1,4 1,10 7,10" />
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="item.status !== 'completed'"
+                      class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                      title="取消"
+                      @click="cancelTransfer(item.transferId)"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <!-- Preparing: indeterminate bar -->
+                <div v-if="isPreparingStatus(item.status)" class="h-4px rd-2px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
+                  <div class="h-full rd-2px w-30% progress-indeterminate" :style="{ background: getStatusColor(item.status) }" />
+                </div>
+                <!-- Uploading/merging: real progress -->
+                <div v-else class="h-4px rd-2px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
+                  <div
+                    class="h-full rd-2px transition-width duration-300"
+                    :style="{ width: `${item.progress}%`, background: getStatusColor(item.status) }"
+                  />
+                </div>
+                <!-- Progress info -->
+                <div v-if="!isPreparingStatus(item.status) && isActiveStatus(item.status)" class="flex justify-between items-center text-10px dark:text-white/35 text-gray-400 mt-3px tabular-nums mx-10px">
+                  <span>{{ formatFileSize(item.transferredSize) }} / {{ formatFileSize(item.totalSize) }}</span>
+                  <div class="flex items-center gap-4px">
+                    <span>{{ formatFileSize(item.speed) }}/s</span>
+                    <button class="text-9px text-[var(--primary-color)] opacity-60 hover:opacity-100 cursor-pointer bg-transparent border-none px-2px" @click.stop="toggleDetail(item.transferId)">
+                      {{ expandedDetails.has(item.transferId) ? '收起' : '详情' }}
+                    </button>
+                  </div>
+                </div>
+                <div v-else-if="getStatusText(item)" class="text-10px mt-3px tabular-nums mx-10px">
+                  <span :style="{ color: getStatusColor(item.status) }">{{ getStatusText(item) }}</span>
+                </div>
+                <!-- Chunk detail -->
+                <div v-if="expandedDetails.has(item.transferId)" class="mt-4px mx-10px px-6px py-4px rd-4px bg-[rgba(100,108,255,0.04)] dark:bg-[rgba(100,108,255,0.08)] text-10px dark:text-white/40 text-gray-400 flex flex-col gap-2px tabular-nums">
+                  <div class="flex justify-between">
+                    <span>文件大小</span>
+                    <span>{{ formatFileSize(item.totalSize) }}</span>
+                  </div>
+                  <div v-if="item.chunkProgress" class="flex justify-between">
+                    <span>分片进度</span>
+                    <span>{{ item.chunkProgress }} 分片</span>
+                  </div>
+                  <div v-if="item.remainingTime > 0" class="flex justify-between">
+                    <span>预计剩余</span>
+                    <span>{{ item.remainingTime }}s</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>当前阶段</span>
+                    <span :style="{ color: getStatusColor(item.status) }">{{ getStatusText(item) || item.status }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ungrouped individual items -->
+          <div v-for="item in ungroupedItems" :key="item.transferId" class="p-8px-10px rd-6px mb-4px transition-bg duration-200 hover:bg-[rgba(100,108,255,0.06)] dark:hover:bg-[rgba(100,108,255,0.1)]">
             <div class="flex justify-between items-center mb-4px">
               <div class="flex items-center gap-6px overflow-hidden">
-                <FileIcon :file-type="item.fileType" size="small" />
+                <FileIcon :file-type="getFileTypeCategory(item.fileType)" :extension="item.fileType" size="small" />
                 <span class="text-12px dark:text-white/80 text-gray-700 whitespace-nowrap truncate max-w-200px">{{ item.fileName }}</span>
               </div>
               <div class="flex items-center gap-6px">
                 <span class="text-12px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
-                  {{ item.progress }}%
+                  {{ item.status === 'failed' ? getStatusText(item) : `${item.progress}%` }}
                 </span>
                 <!-- Pause button: active statuses -->
                 <button
                   v-if="isActiveStatus(item.status)"
-                  class="cancel-btn"
+                  class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="暂停"
                   @click="pause(item.transferId)"
                 >
-                  <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
                     <line x1="10" y1="6" x2="10" y2="18" />
                     <line x1="14" y1="6" x2="14" y2="18" />
                   </svg>
@@ -321,22 +584,22 @@ onMounted(() => {
                 <!-- Resume button: paused -->
                 <button
                   v-if="item.status === 'paused'"
-                  class="cancel-btn text-[var(--primary-color)]"
+                  class="w-22px h-22px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="继续"
                   @click="resume(item.transferId)"
                 >
-                  <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
                     <polygon points="8,6 18,12 8,18" />
                   </svg>
                 </button>
                 <!-- Retry button: failed -->
                 <button
                   v-if="item.status === 'failed'"
-                  class="cancel-btn text-[var(--n-warning-color)]"
+                  class="w-22px h-22px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--n-warning-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="重试"
                   @click="retry(item.transferId)"
                 >
-                  <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="1,4 1,10 7,10" />
                     <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                   </svg>
@@ -344,36 +607,54 @@ onMounted(() => {
                 <!-- Cancel button: all non-completed -->
                 <button
                   v-if="item.status !== 'completed'"
-                  class="cancel-btn"
+                  class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="取消"
                   @click="cancelTransfer(item.transferId)"
                 >
-                  <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
               </div>
             </div>
-            <div class="h-4px rd-2px bg-gray-200 dark:bg-white/6 overflow-hidden">
+            <div class="h-4px rd-2px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
               <div
                 class="h-full rd-2px transition-width duration-300"
                 :style="{ width: `${item.progress}%`, background: getStatusColor(item.status) }"
               />
             </div>
-            <!-- Enhanced progress info -->
-            <div class="flex justify-between text-10px dark:text-white/35 text-gray-400 mt-3px tabular-nums">
-              <template v-if="isActiveStatus(item.status)">
-                <span>{{ formatFileSize(item.transferredSize) }} / {{ formatFileSize(item.totalSize) }}</span>
-                <span v-if="item.chunkProgress" class="ml-4px">{{ item.chunkProgress }}</span>
-              </template>
-              <template v-else-if="getStatusText(item)">
-                <span :style="{ color: getStatusColor(item.status) }">{{ getStatusText(item) }}</span>
-              </template>
+            <!-- Progress info -->
+            <div v-if="isActiveStatus(item.status)" class="flex justify-between items-center text-10px dark:text-white/35 text-gray-400 mt-3px tabular-nums">
+              <span>{{ formatFileSize(item.transferredSize) }} / {{ formatFileSize(item.totalSize) }}</span>
+              <div class="flex items-center gap-4px">
+                <span>{{ formatFileSize(item.speed) }}/s</span>
+                <button class="text-9px text-[var(--primary-color)] opacity-60 hover:opacity-100 cursor-pointer bg-transparent border-none px-2px" @click.stop="toggleDetail(item.transferId)">
+                  {{ expandedDetails.has(item.transferId) ? '收起' : '详情' }}
+                </button>
+              </div>
             </div>
-            <div v-if="isActiveStatus(item.status)" class="flex justify-between text-10px dark:text-white/35 text-gray-400 tabular-nums">
-              <span>{{ formatFileSize(item.speed) }}/s</span>
-              <span>{{ item.remainingTime }}s</span>
+            <div v-else-if="getStatusText(item)" class="text-10px mt-3px tabular-nums">
+              <span :style="{ color: getStatusColor(item.status) }">{{ getStatusText(item) }}</span>
+            </div>
+            <!-- Chunk detail -->
+            <div v-if="expandedDetails.has(item.transferId)" class="mt-4px px-6px py-4px rd-4px bg-[rgba(100,108,255,0.04)] dark:bg-[rgba(100,108,255,0.08)] text-10px dark:text-white/40 text-gray-400 flex flex-col gap-2px tabular-nums">
+              <div class="flex justify-between">
+                <span>文件大小</span>
+                <span>{{ formatFileSize(item.totalSize) }}</span>
+              </div>
+              <div v-if="item.chunkProgress" class="flex justify-between">
+                <span>分片进度</span>
+                <span>{{ item.chunkProgress }} 分片</span>
+              </div>
+              <div v-if="item.remainingTime > 0" class="flex justify-between">
+                <span>预计剩余</span>
+                <span>{{ item.remainingTime }}s</span>
+              </div>
+              <div class="flex justify-between">
+                <span>当前阶段</span>
+                <span :style="{ color: getStatusColor(item.status) }">{{ getStatusText(item) || item.status }}</span>
+              </div>
             </div>
           </div>
 
@@ -518,133 +799,32 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped lang="scss">
-// ---- Panel card (enlarged) ----
-.panel-card {
-  width: 480px;
-  max-height: 500px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(100, 108, 255, 0.2);
-  border-radius: 12px;
-  backdrop-filter: blur(16px);
-  overflow: hidden;
-  box-shadow:
-    0 6px 24px rgba(0, 0, 0, 0.08),
-    0 0 1px rgba(100, 108, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-
-  :root.dark & {
-    background: rgba(15, 18, 30, 0.92);
-    box-shadow:
-      0 6px 24px rgba(0, 0, 0, 0.3),
-      0 0 1px rgba(100, 108, 255, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  }
-
-  @media (max-width: 640px) {
-    width: 280px;
-  }
-}
-
-// ---- Action buttons ----
-.action-btn {
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: rgba(0, 0, 0, 0.4);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba(100, 108, 255, 0.15);
-    color: var(--primary-color);
-  }
-
-  :root.dark & {
-    color: rgba(255, 255, 255, 0.5);
-  }
-}
-
-// ---- Cancel button in list ----
-.cancel-btn {
-  width: 18px;
-  height: 18px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: rgba(0, 0, 0, 0.25);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba(255, 0, 0, 0.1);
-    color: var(--n-error-color);
-  }
-
-  :root.dark & {
-    color: rgba(255, 255, 255, 0.3);
-  }
-}
-
-// ---- Transfer list ----
+<style scoped>
 .transfer-scroll {
   max-height: 480px;
   overflow-y: auto;
   padding: 6px 8px;
-
-  &::-webkit-scrollbar {
-    width: 3px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(100, 108, 255, 0.2);
-    border-radius: 2px;
-  }
+}
+.transfer-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.transfer-scroll::-webkit-scrollbar-thumb {
+  background: rgba(100, 108, 255, 0.2);
+  border-radius: 2px;
 }
 
-.transfer-row {
-  padding: 8px 10px;
-  border-radius: 6px;
-  margin-bottom: 4px;
-  transition: background 0.2s;
-
-  &:hover {
-    background: rgba(100, 108, 255, 0.06);
-
-    :root.dark & {
-      background: rgba(100, 108, 255, 0.1);
-    }
-  }
-}
-
-// ---- Sphere outer glow ----
 .sphere-glow {
   position: absolute;
   inset: -8px;
   border-radius: 50%;
   border: 1px solid rgba(100, 108, 255, 0.08);
   animation: pulseGlow 4s ease-in-out infinite;
-
-  :root.dark & {
-    border-color: rgba(100, 108, 255, 0.12);
-    box-shadow:
-      0 0 20px rgba(100, 108, 255, 0.08),
-      0 0 40px rgba(100, 108, 255, 0.04);
-  }
-
-  @media (max-width: 640px) {
-    inset: -6px;
-  }
+}
+:root.dark .sphere-glow {
+  border-color: rgba(100, 108, 255, 0.12);
+  box-shadow: 0 0 20px rgba(100, 108, 255, 0.08), 0 0 40px rgba(100, 108, 255, 0.04);
 }
 
-// ---- Sphere body ----
 .sphere-body {
   position: absolute;
   top: 10px;
@@ -662,35 +842,24 @@ onMounted(() => {
     0 0 30px rgba(100, 108, 255, 0.08),
     0 0 60px rgba(100, 108, 255, 0.04),
     inset 0 0 40px rgba(100, 108, 255, 0.03);
-
-  :root.dark & {
-    background:
-      radial-gradient(circle at 50% 40%, rgba(140, 150, 255, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 50% 60%, rgba(100, 108, 255, 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 50% 50%, rgba(20, 24, 50, 0.95) 0%, rgba(10, 12, 30, 0.98) 100%);
-    border-color: rgba(100, 108, 255, 0.2);
-    box-shadow:
-      0 0 30px rgba(100, 108, 255, 0.12),
-      0 0 60px rgba(100, 108, 255, 0.06),
-      inset 0 0 40px rgba(100, 108, 255, 0.04);
-  }
-
-  @media (max-width: 640px) {
-    top: 8px;
-    left: 8px;
-    width: 114px;
-    height: 114px;
-  }
+}
+:root.dark .sphere-body {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(140, 150, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 50% 60%, rgba(100, 108, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(20, 24, 50, 0.95) 0%, rgba(10, 12, 30, 0.98) 100%);
+  border-color: rgba(100, 108, 255, 0.2);
+  box-shadow:
+    0 0 30px rgba(100, 108, 255, 0.12),
+    0 0 60px rgba(100, 108, 255, 0.06),
+    inset 0 0 40px rgba(100, 108, 255, 0.04);
 }
 
-// ---- Sphere percent glow ----
-.sphere-percent {
-  :root.dark & {
-    text-shadow: 0 0 16px rgba(100, 108, 255, 0.5);
-  }
+.sphere-percent { }
+:root.dark .sphere-percent {
+  text-shadow: 0 0 16px rgba(100, 108, 255, 0.5);
 }
 
-// ---- ECharts liquidfill 容器 ----
 .liquidfill-container {
   position: absolute;
   inset: 0;
@@ -701,24 +870,20 @@ onMounted(() => {
   z-index: 0;
 }
 
-// ---- Progress ring glow ----
 .ring-fill {
   transition: stroke-dasharray 0.5s ease;
   filter: drop-shadow(0 0 4px rgba(100, 108, 255, 0.5));
 }
 
-// ---- Completed checkmark ----
 .check-icon {
   animation: checkPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-
-  .check-bg {
-    animation: drawCircle 0.6s ease-out 0.1s forwards;
-  }
-
-  .check-mark {
-    animation: drawCheck 0.4s ease-out 0.5s forwards;
-    filter: drop-shadow(0 0 6px rgba(82, 196, 26, 0.5));
-  }
+}
+.check-bg {
+  animation: drawCircle 0.6s ease-out 0.1s forwards;
+}
+.check-mark {
+  animation: drawCheck 0.4s ease-out 0.5s forwards;
+  filter: drop-shadow(0 0 6px rgba(82, 196, 26, 0.5));
 }
 
 .sphere-complete-text {
@@ -726,119 +891,77 @@ onMounted(() => {
   animation: fadeInUp 0.4s ease-out 0.7s both;
 }
 
-// ---- Orbits with particle trails ----
 .orbit {
   position: absolute;
   top: 50%;
   left: 50%;
   border-radius: 50%;
   pointer-events: none;
-
-  .particle {
-    position: absolute;
-    border-radius: 50%;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  &.orbit-1 {
-    width: 168px;
-    height: 168px;
-    margin: -84px 0 0 -84px;
-    animation: orbitSpin 12s linear infinite;
-
-    .particle-1 {
-      width: 4px;
-      height: 4px;
-      top: -2px;
-      background: var(--primary-color);
-      box-shadow:
-        0 0 8px var(--primary-color),
-        0 0 16px rgba(100, 108, 255, 0.4),
-        0 0 4px var(--primary-color);
-    }
-
-    @media (max-width: 640px) {
-      width: 138px;
-      height: 138px;
-      margin: -69px 0 0 -69px;
-    }
-  }
-
-  &.orbit-2 {
-    width: 184px;
-    height: 184px;
-    margin: -92px 0 0 -92px;
-    animation: orbitSpin 18s linear infinite reverse;
-
-    .particle-2 {
-      width: 3px;
-      height: 3px;
-      bottom: -1.5px;
-      top: auto;
-      background: var(--primary-400);
-      box-shadow:
-        0 0 6px var(--primary-400),
-        0 0 12px rgba(100, 108, 255, 0.3);
-    }
-
-    @media (max-width: 640px) {
-      width: 150px;
-      height: 150px;
-      margin: -75px 0 0 -75px;
-    }
-  }
+}
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.orbit-1 {
+  width: 168px;
+  height: 168px;
+  margin: -84px 0 0 -84px;
+  animation: orbitSpin 12s linear infinite;
+}
+.particle-1 {
+  width: 4px;
+  height: 4px;
+  top: -2px;
+  background: var(--primary-color);
+  box-shadow: 0 0 8px var(--primary-color), 0 0 16px rgba(100, 108, 255, 0.4), 0 0 4px var(--primary-color);
+}
+.orbit-2 {
+  width: 184px;
+  height: 184px;
+  margin: -92px 0 0 -92px;
+  animation: orbitSpin 18s linear infinite reverse;
+}
+.particle-2 {
+  width: 3px;
+  height: 3px;
+  bottom: -1.5px;
+  top: auto;
+  background: var(--primary-400);
+  box-shadow: 0 0 6px var(--primary-400), 0 0 12px rgba(100, 108, 255, 0.3);
 }
 
-// ---- Keyframes ----
 @keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.5;
-    box-shadow: 0 0 10px rgba(100, 108, 255, 0.04);
-  }
-  50% {
-    opacity: 1;
-    box-shadow: 0 0 20px rgba(100, 108, 255, 0.1), 0 0 40px rgba(100, 108, 255, 0.05);
-  }
+  0%, 100% { opacity: 0.5; box-shadow: 0 0 10px rgba(100, 108, 255, 0.04); }
+  50% { opacity: 1; box-shadow: 0 0 20px rgba(100, 108, 255, 0.1), 0 0 40px rgba(100, 108, 255, 0.05); }
 }
-
 @keyframes checkPop {
   0% { transform: scale(0); opacity: 0; }
   60% { transform: scale(1.15); }
   100% { transform: scale(1); opacity: 1; }
 }
-
-@keyframes drawCircle {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes drawCheck {
-  to { stroke-dashoffset: 0; }
-}
-
+@keyframes drawCircle { to { stroke-dashoffset: 0; } }
+@keyframes drawCheck { to { stroke-dashoffset: 0; } }
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes orbitSpin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+.progress-indeterminate {
+  animation: indeterminateSlide 1.5s ease-in-out infinite;
+}
+@keyframes indeterminateSlide {
+  0% { width: 20%; margin-left: 0; }
+  50% { width: 40%; margin-left: 30%; }
+  100% { width: 20%; margin-left: 80%; }
+}
 
-// ---- Vue transition: unified view-switch with out-in mode ----
-.view-switch-leave-active {
-  transition: all 0.2s cubic-bezier(0.4, 0, 1, 1);
-}
-.view-switch-enter-active {
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.view-switch-leave-to {
-  opacity: 0;
-  transform: scale(0.92);
-}
-.view-switch-enter-from {
-  opacity: 0;
-  transform: scale(0.92) translateY(8px);
-}
+.view-switch-leave-active { transition: all 0.2s cubic-bezier(0.4, 0, 1, 1); }
+.view-switch-enter-active { transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+.view-switch-leave-to { opacity: 0; transform: scale(0.92); }
+.view-switch-enter-from { opacity: 0; transform: scale(0.92) translateY(8px); }
 </style>

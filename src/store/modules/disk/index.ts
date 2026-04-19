@@ -1,6 +1,37 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 import { SetupStoreId } from '@/enum';
+import { localStg } from '@/utils/storage';
+import { router } from '@/router';
+import { fetchResolvePath } from '@/service/api/disk/file';
+
+const STORAGE_KEY = 'diskTransferList' as const;
+
+/** Active statuses that cannot survive a page refresh */
+const ACTIVE_STATUSES: Api.Disk.TransferItem['status'][] = [
+  'pending', 'hashing', 'checking', 'uploading', 'transferring', 'merging'
+];
+
+function restoreTransferList(): Api.Disk.TransferItem[] {
+  const saved = localStg.get(STORAGE_KEY);
+  if (!saved || !Array.isArray(saved)) return [];
+
+  return saved.map(item => {
+    // Mark active items as interrupted on restore
+    if (ACTIVE_STATUSES.includes(item.status)) {
+      return {
+        ...item,
+        status: 'failed' as const,
+        error: '页面刷新导致上传中断，请重试'
+      };
+    }
+    return item;
+  });
+}
+
+function persistTransferList(list: Api.Disk.TransferItem[]) {
+  localStg.set(STORAGE_KEY, list);
+}
 
 export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   // 当前选中的文件类型
@@ -24,8 +55,11 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     order: 'asc'
   });
 
-  // 传输列表
-  const transferList = ref<Api.Disk.TransferItem[]>([]);
+  // 传输列表（从 localStorage 恢复）
+  const transferList = ref<Api.Disk.TransferItem[]>(restoreTransferList());
+
+  // 当前目录文件列表（由 DiskPage 同步）
+  const currentFileList = ref<Api.Disk.FileItem[]>([]);
 
   // 选中的文件
   const selectedFiles = ref<CommonType.IdType[]>([]);
@@ -48,6 +82,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     currentParentId.value = null;
     currentPath.value = [];
     selectedFiles.value = [];
+    syncStoreToUrl();
   }
 
   // 进入文件夹
@@ -55,6 +90,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     currentParentId.value = folder.fileId;
     currentPath.value.push(folder);
     selectedFiles.value = [];
+    syncStoreToUrl();
   }
 
   // 返回上一级
@@ -71,6 +107,73 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
         : null;
     }
     selectedFiles.value = [];
+    syncStoreToUrl();
+  }
+
+  // 重置路径到根目录
+  function resetPath() {
+    currentPath.value = [];
+    currentParentId.value = null;
+    selectedFiles.value = [];
+    syncStoreToUrl();
+  }
+
+  // 计算当前路径字符串
+  function getCurrentPathString(): string {
+    if (currentPath.value.length === 0) return '/';
+    return '/' + currentPath.value.map(f => f.fileName).join('/');
+  }
+
+  // 同步Store状态到URL（使用path参数而非query）
+  function syncStoreToUrl() {
+    const pathStr = getCurrentPathString();
+
+    // 使用path参数路由，空格编码为%20
+    if (pathStr !== '/') {
+      // 编码路径，确保空格变成%20
+      const encodedPath = encodeURIComponent(pathStr);
+      router.push(`/disk/${encodedPath}`);
+    } else {
+      // 根目录
+      router.push({ name: 'disk' });
+    }
+  }
+
+  // 从URL恢复路径状态（接收已解码的路径）
+  async function restoreFromPath(decodedPath: string): Promise<boolean> {
+    if (!decodedPath || decodedPath === '/') {
+      currentParentId.value = null;
+      currentPath.value = [];
+      return true;
+    }
+
+    try {
+      const { data } = await fetchResolvePath(decodedPath);
+      if (data) {
+        currentParentId.value = data.fileId;
+        // 从面包屑构建currentPath（排除根目录项：fileId为null或0）
+        currentPath.value = data.breadcrumb
+          .filter(b => b.fileId !== null && b.fileId !== 0)
+          .map(b => ({
+            fileId: b.fileId!,
+            fileName: b.fileName,
+            filePath: b.filePath,
+            fileType: 'folder',
+            fileSize: 0,
+            isFolder: true,
+            createTime: '',
+            updateTime: '',
+            modifyTime: '',
+            createBy: '',
+            updateBy: '',
+            parentId: null
+          }));
+        return true;
+      }
+    } catch {
+      // 路径解析失败，返回false
+    }
+    return false;
   }
 
   // 切换视图模式
@@ -142,6 +245,9 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     selectedFiles.value = [];
   }
 
+  // 持久化：transferList 变化时自动保存到 localStorage
+  watch(transferList, list => persistTransferList(list), { deep: true });
+
   return {
     // state
     currentFileType,
@@ -150,6 +256,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     viewMode,
     sortSettings,
     transferList,
+    currentFileList,
     selectedFiles,
     // computed
     breadcrumbPath,
@@ -159,6 +266,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     setFileType,
     enterFolder,
     goBack,
+    resetPath,
     setViewMode,
     setSort,
     addTransferItem,
@@ -169,7 +277,11 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     clearSelection,
     addUploadTasks,
     clearAllTransfers,
-    $reset
+    $reset,
+    // URL同步
+    getCurrentPathString,
+    syncStoreToUrl,
+    restoreFromPath
   };
 });
 

@@ -1182,6 +1182,7 @@ declare namespace App {
             allFiles: string;
             loaded: string;
             total: string;
+            back: string;
           };
           file: {
             name: string;
@@ -1230,6 +1231,12 @@ declare namespace App {
             folderName: FormMsg;
           };
           createFolder: string;
+          duplicateFile: {
+            title: string;
+            message: string;
+            overwrite: string;
+            keepBoth: string;
+          };
         };
       };
       form: {

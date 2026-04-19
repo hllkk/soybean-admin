@@ -10,6 +10,12 @@ const { upload } = useUploader();
 
 const isDragging = ref(false);
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
+let folderIdCounter = 0;
+
+function generateFolderId(): string {
+  folderIdCounter += 1;
+  return `dnd_folder_${Date.now()}_${folderIdCounter}`;
+}
 
 function showOverlay() {
   if (hideTimer) {
@@ -44,6 +50,75 @@ function handleDragLeave(e: DragEvent) {
   hideOverlay();
 }
 
+/** Recursively read a FileSystemEntry, collecting files with their relative paths */
+function readEntry(entry: FileSystemEntry, pathPrefix: string = ''): Promise<{ file: File; relativePath: string }[]> {
+  return new Promise(resolve => {
+    if (entry.isFile) {
+      (entry as FileSystemFileEntry).file(
+        file => {
+          const relativePath = pathPrefix ? `${pathPrefix}/${file.name}` : file.name;
+          resolve([{ file, relativePath }]);
+        },
+        () => resolve([])
+      );
+    } else if (entry.isDirectory) {
+      const subPath = pathPrefix ? `${pathPrefix}/${entry.name}` : entry.name;
+      const reader = (entry as FileSystemDirectoryEntry).createReader();
+      const allFiles: { file: File; relativePath: string }[] = [];
+
+      const readBatch = () => {
+        reader.readEntries(async entries => {
+          if (entries.length === 0) {
+            resolve(allFiles);
+            return;
+          }
+          for (const e of entries) {
+            const files = await readEntry(e, subPath);
+            allFiles.push(...files);
+          }
+          readBatch();
+        }, () => resolve(allFiles));
+      };
+      readBatch();
+    } else {
+      resolve([]);
+    }
+  });
+}
+
+/** Extract files from a drop event, grouping by folder */
+async function extractAndUpload(dataTransfer: DataTransfer) {
+  const items = dataTransfer.items;
+
+  // Prefer webkitGetAsEntry for folder support
+  if (items && items.length > 0 && typeof items[0].webkitGetAsEntry === 'function') {
+    for (const item of Array.from(items)) {
+      const entry = item.webkitGetAsEntry?.();
+      if (!entry) continue;
+
+      if (entry.isDirectory) {
+        const fileEntries = await readEntry(entry);
+        if (fileEntries.length > 0) {
+          upload(fileEntries, undefined, {
+            id: generateFolderId(),
+            name: entry.name
+          });
+        }
+      } else if (entry.isFile) {
+        const fileEntries = await readEntry(entry);
+        if (fileEntries.length > 0) {
+          upload(fileEntries);
+        }
+      }
+    }
+    return;
+  }
+
+  // Fallback: plain FileList
+  const files = Array.from(dataTransfer.files);
+  if (files.length > 0) upload(files);
+}
+
 function handleDrop(e: DragEvent) {
   e.preventDefault();
   e.stopPropagation();
@@ -52,9 +127,8 @@ function handleDrop(e: DragEvent) {
     clearTimeout(hideTimer);
     hideTimer = null;
   }
-
-  if (!e.dataTransfer?.files.length) return;
-  upload(Array.from(e.dataTransfer.files));
+  if (!e.dataTransfer) return;
+  extractAndUpload(e.dataTransfer);
 }
 
 function handleOverlayDrop(e: DragEvent) {
@@ -65,9 +139,8 @@ function handleOverlayDrop(e: DragEvent) {
     clearTimeout(hideTimer);
     hideTimer = null;
   }
-
-  if (!e.dataTransfer?.files.length) return;
-  upload(Array.from(e.dataTransfer.files));
+  if (!e.dataTransfer) return;
+  extractAndUpload(e.dataTransfer);
 }
 
 onMounted(() => {

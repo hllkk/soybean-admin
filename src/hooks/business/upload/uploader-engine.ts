@@ -1,9 +1,8 @@
-import axios, { isCancel } from 'axios';
-import { getToken } from '@/store/modules/auth/shared';
-import { getServiceBaseURL } from '@/utils/service';
-import { fetchMergeChunks, fetchUploadFile } from '@/service/api/disk/file';
+import { isCancel } from 'axios';
+import { fetchCheckFile, fetchMergeChunks, fetchUploadChunk } from '@/service/api/disk/file';
 import { useDiskStore } from '@/store/modules/disk';
-import { computeFileHash, checkInstantUpload } from './instant-check';
+import { useAuthStore } from '@/store/modules/auth';
+import { computeFileHash } from './instant-check';
 import {
   getChunkSize,
   needsChunking,
@@ -41,19 +40,17 @@ function getStore() {
   return useDiskStore();
 }
 
-/** Determine the base URL for raw axios chunk uploads */
-function resolveBaseURL(): string {
-  const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
-  const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
-  return baseURL;
+/** Get current user ID from auth store */
+function getUserId(): number {
+  return Number(useAuthStore().userInfo.userId);
 }
 
-/** Create a raw axios instance for chunk uploads (full control over signal / headers) */
-function createUploadAxios() {
-  return axios.create({
-    baseURL: resolveBaseURL(),
-    timeout: 30000
-  });
+/** Build current directory path from disk store breadcrumbs */
+function getCurrentDirectory(): string {
+  const store = getStore();
+  if (store.currentPath.length === 0) return '/';
+  const parts = store.currentPath.map(item => item.fileName);
+  return `/${parts.join('/')}`;
 }
 
 /** Sleep helper for retry backoff */
@@ -100,12 +97,26 @@ export class UploaderEngine {
   // Public API
   // ---------------------------------------------------------------------------
 
-  /** Add files to the upload queue */
-  addFiles(files: File[], parentId: number): string[] {
+  /** Add files to the upload queue. Folder entries (size 0, no extension, no MIME) are skipped. */
+  addFiles(
+    files: { file: File; resolvedName?: string; override?: boolean; relativePath?: string }[],
+    parentId: number,
+    folderInfo?: { id: string; name: string }
+  ): string[] {
     const ids: string[] = [];
 
-    for (const file of files) {
-      const task = this.createTask(file, parentId);
+    for (const entry of files) {
+      // Skip folder entries from drag-drop (size 0, no type, no extension)
+      const ext = getFileExtension(entry.file.name);
+      if (entry.file.size === 0 && entry.file.type === '' && !ext) continue;
+
+      const task = this.createTask(entry.file, parentId, folderInfo, entry.relativePath);
+      if (entry.resolvedName) {
+        task.fileName = entry.resolvedName;
+      }
+      if (entry.override) {
+        task.override = true;
+      }
       this.taskMap.set(task.taskId, task);
       this.queue.push(task);
       ids.push(task.taskId);
@@ -230,7 +241,12 @@ export class UploaderEngine {
   // ---------------------------------------------------------------------------
 
   /** Create a new upload task from a file */
-  private createTask(file: File, parentId: number): Api.Disk.UploadTask {
+  private createTask(
+    file: File,
+    parentId: number,
+    folderInfo?: { id: string; name: string },
+    explicitRelativePath?: string
+  ): Api.Disk.UploadTask {
     return {
       taskId: generateId(),
       file,
@@ -248,7 +264,10 @@ export class UploaderEngine {
       totalChunks: 1,
       retryCount: 0,
       abortController: undefined,
-      error: undefined
+      error: undefined,
+      folderId: folderInfo?.id,
+      folderName: folderInfo?.name,
+      relativePath: explicitRelativePath || file.webkitRelativePath || undefined
     };
   }
 
@@ -258,11 +277,11 @@ export class UploaderEngine {
       // Phase 1: Hash
       await this.hashPhase(task);
 
-      // Phase 2: Instant check
+      // Phase 2: Check (instant upload / resume)
       const checkResult = await this.checkPhase(task);
 
-      if (checkResult.exists) {
-        // File already exists on server (instant upload)
+      if (checkResult.pass && checkResult.exist) {
+        // File already exists on server (instant upload / 秒传)
         task.status = 'completed';
         task.progress = 100;
         task.transferredSize = task.fileSize;
@@ -271,20 +290,25 @@ export class UploaderEngine {
         return;
       }
 
-      // Phase 3: Upload (whole or chunked)
-      if (needsChunking(task.fileSize)) {
-        // Merge previously uploaded chunks from instant-check response
-        if (checkResult.uploadedChunks && checkResult.uploadedChunks.length > 0) {
-          task.uploadedChunks = [...checkResult.uploadedChunks];
-          this.recalcChunkProgress(task);
-        }
-
-        await this.uploadChunkedPhase(task);
-
-        // Phase 4: Merge
+      if (checkResult.merge) {
+        // All chunks already uploaded, just merge
         await this.mergePhase(task);
       } else {
-        await this.uploadWholePhase(task);
+        // Phase 3: Upload (whole or chunked)
+        if (needsChunking(task.fileSize)) {
+          // Resume from previously uploaded chunks
+          if (checkResult.resume && checkResult.resume.length > 0) {
+            task.uploadedChunks = [...checkResult.resume];
+            this.recalcChunkProgress(task);
+          }
+
+          await this.uploadChunkedPhase(task);
+
+          // Phase 4: Merge
+          await this.mergePhase(task);
+        } else {
+          await this.uploadWholePhase(task);
+        }
       }
 
       task.status = 'completed';
@@ -321,10 +345,8 @@ export class UploaderEngine {
     const abortController = new AbortController();
     task.abortController = abortController;
 
-    const fileHash = await computeFileHash(task.file, (progress: number) => {
-      if (abortController.signal.aborted) return;
-      task.progress = Math.round(progress * 0.3); // hashing = 0-30%
-      this.syncToStore(task);
+    const fileHash = await computeFileHash(task.file, () => {
+      // Don't update progress during hashing — UI shows status text instead
     });
 
     if (abortController.signal.aborted) {
@@ -335,19 +357,39 @@ export class UploaderEngine {
   }
 
   // ---------------------------------------------------------------------------
-  // Phase: Instant check
+  // Phase: Check (instant upload / resume)
   // ---------------------------------------------------------------------------
 
   private async checkPhase(task: Api.Disk.UploadTask): Promise<Api.Disk.FileCheckResponse> {
     task.status = 'checking';
-    task.progress = 30;
+    task.progress = 0;
     this.syncToStore(task);
 
-    return checkInstantUpload(task.fileHash, task.fileName, task.fileSize, task.parentId);
+    const userId = getUserId();
+    const currentDirectory = getCurrentDirectory();
+
+    const { data, error } = await fetchCheckFile({
+      identifier: task.fileHash,
+      fileName: task.fileName,
+      totalSize: task.fileSize,
+      totalChunks: needsChunking(task.fileSize) ? getTotalChunks(task.fileSize, getChunkSize(task.fileSize)) : 1,
+      userId,
+      currentDirectory,
+      relativePath: task.relativePath || task.fileName,
+      isFolder: !!task.folderId,
+      folderPath: task.folderName
+    });
+
+    if (error || !data) {
+      // On check failure, proceed with upload anyway
+      return { pass: false, exist: false, resume: [], upload: true, merge: false };
+    }
+
+    return data;
   }
 
   // ---------------------------------------------------------------------------
-  // Phase: Whole file upload (small files)
+  // Phase: Whole file upload (small files < 10MB)
   // ---------------------------------------------------------------------------
 
   private async uploadWholePhase(task: Api.Disk.UploadTask): Promise<void> {
@@ -359,9 +401,23 @@ export class UploaderEngine {
 
     this.initSpeedTracker(task.taskId);
 
-    const { error } = await fetchUploadFile({
+    const userId = getUserId();
+    const currentDirectory = getCurrentDirectory();
+
+    const { error } = await fetchUploadChunk({
       file: task.file,
-      parentId: task.parentId
+      identifier: task.fileHash,
+      chunkNumber: 0,
+      chunkSize: task.fileSize,
+      currentChunkSize: task.fileSize,
+      totalSize: task.fileSize,
+      fileName: task.fileName,
+      relativePath: task.relativePath || task.fileName,
+      totalChunks: 1,
+      userId,
+      currentDirectory,
+      isFolder: !!task.folderId,
+      folderPath: task.folderName
     });
 
     if (abortController.signal.aborted) {
@@ -450,24 +506,30 @@ export class UploaderEngine {
 
       try {
         const chunk = sliceChunk(task.file, chunkIndex, chunkSize);
-        const token = getToken();
+        const currentChunkSize = chunk.size;
 
-        const axiosInstance = createUploadAxios();
-        const formData = new FormData();
-        formData.append('file', chunk);
-        formData.append('fileHash', task.fileHash);
-        formData.append('chunkIndex', String(chunkIndex));
-        formData.append('totalChunks', String(task.totalChunks));
-        formData.append('fileName', task.fileName);
-        formData.append('parentId', String(task.parentId));
+        const userId = getUserId();
+        const currentDirectory = getCurrentDirectory();
 
-        await axiosInstance.post('/disk/file/chunk', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            ...(token ? { Authorization: token } : {})
-          },
-          signal
+        const { error } = await fetchUploadChunk({
+          file: chunk,
+          identifier: task.fileHash,
+          chunkNumber: chunkIndex,
+          chunkSize,
+          currentChunkSize,
+          totalSize: task.fileSize,
+          fileName: task.fileName,
+          relativePath: task.relativePath || task.fileName,
+          totalChunks: task.totalChunks,
+          userId,
+          currentDirectory,
+          isFolder: !!task.folderId,
+          folderPath: task.folderName
         });
+
+        if (error) {
+          throw new Error(error.message || '分片上传失败');
+        }
 
         // Success: record the uploaded chunk
         task.uploadedChunks = [...task.uploadedChunks, chunkIndex];
@@ -498,16 +560,23 @@ export class UploaderEngine {
     task.status = 'merging';
     this.syncToStore(task);
 
+    const userId = getUserId();
+    const currentDirectory = getCurrentDirectory();
+
     let lastError: Error | undefined;
 
     for (let attempt = 0; attempt <= MERGE_MAX_RETRIES; attempt += 1) {
       try {
         const { error } = await fetchMergeChunks({
-          fileHash: task.fileHash,
+          identifier: task.fileHash,
           fileName: task.fileName,
-          fileSize: task.fileSize,
-          totalChunks: task.totalChunks,
-          parentId: task.parentId
+          totalSize: task.fileSize,
+          userId,
+          currentDirectory,
+          relativePath: task.relativePath || task.fileName,
+          isFolder: !!task.folderId,
+          folder: task.folderName || '',
+          override: task.override ?? false
         });
 
         if (error) {
@@ -581,13 +650,12 @@ export class UploaderEngine {
   // Progress helpers
   // ---------------------------------------------------------------------------
 
-  /** Recalculate progress based on uploaded chunks (hash=30%, chunks=70%) */
+  /** Recalculate progress based on uploaded chunks (0-100%) */
   private recalcChunkProgress(task: Api.Disk.UploadTask): void {
     if (task.totalChunks === 0) return;
     const uploadedCount = task.uploadedChunks.length;
     task.transferredSize = Math.round((uploadedCount / task.totalChunks) * task.fileSize);
-    const chunkPercent = Math.round((uploadedCount / task.totalChunks) * 70);
-    task.progress = 30 + chunkPercent; // 30% from hashing/checking, 70% from chunks
+    task.progress = Math.round((uploadedCount / task.totalChunks) * 100);
   }
 
   // ---------------------------------------------------------------------------
@@ -615,7 +683,9 @@ export class UploaderEngine {
         task.totalChunks > 1
           ? `${task.uploadedChunks.length}/${task.totalChunks}`
           : undefined,
-      error: task.error
+      error: task.error,
+      folderId: task.folderId,
+      folderName: task.folderName
     };
 
     if (existing) {

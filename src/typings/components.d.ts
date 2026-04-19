@@ -86,6 +86,7 @@ declare module 'vue' {
     NGi: typeof import('naive-ui')['NGi']
     NGrid: typeof import('naive-ui')['NGrid']
     NGridItem: typeof import('naive-ui')['NGridItem']
+    NIcon: typeof import('naive-ui')['NIcon']
     NInput: typeof import('naive-ui')['NInput']
     NInputGroup: typeof import('naive-ui')['NInputGroup']
     NInputNumber: typeof import('naive-ui')['NInputNumber']
@@ -138,6 +139,7 @@ declare module 'vue' {
     TableRowCheckAlert: typeof import('./../components/advanced/table-row-check-alert.vue')['default']
     TableSiderLayout: typeof import('./../components/advanced/table-sider-layout.vue')['default']
     ThemeSchemaSwitch: typeof import('./../components/common/theme-schema-switch.vue')['default']
+    UploadTrigger: typeof import('./../components/custom/upload-trigger.vue')['default']
     WangEditor: typeof import('./../components/custom/wang-editor.vue')['default']
     WaveBg: typeof import('./../components/custom/wave-bg.vue')['default']
   }
@@ -219,6 +221,7 @@ declare global {
   const NGi: typeof import('naive-ui')['NGi']
   const NGrid: typeof import('naive-ui')['NGrid']
   const NGridItem: typeof import('naive-ui')['NGridItem']
+  const NIcon: typeof import('naive-ui')['NIcon']
   const NInput: typeof import('naive-ui')['NInput']
   const NInputGroup: typeof import('naive-ui')['NInputGroup']
   const NInputNumber: typeof import('naive-ui')['NInputNumber']
@@ -271,6 +274,7 @@ declare global {
   const TableRowCheckAlert: typeof import('./../components/advanced/table-row-check-alert.vue')['default']
   const TableSiderLayout: typeof import('./../components/advanced/table-sider-layout.vue')['default']
   const ThemeSchemaSwitch: typeof import('./../components/common/theme-schema-switch.vue')['default']
+  const UploadTrigger: typeof import('./../components/custom/upload-trigger.vue')['default']
   const WangEditor: typeof import('./../components/custom/wang-editor.vue')['default']
   const WaveBg: typeof import('./../components/custom/wave-bg.vue')['default']
 }

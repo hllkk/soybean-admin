@@ -1384,7 +1384,8 @@ const local: App.I18n.Schema = {
       breadcrumb: {
         allFiles: '全部文件',
         loaded: '已全部加载',
-        total: '共 {count} 个'
+        total: '共 {count} 个',
+        back: '返回上一级'
       },
       file: {
         name: '名称',
@@ -1435,7 +1436,13 @@ const local: App.I18n.Schema = {
           invalid: '文件夹名称不能为空'
         }
       },
-      createFolder: '新建文件夹'
+      createFolder: '新建文件夹',
+      duplicateFile: {
+        title: '文件名冲突',
+        message: '当前目录下已存在同名文件「{fileName}」，请选择操作',
+        overwrite: '覆盖',
+        keepBoth: '保留两者'
+      }
     }
   },
   form: {

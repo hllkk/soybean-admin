@@ -1,5 +1,4 @@
 import SparkMD5 from 'spark-md5';
-import { fetchCheckFile } from '@/service/api/disk/file';
 
 const HASH_CHUNK_SIZE = 2 * 1024 * 1024;
 
@@ -38,25 +37,4 @@ export function computeFileHash(
 
     loadNext();
   });
-}
-
-/** 秒传检测 */
-export async function checkInstantUpload(
-  fileHash: string,
-  fileName: string,
-  fileSize: number,
-  parentId: number
-): Promise<Api.Disk.FileCheckResponse> {
-  const { data, error } = await fetchCheckFile({
-    fileHash,
-    fileName,
-    fileSize,
-    parentId
-  });
-
-  if (error || !data) {
-    return { exists: false, uploadedChunks: [] };
-  }
-
-  return data;
 }

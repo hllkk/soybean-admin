@@ -11,38 +11,92 @@ declare namespace Api {
       | 'completed'
       | 'failed';
 
-    /** 秒传检测请求参数 */
+    /** 秒传/断点检测请求参数 (匹配后端 FileUploadRequest query) */
     type FileCheckParams = {
-      fileHash: string;
+      /** 文件MD5标识 */
+      identifier: string;
+      /** 文件名 */
       fileName: string;
-      fileSize: number;
-      parentId: number;
+      /** 文件总大小 */
+      totalSize: number;
+      /** 总分片数 */
+      totalChunks: number;
+      /** 当前用户ID */
+      userId: number;
+      /** 当前目录 */
+      currentDirectory?: string;
+      /** 相对路径 */
+      relativePath?: string;
+      /** 是否文件夹 */
+      isFolder?: boolean;
+      /** 文件夹路径 */
+      folderPath?: string;
     };
 
-    /** 秒传检测响应 */
+    /** 秒传/断点检测响应 (匹配后端 CheckFileExistResponse) */
     type FileCheckResponse = {
-      exists: boolean;
-      fileId?: string;
-      uploadedChunks?: number[];
+      /** 是否秒传通过（文件已存在） */
+      pass: boolean;
+      /** 文件是否存在 */
+      exist: boolean;
+      /** 已上传的分片编号列表（用于断点续传） */
+      resume: number[];
+      /** 是否需要上传 */
+      upload: boolean;
+      /** 是否所有分片已上传完毕，可以合并 */
+      merge: boolean;
     };
 
-    /** 分片上传参数 */
+    /** 分片上传参数 (匹配后端 FileUploadRequest form fields) */
     type ChunkUploadParams = {
+      /** 文件分片 */
       file: Blob;
-      fileHash: string;
-      chunkIndex: number;
-      totalChunks: number;
+      /** 文件MD5标识 */
+      identifier: string;
+      /** 当前分片编号（从0开始） */
+      chunkNumber: number;
+      /** 标准分片大小 */
+      chunkSize: number;
+      /** 当前分片实际大小 */
+      currentChunkSize: number;
+      /** 文件总大小 */
+      totalSize: number;
+      /** 文件名 */
       fileName: string;
-      parentId: number;
+      /** 相对路径 */
+      relativePath: string;
+      /** 总分片数 */
+      totalChunks: number;
+      /** 当前用户ID */
+      userId: number;
+      /** 当前目录 */
+      currentDirectory?: string;
+      /** 是否文件夹 */
+      isFolder?: boolean;
+      /** 文件夹路径 */
+      folderPath?: string;
     };
 
-    /** 合并分片请求参数 */
+    /** 合并分片请求参数 (匹配后端 FileMergeRequest) */
     type MergeChunksParams = {
-      fileHash: string;
+      /** 文件MD5标识 */
+      identifier: string;
+      /** 文件名 */
       fileName: string;
-      fileSize: number;
-      totalChunks: number;
-      parentId: number;
+      /** 文件总大小 */
+      totalSize: number;
+      /** 当前用户ID */
+      userId: number;
+      /** 当前目录 */
+      currentDirectory?: string;
+      /** 相对路径 */
+      relativePath?: string;
+      /** 是否文件夹 */
+      isFolder?: boolean;
+      /** 文件夹路径 */
+      folder: string;
+      /** 是否覆盖 */
+      override?: boolean;
     };
 
     /** 合并分片响应 */
@@ -70,6 +124,14 @@ declare namespace Api {
       retryCount: number;
       abortController?: AbortController;
       error?: string;
+      /** 所属文件夹分组ID */
+      folderId?: string;
+      /** 所属文件夹名称 */
+      folderName?: string;
+      /** 文件相对路径（文件夹上传时保留目录结构） */
+      relativePath?: string;
+      /** 是否覆盖同名文件 */
+      override?: boolean;
     };
   }
 }

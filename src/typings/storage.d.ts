@@ -48,5 +48,7 @@ declare namespace StorageType {
       needInit: boolean;
       timestamp: number;
     };
+    /** The disk transfer list (persisted across refreshes) */
+    diskTransferList: Api.Disk.TransferItem[];
   }
 }

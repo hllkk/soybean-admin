@@ -101,6 +101,34 @@ declare namespace Api {
       chunkProgress?: string;
       /** 错误信息 */
       error?: string;
+      /** 所属文件夹分组ID */
+      folderId?: string;
+      /** 所属文件夹名称 */
+      folderName?: string;
+    };
+
+    /** 面包屑项 */
+    type BreadcrumbItem = {
+      /** 文件夹ID (null表示根目录) */
+      fileId: CommonType.IdType | null;
+      /** 文件夹名称 */
+      fileName: string;
+      /** 路径字符串 */
+      filePath: string;
+    };
+
+    /** 路径解析响应 */
+    type PathResolveResponse = {
+      /** 最终文件夹ID */
+      fileId: CommonType.IdType;
+      /** 文件夹名称 */
+      fileName: string;
+      /** 父目录ID */
+      parentId: CommonType.IdType | null;
+      /** 路径字符串 */
+      filePath: string;
+      /** 面包屑链 */
+      breadcrumb: BreadcrumbItem[];
     };
   }
 }

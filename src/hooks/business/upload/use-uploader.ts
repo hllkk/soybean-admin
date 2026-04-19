@@ -1,7 +1,10 @@
+import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
+import { getFileExtension } from './chunk-manager';
 import { UploaderEngine } from './uploader-engine';
 
 let engineInstance: UploaderEngine | null = null;
+let folderIdCounter = 0;
 
 function getEngine(): UploaderEngine {
   if (!engineInstance) {
@@ -10,13 +13,106 @@ function getEngine(): UploaderEngine {
   return engineInstance;
 }
 
+function generateFolderId(): string {
+  folderIdCounter += 1;
+  return `folder_${Date.now()}_${folderIdCounter}`;
+}
+
+/** Get the set of file names (non-folder) in the current directory */
+function getExistingFileNames(): Set<string> {
+  const diskStore = useDiskStore();
+  const names = new Set<string>();
+  for (const item of diskStore.currentFileList) {
+    if (!item.isFolder) {
+      names.add(item.fileName);
+    }
+  }
+  return names;
+}
+
+/** Generate a sequential file name to avoid collision: report.pdf → report(1).pdf */
+function resolveFileName(fileName: string, existingNames: Set<string>): string {
+  if (!existingNames.has(fileName)) return fileName;
+
+  const ext = getFileExtension(fileName);
+  const baseName = ext ? fileName.slice(0, -(ext.length + 1)) : fileName;
+  let counter = 1;
+  let newName: string;
+  do {
+    newName = ext ? `${baseName}(${counter}).${ext}` : `${baseName}(${counter})`;
+    counter += 1;
+  } while (existingNames.has(newName));
+
+  return newName;
+}
+
+/** Show a per-file duplicate dialog. Returns 'overwrite' | 'keepBoth' | 'skip' */
+function showDuplicateDialog(fileName: string): Promise<'overwrite' | 'keepBoth' | 'skip'> {
+  return new Promise(resolve => {
+    const dialog = window.$dialog?.warning({
+      title: $t('page.disk.duplicateFile.title'),
+      content: $t('page.disk.duplicateFile.message', { fileName }),
+      positiveText: $t('page.disk.duplicateFile.keepBoth'),
+      negativeText: $t('page.disk.duplicateFile.overwrite'),
+      onPositiveClick: () => resolve('keepBoth'),
+      onNegativeClick: () => resolve('overwrite'),
+      onClose: () => resolve('skip'),
+      onMaskClick: () => resolve('skip')
+    });
+
+    // Fallback if dialog is unavailable
+    if (!dialog) {
+      resolve('keepBoth');
+    }
+  });
+}
+
+type FileEntry = { file: File; relativePath?: string };
+
 export function useUploader() {
   const engine = getEngine();
   const diskStore = useDiskStore();
 
-  function upload(files: File[], parentId?: number) {
+  async function upload(
+    files: File[] | FileEntry[],
+    parentId?: number,
+    folderInfo?: { id: string; name: string }
+  ) {
     const targetParentId = parentId ?? Number(diskStore.currentParentId ?? 0);
-    engine.addFiles(files, targetParentId);
+    const existingNames = getExistingFileNames();
+
+    // Normalize to FileEntry array
+    const entries: FileEntry[] = files.map(f =>
+      f instanceof File ? { file: f } : (f as FileEntry)
+    );
+
+    // Resolve duplicates
+    const resolvedFiles: { file: File; resolvedName?: string; override?: boolean; relativePath?: string }[] = [];
+
+    for (const entry of entries) {
+      const fileName = entry.file.name;
+
+      if (!existingNames.has(fileName)) {
+        resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
+        continue;
+      }
+
+      // Duplicate found — ask user
+      const choice = await showDuplicateDialog(fileName);
+
+      if (choice === 'overwrite') {
+        resolvedFiles.push({ file: entry.file, override: true, relativePath: entry.relativePath });
+      } else if (choice === 'keepBoth') {
+        const newName = resolveFileName(fileName, existingNames);
+        existingNames.add(newName);
+        resolvedFiles.push({ file: entry.file, resolvedName: newName, relativePath: entry.relativePath });
+      }
+      // 'skip' → don't add the file
+    }
+
+    if (resolvedFiles.length > 0) {
+      engine.addFiles(resolvedFiles, targetParentId, folderInfo);
+    }
   }
 
   function triggerFile(parentId?: number) {
@@ -34,22 +130,42 @@ export function useUploader() {
 
   function triggerFolder(parentId?: number) {
     const input = document.createElement('input');
-    input.type = 'file';
     input.setAttribute('webkitdirectory', '');
     input.setAttribute('directory', '');
     input.addEventListener('change', (e) => {
       const files = (e.target as HTMLInputElement).files;
-      if (files) {
-        upload(Array.from(files), parentId);
+      if (files && files.length > 0) {
+        const firstPath = files[0].webkitRelativePath || '';
+        const folderName = firstPath.split('/')[0] || '文件夹';
+        upload(Array.from(files), parentId, {
+          id: generateFolderId(),
+          name: folderName
+        });
       }
     });
     input.click();
   }
 
-  function pause(taskId: string) { engine.pause(taskId); }
-  function resume(taskId: string) { engine.resume(taskId); }
-  function cancel(taskId: string) { engine.cancel(taskId); }
-  function retry(taskId: string) { engine.retry(taskId); }
+  function pause(taskId: string) {
+    if (engine.getTask(taskId)) engine.pause(taskId);
+  }
+  function resume(taskId: string) {
+    if (engine.getTask(taskId)) engine.resume(taskId);
+  }
+  function cancel(taskId: string) {
+    if (engine.getTask(taskId)) {
+      engine.cancel(taskId);
+    } else {
+      diskStore.removeTransferItem(taskId);
+    }
+  }
+  function retry(taskId: string) {
+    if (engine.getTask(taskId)) {
+      engine.retry(taskId);
+    } else {
+      window.$message?.warning('刷新后无法重试，请新建上传任务');
+    }
+  }
   function pauseAll() { engine.pauseAll(); }
   function resumeAll() {
     const tasks = engine.getAllTasks();
