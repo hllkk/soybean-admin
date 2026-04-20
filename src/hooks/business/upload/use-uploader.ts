@@ -1,4 +1,5 @@
 import { $t } from '@/locales';
+import { fetchCheckQuota } from '@/service/api/disk/quota';
 import { useDiskStore } from '@/store/modules/disk';
 import { getFileExtension } from './chunk-manager';
 import { UploaderEngine } from './uploader-engine';
@@ -85,6 +86,16 @@ export function useUploader() {
     const entries: FileEntry[] = files.map(f =>
       f instanceof File ? { file: f } : (f as FileEntry)
     );
+
+    // === 配额校验 - 计算总大小并校验 ===
+    const totalSize = entries.reduce((sum, entry) => sum + entry.file.size, 0);
+    const { data: checkResult, error: checkError } = await fetchCheckQuota(totalSize);
+
+    if (checkError || !checkResult?.allowed) {
+      window.$message?.error(checkResult?.reason || '存储空间不足，无法上传');
+      return;
+    }
+    // === 配额校验结束 ===
 
     // Resolve duplicates
     const resolvedFiles: { file: File; resolvedName?: string; override?: boolean; relativePath?: string }[] = [];
