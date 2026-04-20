@@ -164,6 +164,8 @@ declare namespace Api {
       loginDate: Date;
       /** 备注 */
       remark?: string;
+      /** 存储配额（字节） */
+      quota?: number;
     }>;
 
     /** user search params */
@@ -187,7 +189,7 @@ declare namespace Api {
         | 'password'
         | 'status'
         | 'remark'
-      > & { roleIds: CommonType.IdType[]; postIds: CommonType.IdType[]; forceCreate?: boolean }
+      > & { roleIds: CommonType.IdType[]; postIds: CommonType.IdType[]; forceCreate?: boolean; quota?: number }
     >;
 
     /** user profile operate params */

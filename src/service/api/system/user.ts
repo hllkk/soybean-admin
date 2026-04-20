@@ -151,3 +151,12 @@ export function fetchRestoreDeletedUser(data: Api.System.RestoreUserParams) {
     data
   });
 }
+
+/** 设置用户配额 */
+export function fetchSetUserQuota(userId: number, quota: number) {
+  return request<boolean>({
+    url: `/system/user/quota/${userId}`,
+    method: 'put',
+    data: { quota }
+  });
+}

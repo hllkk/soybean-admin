@@ -64,7 +64,8 @@ function createDefaultModel(): Model {
     status: '0',
     roleIds: [],
     postIds: [],
-    remark: ''
+    remark: '',
+    quota: 0
   };
 }
 
@@ -115,6 +116,12 @@ async function handleUpdateModelWhenEdit() {
     startDeptLoading();
     Object.assign(model.value, jsonClone(props.rowData));
     model.value.password = '';
+    // 将字节转换为 GB 显示（如果 quota 存在且大于 0）
+    if (model.value.quota && model.value.quota > 0) {
+      model.value.quota = Math.round(model.value.quota / (1024 * 1024 * 1024));
+    } else {
+      model.value.quota = 0;
+    }
     await getUserInfo(props.rowData.userId);
     endDeptLoading();
   }
@@ -131,8 +138,11 @@ const pendingUserData = ref<Api.System.RestoreUserParams | null>(null);
 async function handleSubmit() {
   await validate();
 
-  const { userId, deptId, userName, nickName, email, phonenumber, sex, password, status, roleIds, postIds, remark } =
+  const { userId, deptId, userName, nickName, email, phonenumber, sex, password, status, roleIds, postIds, remark, quota } =
     model.value;
+
+  // 将 GB 转换为字节
+  const quotaBytes = quota ? quota * 1024 * 1024 * 1024 : 0;
 
   // request
   if (props.operateType === 'add') {
@@ -147,7 +157,8 @@ async function handleSubmit() {
       status,
       roleIds,
       postIds,
-      remark
+      remark,
+      quota: quotaBytes
     });
     if (error) {
       // 检测是否是软删除用户冲突
@@ -184,7 +195,8 @@ async function handleSubmit() {
       status,
       roleIds,
       postIds,
-      remark
+      remark,
+      quota: quotaBytes
     });
     if (error) return;
   }
@@ -319,6 +331,14 @@ watch(visible, () => {
           </NFormItem>
           <NFormItem :label="$t('page.system.user.status')" path="status">
             <DictRadio v-model:value="model.status" dict-code="sys_normal_disable" />
+          </NFormItem>
+          <NFormItem label="存储配额" path="quota">
+            <NInputNumber v-model:value="model.quota" :min="0" class="max-w-200px">
+              <template #suffix>GB</template>
+            </NInputNumber>
+            <div class="text-12px text-[var(--n-text-color-3)] mt-4px">
+              0 表示使用全局默认配额
+            </div>
           </NFormItem>
           <NFormItem :label="$t('page.system.user.remark')" path="remark">
             <NInput v-model:value="model.remark" :placeholder="$t('page.system.user.form.remark.required')" />
