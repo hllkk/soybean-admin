@@ -1461,6 +1461,20 @@ const local: App.I18n.Schema = {
         message: '当前目录下已存在同名文件「{fileName}」，请选择操作',
         overwrite: '覆盖',
         keepBoth: '保留两者'
+      },
+      moveCopy: {
+        copyTitle: '复制到',
+        moveTitle: '移动到',
+        sourceLabel: '已选文件',
+        targetLabel: '目标路径',
+        currentDir: '当前目录',
+        noFolders: '暂无子文件夹',
+        copySuccess: '复制成功',
+        moveSuccess: '移动成功',
+        renameSuccess: '重命名成功',
+        renamePlaceholder: '请输入新名称',
+        deleteConfirm: '确认删除',
+        deleteSuccess: '删除成功'
       }
     }
   },

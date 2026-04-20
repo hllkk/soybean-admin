@@ -4,13 +4,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, mapBackendFileList } from '@/service/api/disk';
+import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList } from '@/service/api/disk';
 import FileTypeMenu from './modules/file-type-menu.vue';
 import Toolbar from './modules/toolbar.vue';
 import Breadcrumb from './modules/breadcrumb.vue';
 import FileGrid from './modules/file-grid.vue';
 import FileList from './modules/file-list.vue';
 import TransferPanel from './modules/transfer-panel.vue';
+import MoveCopyDialog from './modules/move-copy-dialog.vue';
 
 defineOptions({
   name: 'DiskPage'
@@ -24,6 +25,11 @@ const { loading, startLoading, endLoading } = useLoading();
 const fileList = ref<Api.Disk.FileItem[]>([]);
 const transferPanelRef = ref<InstanceType<typeof TransferPanel>>();
 const totalCount = ref(0);
+
+// 重命名状态
+const renameDialogVisible = ref(false);
+const renameFile = ref<Api.Disk.FileItem | null>(null);
+const renameNewName = ref('');
 
 // 显示容量开关
 const showCapacity = ref(true);
@@ -304,8 +310,57 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
 }
 
 function handleFileAction(action: string, file: Api.Disk.FileItem) {
-  // TODO: 实现各操作的具体逻辑
-  window.$message?.info(`${action}: ${file.fileName}`);
+  switch (action) {
+    case 'rename':
+      renameFile.value = file;
+      renameNewName.value = file.fileName;
+      renameDialogVisible.value = true;
+      break;
+    case 'copy':
+      diskStore.openMoveCopyDialog('copy', [file]);
+      break;
+    case 'move':
+      diskStore.openMoveCopyDialog('move', [file]);
+      break;
+    case 'delete':
+      handleDeleteFile(file);
+      break;
+    case 'share':
+      window.$message?.info(`${$t('page.disk.toolbar.share')}: ${file.fileName}`);
+      break;
+    case 'download':
+      window.$message?.info(`${$t('page.disk.toolbar.download')}: ${file.fileName}`);
+      break;
+    default:
+      break;
+  }
+}
+
+async function handleRenameConfirm() {
+  if (!renameFile.value || !renameNewName.value.trim()) return;
+  const { error } = await fetchRenameFile(renameFile.value.fileId, renameNewName.value.trim());
+  if (!error) {
+    window.$message?.success($t('page.disk.moveCopy.renameSuccess'));
+    renameDialogVisible.value = false;
+    getFileList();
+  }
+}
+
+async function handleDeleteFile(file: Api.Disk.FileItem) {
+  window.$dialog?.warning({
+    title: $t('page.disk.toolbar.delete'),
+    content: `${$t('page.disk.moveCopy.deleteConfirm')} "${file.fileName}"?`,
+    positiveText: $t('common.confirm'),
+    negativeText: $t('common.cancel'),
+    onPositiveClick: async () => {
+      const { fetchDeleteFile } = await import('@/service/api/disk/file');
+      const { error } = await fetchDeleteFile([file.fileId]);
+      if (!error) {
+        window.$message?.success($t('page.disk.moveCopy.deleteSuccess'));
+        getFileList();
+      }
+    }
+  });
 }
 
 // Watch file type changes
@@ -441,6 +496,22 @@ onMounted(async () => {
 
     <!-- Transfer Panel -->
     <TransferPanel ref="transferPanelRef" />
+
+    <!-- Move/Copy Dialog -->
+    <MoveCopyDialog @success="getFileList" />
+
+    <!-- Rename Dialog -->
+    <NModal
+      v-model:show="renameDialogVisible"
+      preset="dialog"
+      :title="$t('page.disk.toolbar.rename')"
+      positive-text="确认"
+      negative-text="取消"
+      :disabled="!renameNewName.trim()"
+      @positive-click="handleRenameConfirm"
+    >
+      <NInput v-model:value="renameNewName" :placeholder="$t('page.disk.moveCopy.renamePlaceholder')" />
+    </NModal>
   </TableSiderLayout>
 </template>
 

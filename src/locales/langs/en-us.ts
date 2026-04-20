@@ -1469,6 +1469,20 @@ const local: App.I18n.Schema = {
         message: 'A file named "{fileName}" already exists. Choose an action:',
         overwrite: 'Overwrite',
         keepBoth: 'Keep Both'
+      },
+      moveCopy: {
+        copyTitle: 'Copy To',
+        moveTitle: 'Move To',
+        sourceLabel: 'Selected files',
+        targetLabel: 'Target path',
+        currentDir: 'Current folder',
+        noFolders: 'No subfolders',
+        copySuccess: 'Copied successfully',
+        moveSuccess: 'Moved successfully',
+        renameSuccess: 'Renamed successfully',
+        renamePlaceholder: 'Enter new name',
+        deleteConfirm: 'Confirm delete',
+        deleteSuccess: 'Deleted successfully'
       }
     }
   },

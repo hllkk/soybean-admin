@@ -1256,6 +1256,20 @@ declare namespace App {
             overwrite: string;
             keepBoth: string;
           };
+          moveCopy: {
+            copyTitle: string;
+            moveTitle: string;
+            sourceLabel: string;
+            targetLabel: string;
+            currentDir: string;
+            noFolders: string;
+            copySuccess: string;
+            moveSuccess: string;
+            renameSuccess: string;
+            renamePlaceholder: string;
+            deleteConfirm: string;
+            deleteSuccess: string;
+          };
         };
       };
       form: {

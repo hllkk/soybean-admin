@@ -203,8 +203,15 @@ function handleRename() {
 }
 
 // 处理更多操作
-function handleMoreSelect(_key: string) {
-  // TODO: 实现移动、复制、查看详情等操作
+function handleMoreSelect(key: string) {
+  const selectedFileItems = diskStore.currentFileList.filter(f => diskStore.selectedFiles.includes(f.fileId));
+  if (selectedFileItems.length === 0) return;
+
+  if (key === 'move') {
+    diskStore.openMoveCopyDialog('move', selectedFileItems);
+  } else if (key === 'copy') {
+    diskStore.openMoveCopyDialog('copy', selectedFileItems);
+  }
 }
 
 // 切换视图模式

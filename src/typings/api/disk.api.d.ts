@@ -138,5 +138,26 @@ declare namespace Api {
       /** 面包屑链 */
       breadcrumb: BreadcrumbItem[];
     };
+
+    /** 文件夹项（选择器用） */
+    type FolderItem = {
+      id: CommonType.IdType;
+      name: string;
+      path: string;
+      parentId: CommonType.IdType | null;
+      depth: number;
+    };
+
+    /** 复制文件参数 */
+    type CopyFileParams = {
+      fileIds: CommonType.IdType[];
+      targetPath: string;
+    };
+
+    /** 移动文件参数 */
+    type MoveFileParams = {
+      fileIds: CommonType.IdType[];
+      targetPath: string;
+    };
   }
 }

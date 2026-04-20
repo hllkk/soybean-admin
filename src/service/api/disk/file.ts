@@ -146,11 +146,29 @@ export function fetchDeleteFile(fileIds: CommonType.IdType[]) {
 }
 
 /** 移动文件 */
-export function fetchMoveFile(fileId: CommonType.IdType, targetFolderId: CommonType.IdType) {
+export function fetchMoveFile(data: Api.Disk.MoveFileParams) {
   return request<boolean>({
     url: '/file-meta/move',
     method: 'put',
-    data: { fileId, targetFolderId }
+    data
+  });
+}
+
+/** 复制文件 */
+export function fetchCopyFile(data: Api.Disk.CopyFileParams) {
+  return request<boolean>({
+    url: '/file-meta/copy',
+    method: 'post',
+    data
+  });
+}
+
+/** 获取文件夹列表（供目标选择器使用） */
+export function fetchGetFolderList(path?: string) {
+  return request<{ list: Api.Disk.FolderItem[] }>({
+    url: '/file-meta/folders',
+    method: 'get',
+    params: { path: path || '/' }
   });
 }
 

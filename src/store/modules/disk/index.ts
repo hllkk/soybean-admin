@@ -67,6 +67,11 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   // 内联创建状态
   const creatingType = ref<'file' | 'folder' | null>(null);
 
+  // 移动/复制弹窗状态
+  const moveCopyDialogVisible = ref(false);
+  const moveCopyMode = ref<'copy' | 'move'>('copy');
+  const moveCopyFiles = ref<Api.Disk.FileItem[]>([]);
+
   // 计算属性：面包屑路径显示
   const breadcrumbPath = computed(() => {
     return currentPath.value.map(item => item.fileName);
@@ -228,6 +233,19 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     creatingType.value = null;
   }
 
+  // 打开移动/复制弹窗
+  function openMoveCopyDialog(mode: 'copy' | 'move', files: Api.Disk.FileItem[]) {
+    moveCopyMode.value = mode;
+    moveCopyFiles.value = [...files];
+    moveCopyDialogVisible.value = true;
+  }
+
+  // 关闭移动/复制弹窗
+  function closeMoveCopyDialog() {
+    moveCopyDialogVisible.value = false;
+    moveCopyFiles.value = [];
+  }
+
   // 获取上传中的任务数
   const uploadingCount = computed(() =>
     transferList.value.filter(item => item.transferType === 'upload' && item.status !== 'completed').length
@@ -268,6 +286,9 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     currentFileList,
     selectedFiles,
     creatingType,
+    moveCopyDialogVisible,
+    moveCopyMode,
+    moveCopyFiles,
     // computed
     breadcrumbPath,
     hasUploadTask,
@@ -287,6 +308,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     clearSelection,
     startCreating,
     cancelCreating,
+    openMoveCopyDialog,
+    closeMoveCopyDialog,
     addUploadTasks,
     clearAllTransfers,
     $reset,
