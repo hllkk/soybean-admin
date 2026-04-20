@@ -159,5 +159,33 @@ declare namespace Api {
       fileIds: CommonType.IdType[];
       targetPath: string;
     };
+
+    /** 配额信息 */
+    type QuotaInfo = {
+      /** 已用空间（字节） */
+      usedSpace: number;
+      /** 配额上限（字节） */
+      quota: number;
+      /** 是否无限制 */
+      unlimited: boolean;
+      /** 配额来源 */
+      quotaSource: 'personal' | 'global' | 'none';
+    };
+
+    /** 配额校验请求 */
+    type QuotaCheckParams = {
+      /** 文件大小（字节） */
+      fileSize: number;
+    };
+
+    /** 配额校验响应 */
+    type QuotaCheckResponse = {
+      /** 是否允许 */
+      allowed: boolean;
+      /** 拒绝原因 */
+      reason?: string;
+      /** 剩余空间（字节） */
+      remainingSpace: number;
+    };
   }
 }
