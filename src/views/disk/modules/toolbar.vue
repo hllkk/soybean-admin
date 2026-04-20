@@ -11,7 +11,7 @@ defineOptions({
 });
 
 interface Emits {
-  (e: 'search'): void;
+  (e: 'search', keyword: string): void;
   (e: 'refresh'): void;
   (e: 'share'): void;
   (e: 'batchShare'): void;
@@ -29,6 +29,43 @@ const { triggerFile, triggerFolder } = useUploader();
 
 const showMobileSearch = ref(false);
 const searchKeyword = ref('');
+
+// 最近搜索记录（最多保存10条）
+const RECENT_SEARCH_KEY = 'disk_recent_search';
+const recentSearches = ref<string[]>([]);
+
+function loadRecentSearches() {
+  const saved = localStorage.getItem(RECENT_SEARCH_KEY);
+  if (saved) {
+    try {
+      recentSearches.value = JSON.parse(saved);
+    } catch {
+      recentSearches.value = [];
+    }
+  }
+}
+
+function saveRecentSearch(keyword: string) {
+  if (!keyword.trim() || keyword.trim().length < 2) return;
+
+  const trimmed = keyword.trim();
+  const exists = recentSearches.value.includes(trimmed);
+  if (exists) {
+    // 移到最前面
+    recentSearches.value = [trimmed, ...recentSearches.value.filter(k => k !== trimmed)];
+  } else {
+    recentSearches.value = [trimmed, ...recentSearches.value.slice(0, 9)];
+  }
+  localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(recentSearches.value));
+}
+
+function clearRecentSearches() {
+  recentSearches.value = [];
+  localStorage.removeItem(RECENT_SEARCH_KEY);
+}
+
+// 页面加载时读取最近搜索
+loadRecentSearches();
 const currentSort = computed({
   get: () => {
     const { field, order } = diskStore.sortSettings;
@@ -163,13 +200,32 @@ function handleSortSelect(key: string) {
 
 // 处理搜索
 function handleSearch() {
-  emit('search');
+  const keyword = searchKeyword.value.trim();
+  if (keyword) {
+    saveRecentSearch(keyword);
+  }
+  emit('search', keyword);
 }
 
 // 移动端搜索
 function handleMobileSearch() {
+  const keyword = searchKeyword.value.trim();
+  if (keyword) {
+    saveRecentSearch(keyword);
+  }
   showMobileSearch.value = false;
-  emit('search');
+  emit('search', keyword);
+}
+
+// 点击最近搜索
+function handleRecentSearchClick(keyword: string) {
+  searchKeyword.value = keyword;
+  handleSearch();
+}
+
+// 清除最近搜索
+function handleClearRecent() {
+  clearRecentSearches();
 }
 
 // 取消选中
@@ -255,7 +311,40 @@ function handleRefresh() {
 
         <!-- 搜索框：平板及以上显示 -->
         <NInputGroup class="hidden sm:flex w-180px lg:w-240px">
-          <NInput v-model:value="searchKeyword" :placeholder="$t('page.disk.toolbar.searchPlaceholder')" clearable />
+          <NPopover
+            trigger="focus"
+            placement="bottom-start"
+            :show-arrow="false"
+            :disabled="recentSearches.length === 0"
+            :style="{ width: '100%' }"
+            content-style="padding: 8px 0;"
+          >
+            <template #trigger>
+              <NInput
+                v-model:value="searchKeyword"
+                :placeholder="$t('page.disk.toolbar.searchPlaceholder')"
+                clearable
+                @keydown.enter="handleSearch"
+              />
+            </template>
+            <div class="flex flex-col gap-4px min-w-150px">
+              <div class="flex items-center justify-between px-8px mb-4px text-12px text-gray-500">
+                <span>{{ $t('page.disk.toolbar.recentSearch') }}</span>
+                <NButton text size="tiny" @click.stop="handleClearRecent">
+                  {{ $t('common.clear') }}
+                </NButton>
+              </div>
+              <div
+                v-for="item in recentSearches"
+                :key="item"
+                class="flex items-center gap-8px px-8px py-6px cursor-pointer hover:bg-primary/10 rd-4px text-13px"
+                @click="handleRecentSearchClick(item)"
+              >
+                <SvgIcon icon="mdi:clock-outline" :size="14" class="text-gray-400" />
+                <span class="flex-1 truncate">{{ item }}</span>
+              </div>
+            </div>
+          </NPopover>
           <NButton type="primary" @click="handleSearch">
             <template #icon>
               <SvgIcon icon="mdi:magnify" :size="18" class="dark:text-white" />
@@ -399,14 +488,40 @@ function handleRefresh() {
 
     <!-- 移动端搜索弹窗 -->
     <NModal v-model:show="showMobileSearch" preset="card" style="width: 90%; max-width: 400px" :bordered="false">
-      <NInputGroup>
-        <NInput v-model:value="searchKeyword" :placeholder="$t('page.disk.toolbar.searchPlaceholder')" clearable autofocus />
-        <NButton type="primary" @click="handleMobileSearch">
-          <template #icon>
-            <SvgIcon icon="mdi:magnify" :size="18" />
-          </template>
-        </NButton>
-      </NInputGroup>
+      <div class="flex flex-col gap-12px">
+        <NInputGroup>
+          <NInput v-model:value="searchKeyword" :placeholder="$t('page.disk.toolbar.searchPlaceholder')" clearable autofocus @keydown.enter="handleMobileSearch" />
+          <NButton type="primary" @click="handleMobileSearch">
+            <template #icon>
+              <SvgIcon icon="mdi:magnify" :size="18" />
+            </template>
+          </NButton>
+        </NInputGroup>
+        <!-- 最近搜索 -->
+        <div v-if="recentSearches.length > 0" class="flex flex-col gap-8px">
+          <div class="flex items-center justify-between text-12px text-gray-500">
+            <span>{{ $t('page.disk.toolbar.recentSearch') }}</span>
+            <NButton text size="tiny" @click.stop="handleClearRecent">
+              {{ $t('common.clear') }}
+            </NButton>
+          </div>
+          <div class="flex flex-wrap gap-8px">
+            <NTag
+              v-for="item in recentSearches"
+              :key="item"
+              size="small"
+              round
+              cursor-pointer
+              @click="handleRecentSearchClick(item); showMobileSearch = false;"
+            >
+              <template #avatar>
+                <SvgIcon icon="mdi:clock-outline" :size="12" class="text-gray-400" />
+              </template>
+              {{ item }}
+            </NTag>
+          </div>
+        </div>
+      </div>
     </NModal>
   </div>
 </template>

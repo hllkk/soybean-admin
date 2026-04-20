@@ -1363,6 +1363,7 @@ const local: App.I18n.Schema = {
         createFolder: 'New Folder',
         search: 'Search',
         searchPlaceholder: 'Search my files',
+        recentSearch: 'Recent Searches',
         share: 'Share',
         batchShare: 'Batch Share',
         download: 'Download',

@@ -1355,6 +1355,7 @@ const local: App.I18n.Schema = {
         createFolder: '新建文件夹',
         search: '搜索',
         searchPlaceholder: '搜索我的文件',
+        recentSearch: '最近搜索',
         share: '分享',
         batchShare: '批量分享',
         download: '下载',

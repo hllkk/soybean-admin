@@ -1152,6 +1152,7 @@ declare namespace App {
             createFolder: string;
             search: string;
             searchPlaceholder: string;
+            recentSearch: string;
             share: string;
             batchShare: string;
             download: string;

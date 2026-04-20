@@ -20,6 +20,7 @@ export function fetchGetFileList(params?: Api.Disk.FileSearchParams) {
       userId,
       currentDirectory,
       queryType,
+      keyword: params?.keyword || '',
       page: params?.pageNum || 1,
       pageSize: params?.pageSize || 50,
       sortBy: params?.sortField === 'modifyTime' ? 'time' : params?.sortField,
