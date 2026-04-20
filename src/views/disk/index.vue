@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList } from '@/service/api/disk';
+import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList, fetchGetQuota } from '@/service/api/disk';
 import FileTypeMenu from './modules/file-type-menu.vue';
 import Toolbar from './modules/toolbar.vue';
 import Breadcrumb from './modules/breadcrumb.vue';
@@ -32,11 +32,14 @@ const renamingFile = ref<Api.Disk.FileItem | null>(null);
 // 显示容量开关
 const showCapacity = ref(true);
 
-// 容量数据（后续可从 API 获取）
-const capacityInfo = ref({
-  used: 2.5, // GB
-  total: 10 // GB
+// 配额信息
+const quotaInfo = ref<Api.Disk.QuotaInfo>({
+  usedSpace: 0,
+  quota: 0,
+  unlimited: false,
+  quotaSource: 'none'
 });
+const quotaLoading = ref(false);
 
 // 测试数据 - 用于无后端时测试前端效果
 const mockFileList: Api.Disk.FileItem[] = [
@@ -236,6 +239,15 @@ const searchParams = ref<Api.Disk.FileSearchParams>({
   sortOrder: null
 });
 
+async function loadQuotaInfo() {
+  quotaLoading.value = true;
+  const { data, error } = await fetchGetQuota();
+  if (!error && data) {
+    quotaInfo.value = data;
+  }
+  quotaLoading.value = false;
+}
+
 async function getFileList() {
   startLoading();
 
@@ -292,7 +304,8 @@ async function handleFolderCreated(name: string) {
   getFileList();
 }
 
-function handleSearch() {
+function handleSearch(keyword: string) {
+  searchParams.value.keyword = keyword || null;
   getFileList();
 }
 
@@ -429,6 +442,7 @@ watch(
     if (completedCount > prevCompletedCount) {
       prevCompletedCount = completedCount;
       getFileList();
+      loadQuotaInfo();
     }
   }
 );
@@ -466,6 +480,7 @@ onMounted(async () => {
     }
   }
   getFileList();
+  loadQuotaInfo();
 });
 </script>
 
@@ -483,8 +498,8 @@ onMounted(async () => {
       <NDivider dashed />
       <FileTypeMenu
         :show-capacity="showCapacity"
-        :used-capacity="capacityInfo.used"
-        :total-capacity="capacityInfo.total"
+        :quota-info="quotaInfo"
+        :quota-loading="quotaLoading"
       />
     </template>
 
