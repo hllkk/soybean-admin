@@ -12,6 +12,7 @@ import FileGrid from './modules/file-grid.vue';
 import FileList from './modules/file-list.vue';
 import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
+import FilePreviewModal from './modules/preview/file-preview-modal.vue';
 
 defineOptions({
   name: 'DiskPage'
@@ -28,6 +29,10 @@ const totalCount = ref(0);
 
 // 重命名状态
 const renamingFile = ref<Api.Disk.FileItem | null>(null);
+
+// 文件预览
+const previewVisible = ref(false);
+const previewFile = ref<Api.Disk.PreviewFileInfo | null>(null);
 
 // 显示容量开关
 const showCapacity = ref(true);
@@ -315,8 +320,14 @@ function handleRefresh() {
 
 function handleFileDblClick(file: Api.Disk.FileItem) {
   if (!file.isFolder) {
-    // TODO: File preview/download
-    window.$message?.info(`Open file: ${file.fileName}`);
+    previewFile.value = {
+      fileId: file.fileId,
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      fileExtension: file.fileExtension,
+      filePath: file.filePath
+    };
+    previewVisible.value = true;
   }
 }
 
@@ -563,6 +574,12 @@ onMounted(async () => {
 
     <!-- Move/Copy Dialog -->
     <MoveCopyDialog @success="getFileList" />
+
+    <!-- File Preview Modal -->
+    <FilePreviewModal
+      v-model:visible="previewVisible"
+      :file="previewFile"
+    />
   </TableSiderLayout>
 </template>
 
