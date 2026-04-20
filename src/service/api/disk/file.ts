@@ -183,3 +183,8 @@ export function fetchResolvePath(path: string) {
     params: { path }
   });
 }
+
+/** 获取文件预览URL */
+export function getPreviewUrl(fileId: CommonType.IdType): string {
+  return `/disk/preview/file/${fileId}`;
+}

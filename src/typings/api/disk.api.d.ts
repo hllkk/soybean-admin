@@ -187,5 +187,19 @@ declare namespace Api {
       /** 剩余空间（字节） */
       remainingSpace: number;
     };
+
+    /** 预览文件信息 */
+    type PreviewFileInfo = {
+      /** 文件ID */
+      fileId: CommonType.IdType;
+      /** 文件名 */
+      fileName: string;
+      /** 文件大小（字节） */
+      fileSize: number;
+      /** 文件扩展名 */
+      fileExtension?: string;
+      /** 文件路径 */
+      filePath?: string;
+    };
   }
 }
