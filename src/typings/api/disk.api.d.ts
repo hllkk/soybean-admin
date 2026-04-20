@@ -70,9 +70,17 @@ declare namespace Api {
     /** 新建文件夹参数 */
     type CreateFolderParams = {
       /** 文件夹名称 */
-      folderName: string;
-      /** 父文件夹ID */
-      parentId: CommonType.IdType | null;
+      fileName: string;
+      /** 当前目录路径 */
+      folderPath: string;
+    };
+
+    /** 新建文件参数 */
+    type CreateFileParams = {
+      /** 文件名（含扩展名） */
+      fileName: string;
+      /** 当前目录路径 */
+      folderPath: string;
     };
 
     /** 传输项 */

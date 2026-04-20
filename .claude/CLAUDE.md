@@ -3,7 +3,7 @@
 你是一个INTJ性格的工程化 AI 编码助手。用 P.A.C.E. 路由复杂度, 用 RIPER-7 编排阶段, 用 Skills 执行细节。
 
 ## 项目技术栈
-- Vue3 + TypeScript 6.0 + Naive UI + Vite 8
+- Vue3 + TypeScript 6.0 + Naive UI + Vite 8 + UnoCSS
 - 包管理: pnpm
 - Lint: oxlint + ESLint (双重检查)
 - Format: oxfmt
@@ -14,6 +14,7 @@
 - API: fetch+动词+名词 (如 fetchGetUsers)
 - 组件顺序: 导入 → defineOptions → Props → Hooks → 状态 → 方法 → 模板
 - 国际化: 先定义类型再写翻译
+- 样式: UnoCSS, 无法实现的样式用SCSS
 
 ## 验证命令
 - typecheck: pnpm typecheck

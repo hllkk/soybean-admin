@@ -1,0 +1,140 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+import type { DropdownOption } from 'naive-ui';
+import { useSvgIcon } from '@/hooks/common/icon';
+import { $t } from '@/locales';
+
+defineOptions({
+  name: 'DiskContextMenu'
+});
+
+interface Props {
+  x: number;
+  y: number;
+  type: 'file' | 'area';
+}
+
+const props = defineProps<Props>();
+
+const visible = defineModel<boolean>('visible');
+
+const emit = defineEmits<{
+  (e: 'select', key: string): void;
+}>();
+
+const { SvgIconVNode } = useSvgIcon();
+
+const fileOptions = computed<DropdownOption[]>(() => [
+  {
+    label: $t('page.disk.contextMenu.open'),
+    key: 'open',
+    icon: SvgIconVNode({ icon: 'mdi:open-in-new', fontSize: 18 })
+  },
+  {
+    label: $t('page.disk.contextMenu.download'),
+    key: 'download',
+    icon: SvgIconVNode({ icon: 'mdi:download-outline', fontSize: 18 })
+  },
+  {
+    label: $t('page.disk.contextMenu.share'),
+    key: 'share',
+    icon: SvgIconVNode({ icon: 'mdi:share-outline', fontSize: 18 })
+  },
+  {
+    label: $t('page.disk.contextMenu.copy'),
+    key: 'copy',
+    icon: SvgIconVNode({ icon: 'mdi:content-copy', fontSize: 18 })
+  },
+  {
+    label: $t('page.disk.contextMenu.move'),
+    key: 'move',
+    icon: SvgIconVNode({ icon: 'mdi:folder-move-outline', fontSize: 18 })
+  },
+  {
+    label: $t('page.disk.contextMenu.rename'),
+    key: 'rename',
+    icon: SvgIconVNode({ icon: 'mdi:pencil-outline', fontSize: 18 })
+  },
+  {
+    label: $t('page.disk.contextMenu.delete'),
+    key: 'delete',
+    icon: SvgIconVNode({ icon: 'mdi:delete-outline', fontSize: 18 })
+  }
+]);
+
+const areaOptions = computed<DropdownOption[]>(() => [
+  {
+    label: $t('page.disk.contextMenu.view'),
+    key: 'view',
+    icon: SvgIconVNode({ icon: 'mdi:eye-outline', fontSize: 18 }),
+    children: [
+      {
+        label: $t('page.disk.contextMenu.viewGrid'),
+        key: 'view-grid',
+        icon: SvgIconVNode({ icon: 'mdi:view-grid-outline', fontSize: 18 })
+      },
+      {
+        label: $t('page.disk.contextMenu.viewList'),
+        key: 'view-list',
+        icon: SvgIconVNode({ icon: 'mdi:view-list-outline', fontSize: 18 })
+      }
+    ]
+  },
+  {
+    label: $t('page.disk.contextMenu.sortBy'),
+    key: 'sort',
+    icon: SvgIconVNode({ icon: 'mdi:sort', fontSize: 18 }),
+    children: [
+      {
+        label: $t('page.disk.contextMenu.sortName'),
+        key: 'sort-name',
+        icon: SvgIconVNode({ icon: 'mdi:sort-alphabetical-ascending', fontSize: 18 })
+      },
+      {
+        label: $t('page.disk.contextMenu.sortSize'),
+        key: 'sort-size',
+        icon: SvgIconVNode({ icon: 'mdi:sort-numeric-ascending', fontSize: 18 })
+      },
+      {
+        label: $t('page.disk.contextMenu.sortTime'),
+        key: 'sort-modifyTime',
+        icon: SvgIconVNode({ icon: 'mdi:clock-outline', fontSize: 18 })
+      }
+    ]
+  },
+  {
+    label: $t('page.disk.contextMenu.refresh'),
+    key: 'refresh',
+    icon: SvgIconVNode({ icon: 'mdi:refresh', fontSize: 18 })
+  },
+  {
+    label: $t('page.disk.contextMenu.reload'),
+    key: 'reload',
+    icon: SvgIconVNode({ icon: 'mdi:reload', fontSize: 18 })
+  }
+]);
+
+const options = computed(() => (props.type === 'file' ? fileOptions.value : areaOptions.value));
+
+function hide() {
+  visible.value = false;
+}
+
+function handleSelect(key: string) {
+  emit('select', key);
+  hide();
+}
+</script>
+
+<template>
+  <NDropdown
+    :show="visible"
+    placement="bottom-start"
+    trigger="manual"
+    :x="x"
+    :y="y"
+    :options="options"
+    @clickoutside="hide"
+    @select="handleSelect"
+  />
+</template>

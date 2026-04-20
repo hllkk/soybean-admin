@@ -130,6 +130,7 @@ export function useUploader() {
 
   function triggerFolder(parentId?: number) {
     const input = document.createElement('input');
+    input.type = 'file';
     input.setAttribute('webkitdirectory', '');
     input.setAttribute('directory', '');
     input.addEventListener('change', (e) => {

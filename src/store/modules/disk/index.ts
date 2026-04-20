@@ -64,6 +64,9 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   // 选中的文件
   const selectedFiles = ref<CommonType.IdType[]>([]);
 
+  // 内联创建状态
+  const creatingType = ref<'file' | 'folder' | null>(null);
+
   // 计算属性：面包屑路径显示
   const breadcrumbPath = computed(() => {
     return currentPath.value.map(item => item.fileName);
@@ -219,6 +222,16 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     selectedFiles.value = [];
   }
 
+  // 开始内联创建
+  function startCreating(type: 'file' | 'folder') {
+    creatingType.value = type;
+  }
+
+  // 取消内联创建
+  function cancelCreating() {
+    creatingType.value = null;
+  }
+
   // 获取上传中的任务数
   const uploadingCount = computed(() =>
     transferList.value.filter(item => item.transferType === 'upload' && item.status !== 'completed').length
@@ -258,6 +271,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     transferList,
     currentFileList,
     selectedFiles,
+    creatingType,
     // computed
     breadcrumbPath,
     hasUploadTask,
@@ -275,6 +289,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     clearCompletedTransfers,
     setSelectedFiles,
     clearSelection,
+    startCreating,
+    cancelCreating,
     addUploadTasks,
     clearAllTransfers,
     $reset,

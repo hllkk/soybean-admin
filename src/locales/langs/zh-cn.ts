@@ -26,6 +26,7 @@ const local: App.I18n.Schema = {
     selectFileFirst: '请先选择文件',
     exportSuccess: '导出成功',
     exportFail: '导出失败',
+    updateFail: '更新失败',
     updateExisting: '是否更新已经存在的数据',
     cancel: '取消',
     close: '关闭',
@@ -1421,14 +1422,32 @@ const local: App.I18n.Schema = {
           cancel: '取消'
         }
       },
+      createInline: {
+        defaultFileName: '新建文件.txt',
+        defaultFolderName: '新建文件夹',
+        emptyName: '名称不能为空',
+        nameExists: '当前目录下已存在"{name}"，继续创建将自动添加后缀编号。',
+        confirmCreate: '继续创建',
+        cancelCreate: '取消'
+      },
       contextMenu: {
         open: '打开',
         download: '下载',
-        rename: '重命名',
-        move: '移动',
-        delete: '删除',
         share: '分享',
-        deleteConfirm: '确认删除该文件吗？'
+        copy: '复制',
+        move: '移动',
+        rename: '重命名',
+        delete: '删除',
+        deleteConfirm: '确认删除该文件吗？',
+        view: '查看',
+        viewGrid: '网格模式',
+        viewList: '列表模式',
+        sortBy: '排序方式',
+        sortName: '名称',
+        sortSize: '大小',
+        sortTime: '修改时间',
+        refresh: '刷新',
+        reload: '重新加载页面'
       },
       form: {
         folderName: {

@@ -11,7 +11,6 @@ defineOptions({
 });
 
 interface Emits {
-  (e: 'createFolder'): void;
   (e: 'search'): void;
   (e: 'refresh'): void;
   (e: 'share'): void;
@@ -35,7 +34,7 @@ const currentSort = computed({
     const { field, order } = diskStore.sortSettings;
     return field ? `${field}-${order}` : '';
   },
-  set: (val: string) => {
+  set: (_val: string) => {
     // setter is unused but required by computed writable
   }
 });
@@ -148,8 +147,10 @@ function handleUploadSelect(key: string) {
 
 // 处理新建选择
 function handleCreateSelect(key: string) {
-  if (key === 'createFolder') {
-    emit('createFolder');
+  if (key === 'createFile') {
+    diskStore.startCreating('file');
+  } else if (key === 'createFolder') {
+    diskStore.startCreating('folder');
   }
 }
 

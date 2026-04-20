@@ -26,6 +26,7 @@ const local: App.I18n.Schema = {
     selectFileFirst: 'Please select a file first',
     exportSuccess: 'Export Success',
     exportFail: 'Export Fail',
+    updateFail: 'Update Failed',
     updateExisting: 'Whether to update the existing user data',
     cancel: 'Cancel',
     close: 'Close',
@@ -1429,14 +1430,32 @@ const local: App.I18n.Schema = {
           cancel: 'Cancel'
         }
       },
+      createInline: {
+        defaultFileName: 'New File.txt',
+        defaultFolderName: 'New Folder',
+        emptyName: 'Name cannot be empty',
+        nameExists: '"{name}" already exists in this directory. Continuing will add a suffix number.',
+        confirmCreate: 'Continue',
+        cancelCreate: 'Cancel'
+      },
       contextMenu: {
         open: 'Open',
         download: 'Download',
-        rename: 'Rename',
-        move: 'Move',
-        delete: 'Delete',
         share: 'Share',
-        deleteConfirm: 'Are you sure to delete this file?'
+        copy: 'Copy',
+        move: 'Move',
+        rename: 'Rename',
+        delete: 'Delete',
+        deleteConfirm: 'Are you sure to delete this file?',
+        view: 'View',
+        viewGrid: 'Grid View',
+        viewList: 'List View',
+        sortBy: 'Sort By',
+        sortName: 'Name',
+        sortSize: 'Size',
+        sortTime: 'Modified Time',
+        refresh: 'Refresh',
+        reload: 'Reload Page'
       },
       form: {
         folderName: {

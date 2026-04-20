@@ -855,7 +855,6 @@ onMounted(() => {
     inset 0 0 40px rgba(100, 108, 255, 0.04);
 }
 
-.sphere-percent { }
 :root.dark .sphere-percent {
   text-shadow: 0 0 16px rgba(100, 108, 255, 0.5);
 }

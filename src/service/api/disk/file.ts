@@ -113,7 +113,17 @@ export function fetchCreateFolder(data: Api.Disk.CreateFolderParams) {
   return request<boolean>({
     url: '/file-meta/createFolder',
     method: 'post',
-    data
+    data: { ...data, isFolder: true }
+  });
+}
+
+/** 新建空文件 */
+export function fetchCreateFile(data: Api.Disk.CreateFileParams) {
+  const userId = Number(useAuthStore().userInfo.userId);
+  return request<boolean>({
+    url: '/file-meta/create',
+    method: 'post',
+    data: { ...data, userId }
   });
 }
 

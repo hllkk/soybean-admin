@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import { fetchGetFileList, fetchCreateFolder, mapBackendFileList } from '@/service/api/disk';
+import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, mapBackendFileList } from '@/service/api/disk';
 import FileTypeMenu from './modules/file-type-menu.vue';
 import Toolbar from './modules/toolbar.vue';
 import Breadcrumb from './modules/breadcrumb.vue';
@@ -24,8 +24,6 @@ const { loading, startLoading, endLoading } = useLoading();
 const fileList = ref<Api.Disk.FileItem[]>([]);
 const transferPanelRef = ref<InstanceType<typeof TransferPanel>>();
 const totalCount = ref(0);
-const showCreateFolderModal = ref(false);
-const newFolderName = ref('');
 
 // 显示容量开关
 const showCapacity = ref(true);
@@ -264,27 +262,30 @@ async function getFileList() {
   diskStore.currentFileList = fileList.value;
 }
 
-function handleCreateFolder() {
-  showCreateFolderModal.value = true;
-}
-
-async function submitCreateFolder() {
-  if (!newFolderName.value.trim()) {
-    window.$message?.warning($t('page.disk.form.folderName.required'));
-    return;
-  }
-
-  const { error } = await fetchCreateFolder({
-    folderName: newFolderName.value.trim(),
-    parentId: diskStore.currentParentId
+async function handleFileCreated(name: string) {
+  const { error } = await fetchCreateFile({
+    fileName: name,
+    folderPath: diskStore.getCurrentPathString()
   });
 
   if (!error) {
     window.$message?.success($t('common.addSuccess'));
-    showCreateFolderModal.value = false;
-    newFolderName.value = '';
-    getFileList();
   }
+  diskStore.cancelCreating();
+  getFileList();
+}
+
+async function handleFolderCreated(name: string) {
+  const { error } = await fetchCreateFolder({
+    fileName: name,
+    folderPath: diskStore.getCurrentPathString()
+  });
+
+  if (!error) {
+    window.$message?.success($t('common.addSuccess'));
+  }
+  diskStore.cancelCreating();
+  getFileList();
 }
 
 function handleSearch() {
@@ -396,7 +397,6 @@ onMounted(async () => {
         <div class="h-full flex flex-col">
           <!-- Toolbar -->
           <Toolbar
-            @create-folder="handleCreateFolder"
             @search="handleSearch"
             @refresh="handleRefresh"
             @show-transfer="transferPanelRef?.showDefault()"
@@ -410,48 +410,35 @@ onMounted(async () => {
               :files="fileList"
               :loading="loading"
               @file-dbl-click="handleFileDblClick"
+              @file-created="handleFileCreated"
+              @folder-created="handleFolderCreated"
               @file-share="handleFileAction('share', $event)"
               @file-download="handleFileAction('download', $event)"
               @file-delete="handleFileAction('delete', $event)"
               @file-rename="handleFileAction('rename', $event)"
               @file-copy="handleFileAction('copy', $event)"
               @file-move="handleFileAction('move', $event)"
+              @refresh="handleRefresh"
             />
             <FileList
               v-if="diskStore.viewMode === 'list'"
               :files="fileList"
               :loading="loading"
               @file-dbl-click="handleFileDblClick"
+              @file-created="handleFileCreated"
+              @folder-created="handleFolderCreated"
+              @file-share="handleFileAction('share', $event)"
+              @file-download="handleFileAction('download', $event)"
+              @file-delete="handleFileAction('delete', $event)"
+              @file-rename="handleFileAction('rename', $event)"
+              @file-copy="handleFileAction('copy', $event)"
+              @file-move="handleFileAction('move', $event)"
+              @refresh="handleRefresh"
             />
           </div>
         </div>
       </NCard>
     </div>
-
-    <!-- Create Folder Modal -->
-    <NModal
-      v-model:show="showCreateFolderModal"
-      preset="card"
-      :title="$t('page.disk.createFolder')"
-      style="width: 300px"
-      :bordered="false"
-    >
-      <NForm>
-        <NFormItem :label="$t('page.disk.file.name')">
-          <NInput v-model:value="newFolderName" :placeholder="$t('page.disk.form.folderName.required')" />
-        </NFormItem>
-      </NForm>
-      <template #footer>
-        <NSpace justify="end">
-          <NButton @click="showCreateFolderModal = false">
-            {{ $t('common.cancel') }}
-          </NButton>
-          <NButton type="primary" @click="submitCreateFolder">
-            {{ $t('common.confirm') }}
-          </NButton>
-        </NSpace>
-      </template>
-    </NModal>
 
     <!-- Transfer Panel -->
     <TransferPanel ref="transferPanelRef" />

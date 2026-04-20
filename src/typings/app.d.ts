@@ -354,6 +354,7 @@ declare namespace App {
         selectFileFirst: string;
         exportSuccess: string;
         exportFail: string;
+        updateFail: string;
         updateExisting: string;
         cancel: string;
         close: string;
@@ -1218,14 +1219,32 @@ declare namespace App {
               cancel: string;
             };
           };
+          createInline: {
+            defaultFileName: string;
+            defaultFolderName: string;
+            emptyName: string;
+            nameExists: string;
+            confirmCreate: string;
+            cancelCreate: string;
+          };
           contextMenu: {
             open: string;
             download: string;
-            rename: string;
-            move: string;
-            delete: string;
             share: string;
+            copy: string;
+            move: string;
+            rename: string;
+            delete: string;
             deleteConfirm: string;
+            view: string;
+            viewGrid: string;
+            viewList: string;
+            sortBy: string;
+            sortName: string;
+            sortSize: string;
+            sortTime: string;
+            refresh: string;
+            reload: string;
           };
           form: {
             folderName: FormMsg;
