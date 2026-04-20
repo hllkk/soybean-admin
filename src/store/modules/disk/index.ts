@@ -127,17 +127,13 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     return '/' + currentPath.value.map(f => f.fileName).join('/');
   }
 
-  // 同步Store状态到URL（使用path参数而非query）
+  // 同步Store状态到URL（使用query参数，避免路由组件重建）
   function syncStoreToUrl() {
     const pathStr = getCurrentPathString();
 
-    // 使用path参数路由，空格编码为%20
     if (pathStr !== '/') {
-      // 编码路径，确保空格变成%20
-      const encodedPath = encodeURIComponent(pathStr);
-      router.push(`/disk/${encodedPath}`);
+      router.push({ name: 'disk', query: { path: pathStr } });
     } else {
-      // 根目录
       router.push({ name: 'disk' });
     }
   }

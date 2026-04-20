@@ -336,8 +336,7 @@ watch(
 );
 
 // Watch URL path changes (browser back/forward)
-// 支持两种路由格式：path参数(/disk/:path)和query参数(/disk?path=xxx)
-watch(() => route.params.path || route.query.path, async (newPath) => {
+watch(() => route.query.path, async (newPath) => {
   const currentPathStr = diskStore.getCurrentPathString();
   // 解码URL路径
   const decodedNewPath = newPath
@@ -357,8 +356,8 @@ watch(() => route.params.path || route.query.path, async (newPath) => {
 });
 
 onMounted(async () => {
-  // 从URL恢复路径状态（支持path参数和query参数）
-  const pathParam = (route.params.path || route.query.path) as string;
+  // 从URL恢复路径状态
+  const pathParam = route.query.path as string;
   if (pathParam) {
     // 解码URL路径
     const decodedPath = decodeURIComponent(pathParam);

@@ -9,27 +9,13 @@ import { createDocumentTitleGuard } from './title';
  * @param router - Router instance
  */
 export function createRouterGuard(router: Router) {
-  // 动态添加disk_path路由（用于URL导航，路径参数编码为%20）
-  // 使用disk layout包裹disk view
+  // 兼容旧 URL 格式 /disk/:path → 重定向到 /disk?path=xxx
   router.addRoute({
     name: 'disk_path',
     path: '/disk/:path(.*)',
-    component: () => import('@/layouts/disk-layout/index.vue'),
-    children: [
-      {
-        name: 'disk_path_view',
-        path: '',
-        component: () => import('@/views/disk/index.vue'),
-        props: true,
-        meta: {
-          title: 'disk',
-          hideInMenu: true
-        }
-      }
-    ],
-    meta: {
-      title: 'disk',
-      hideInMenu: true
+    redirect: to => {
+      const path = to.params.path as string;
+      return { name: 'disk', query: { path: decodeURIComponent(path) } };
     }
   });
 

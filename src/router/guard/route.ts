@@ -90,10 +90,10 @@ function isRouteAuthorized(to: RouteLocationNormalized, routeStore: ReturnType<t
     return true;
   }
 
-  // 动态添加的路由（如disk_path）始终允许访问
-  const dynamicRouteNames = ['disk_path', 'disk_path_view'];
+  // 重定向路由始终允许访问
+  const redirectRouteNames = ['disk_path'];
   const routeName = to.name as string;
-  if (dynamicRouteNames.includes(routeName)) {
+  if (redirectRouteNames.includes(routeName)) {
     return true;
   }
 
