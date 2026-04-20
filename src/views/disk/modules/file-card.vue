@@ -132,10 +132,12 @@ function handleRenameKeydown(e: KeyboardEvent) {
 }
 
 function handleClick() {
+  if (isRenamingThis.value) return;
   emit('click', props.file);
 }
 
 function handleDblClick() {
+  if (isRenamingThis.value) return;
   emit('dblclick', props.file);
 }
 
@@ -167,8 +169,8 @@ function handleMoreSelect(key: string) {
   <div
     class="group relative flex flex-col items-center px-8px py-16px rd-8px cursor-pointer overflow-hidden transition-colors duration-200 hover:bg-primary/10 dark:hover:bg-primary/20"
     :class="{ 'bg-primary/15 dark:bg-primary/25': selected }"
-    @click="isRenamingThis ? undefined : handleClick"
-    @dblclick="isRenamingThis ? undefined : handleDblClick"
+    @click="handleClick"
+    @dblclick="handleDblClick"
   >
     <!-- 顶部操作栏：重命名模式下显示确认/取消按钮 -->
     <div
