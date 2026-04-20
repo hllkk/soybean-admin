@@ -13,30 +13,44 @@ const { SvgIconVNode } = useSvgIcon();
 interface Props {
   /** 显示容量开关 */
   showCapacity?: boolean;
-  /** 已使用容量 (GB) */
-  usedCapacity?: number;
-  /** 总容量 (GB) */
-  totalCapacity?: number;
+  /** 配额信息 */
+  quotaInfo?: Api.Disk.QuotaInfo;
+  /** 加载状态 */
+  quotaLoading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showCapacity: false,
-  usedCapacity: 0,
-  totalCapacity: 0
+  quotaInfo: () => ({
+    usedSpace: 0,
+    quota: 0,
+    unlimited: false,
+    quotaSource: 'none'
+  }),
+  quotaLoading: false
 });
 
 const diskStore = useDiskStore();
 
+// 格式化字节为可读单位
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 // 计算容量百分比
 const usedPercent = computed(() => {
-  if (props.totalCapacity === 0) return 0;
-  return Math.round((props.usedCapacity / props.totalCapacity) * 100);
+  if (props.quotaInfo.unlimited || props.quotaInfo.quota === 0) return 0;
+  return Math.round((props.quotaInfo.usedSpace / props.quotaInfo.quota) * 100);
 });
 
 // 容量数据
 const capacityData = computed(() => ({
-  used: props.usedCapacity,
-  total: props.totalCapacity,
+  used: formatBytes(props.quotaInfo.usedSpace),
+  total: props.quotaInfo.unlimited ? '无限制' : formatBytes(props.quotaInfo.quota),
   usedPercent: usedPercent.value
 }));
 
@@ -112,11 +126,6 @@ const capacityColor = computed(() => {
   if (percent < 90) return '#f0a020'; // 橙色
   return '#d03050'; // 红色
 });
-
-// 格式化容量显示
-function formatSize(size: number): string {
-  return `${size.toFixed(1)} GB`;
-}
 </script>
 
 <template>
@@ -133,58 +142,70 @@ function formatSize(size: number): string {
 
     <!-- 容量显示区域 - 固定在底部 -->
     <div v-if="props.showCapacity" class="mt-auto">
-      <div class="p-12px rd-12px flex gap-16px items-center bg-gradient-to-br from-green-500/8 to-blue-500/8 dark:from-green-500/20 dark:to-blue-500/20 dark:border dark:border-white/10">
-        <!-- 科技感容量环 -->
-        <div class="relative size-80px">
-          <div class="absolute inset-0 rd-full bg-black/8 dark:bg-white/12 shadow-[inset_0_0_10px_rgba(0,0,0,0.15)] dark:shadow-[inset_0_0_10px_rgba(255,255,255,0.15)]" />
-          <div
-            class="absolute inset-4px rd-full"
-            :style="{
-              background: `conic-gradient(${capacityColor} 0deg, ${capacityColor} ${capacityData.usedPercent * 3.6}deg, transparent ${capacityData.usedPercent * 3.6}deg, transparent 360deg)`
-            }"
-          />
-          <div class="absolute inset-12px rd-full flex-center bg-[var(--n-color)] shadow-sm dark:shadow-md">
-            <div class="flex items-baseline font-600">
-              <span class="text-20px text-[var(--n-text-color)]">{{ capacityData.usedPercent }}</span>
-              <span class="text-12px text-[var(--n-text-color-3)] ml-2px">%</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 容量信息 -->
-        <div class="flex-1">
-          <div class="flex items-center gap-6px text-14px font-500 mb-12px text-[var(--n-text-color)]">
+      <NSkeleton v-if="props.quotaLoading" text :repeat="2" />
+      <div v-else class="p-12px rd-12px flex gap-16px items-center bg-gradient-to-br from-green-500/8 to-blue-500/8 dark:from-green-500/20 dark:to-blue-500/20 dark:border dark:border-white/10">
+        <!-- 无限制时显示文字 -->
+        <template v-if="props.quotaInfo.unlimited">
+          <div class="flex items-center gap-6px text-14px font-500 text-[var(--n-text-color)]">
             <SvgIcon icon="mdi:cloud-outline" class="text-18px text-[#2080f0]" />
-            <span>存储空间</span>
+            <span>存储空间：无限制</span>
           </div>
+        </template>
 
-          <div class="flex gap-16px mb-12px">
-            <div class="flex flex-col gap-2px">
-              <span class="text-12px text-[var(--n-text-color-3)]">已使用</span>
-              <span class="text-14px font-600" :style="{ color: capacityColor }">
-                {{ formatSize(capacityData.used) }}
-              </span>
-            </div>
-            <div class="flex flex-col gap-2px">
-              <span class="text-12px text-[var(--n-text-color-3)]">总容量</span>
-              <span class="text-14px font-600 text-[var(--n-text-color)]">{{ formatSize(capacityData.total) }}</span>
-            </div>
-          </div>
-
-          <!-- 进度条 -->
-          <div class="relative h-6px rd-3px overflow-hidden">
-            <div class="absolute inset-0 rd-3px bg-black/10 dark:bg-white/20" />
+        <!-- 有配额时显示进度条 -->
+        <template v-else>
+          <!-- 科技感容量环 - 保持原有设计 -->
+          <div class="relative size-80px">
+            <div class="absolute inset-0 rd-full bg-black/8 dark:bg-white/12 shadow-[inset_0_0_10px_rgba(0,0,0,0.15)] dark:shadow-[inset_0_0_10px_rgba(255,255,255,0.15)]" />
             <div
-              class="absolute left-0 top-0 bottom-0 rd-3px transition-width duration-300"
+              class="absolute inset-4px rd-full"
               :style="{
-                width: `${capacityData.usedPercent}%`,
-                background: capacityColor
+                background: `conic-gradient(${capacityColor} 0deg, ${capacityColor} ${capacityData.usedPercent * 3.6}deg, transparent ${capacityData.usedPercent * 3.6}deg, transparent 360deg)`
               }"
-            >
-              <div class="absolute right-0 top--2px bottom--2px w-12px blur-4px opacity-60 animate-pulse dark:blur-6px dark:opacity-80" :style="{ background: capacityColor }" />
+            />
+            <div class="absolute inset-12px rd-full flex-center bg-[var(--n-color)] shadow-sm dark:shadow-md">
+              <div class="flex items-baseline font-600">
+                <span class="text-20px text-[var(--n-text-color)]">{{ capacityData.usedPercent }}</span>
+                <span class="text-12px text-[var(--n-text-color-3)] ml-2px">%</span>
+              </div>
             </div>
           </div>
-        </div>
+
+          <!-- 容量信息 -->
+          <div class="flex-1">
+            <div class="flex items-center gap-6px text-14px font-500 mb-12px text-[var(--n-text-color)]">
+              <SvgIcon icon="mdi:cloud-outline" class="text-18px text-[#2080f0]" />
+              <span>存储空间</span>
+            </div>
+
+            <div class="flex gap-16px mb-12px">
+              <div class="flex flex-col gap-2px">
+                <span class="text-12px text-[var(--n-text-color-3)]">已使用</span>
+                <span class="text-14px font-600" :style="{ color: capacityColor }">
+                  {{ capacityData.used }}
+                </span>
+              </div>
+              <div class="flex flex-col gap-2px">
+                <span class="text-12px text-[var(--n-text-color-3)]">总容量</span>
+                <span class="text-14px font-600 text-[var(--n-text-color)]">{{ capacityData.total }}</span>
+              </div>
+            </div>
+
+            <!-- 进度条 -->
+            <div class="relative h-6px rd-3px overflow-hidden">
+              <div class="absolute inset-0 rd-3px bg-black/10 dark:bg-white/20" />
+              <div
+                class="absolute left-0 top-0 bottom-0 rd-3px transition-width duration-300"
+                :style="{
+                  width: `${capacityData.usedPercent}%`,
+                  background: capacityColor
+                }"
+              >
+                <div class="absolute right-0 top--2px bottom--2px w-12px blur-4px opacity-60 animate-pulse dark:blur-6px dark:opacity-80" :style="{ background: capacityColor }" />
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
   </div>
