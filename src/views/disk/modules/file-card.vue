@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, nextTick, watch } from 'vue';
 import type { DropdownOption } from 'naive-ui';
 
 import { $t } from '@/locales';
 import { formatDateShort, formatFileSize } from '@/utils/format';
+import { useDiskStore } from '@/store/modules/disk';
 
 import FileIcon from './file-icon.vue';
 import { useSvgIcon } from '@/hooks/common/icon';
@@ -31,13 +32,19 @@ interface Emits {
   (e: 'rename', file: Api.Disk.FileItem): void;
   (e: 'copy', file: Api.Disk.FileItem): void;
   (e: 'move', file: Api.Disk.FileItem): void;
+  (e: 'renameConfirm', fileId: CommonType.IdType, newName: string): void;
+  (e: 'renameCancel'): void;
 }
 
 const emit = defineEmits<Emits>();
 
+const diskStore = useDiskStore();
 const { SvgIconVNode } = useSvgIcon();
 
 const moreDropdownShow = ref(false);
+const renameInputRef = ref<InstanceType<typeof NInput>>();
+const renameName = ref('');
+const isRenaming = ref(false);
 
 const formattedTime = computed(() => formatDateShort(props.file.modifyTime));
 
@@ -45,6 +52,8 @@ const formattedSize = computed(() => {
   if (props.file.isFolder) return '-';
   return formatFileSize(props.file.fileSize);
 });
+
+const isRenamingThis = computed(() => diskStore.renamingFileId === props.file.fileId);
 
 /** 悬停名称 tooltip 详情 */
 const nameTooltipContent = computed(() => {
@@ -85,6 +94,43 @@ const moreOptions = computed<DropdownOption[]>(() => [
   }
 ]);
 
+watch(isRenamingThis, val => {
+  if (val) {
+    renameName.value = props.file.fileName;
+    isRenaming.value = false;
+    nextTick(() => {
+      renameInputRef.value?.focus();
+    });
+  }
+});
+
+function handleRenameConfirm() {
+  if (isRenaming.value) return;
+  const name = renameName.value.trim();
+  if (!name) {
+    diskStore.cancelRenaming();
+    emit('renameCancel');
+    return;
+  }
+  isRenaming.value = true;
+  emit('renameConfirm', props.file.fileId, name);
+}
+
+function handleRenameCancel() {
+  if (isRenaming.value) return;
+  diskStore.cancelRenaming();
+  emit('renameCancel');
+}
+
+function handleRenameKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleRenameConfirm();
+  } else if (e.key === 'Escape') {
+    handleRenameCancel();
+  }
+}
+
 function handleClick() {
   emit('click', props.file);
 }
@@ -121,11 +167,31 @@ function handleMoreSelect(key: string) {
   <div
     class="group relative flex flex-col items-center px-8px py-16px rd-8px cursor-pointer overflow-hidden transition-colors duration-200 hover:bg-primary/10 dark:hover:bg-primary/20"
     :class="{ 'bg-primary/15 dark:bg-primary/25': selected }"
-    @click="handleClick"
-    @dblclick="handleDblClick"
+    @click="isRenamingThis ? undefined : handleClick"
+    @dblclick="isRenamingThis ? undefined : handleDblClick"
   >
-    <!-- 顶部操作栏：pointer-events-none 默认禁用交互，避免盖住相邻卡片 -->
+    <!-- 顶部操作栏：重命名模式下显示确认/取消按钮 -->
     <div
+      v-if="isRenamingThis"
+      class="absolute top-4px left-4px right-4px z-1 flex items-center justify-end gap-2px pointer-events-auto"
+      @click.stop
+    >
+      <button
+        class="p-4px rd-4px cursor-pointer hover:bg-primary/15 dark:hover:bg-primary/25 text-primary"
+        @mousedown.prevent="handleRenameConfirm"
+      >
+        <SvgIcon icon="mdi:check" :size="14" />
+      </button>
+      <button
+        class="p-4px rd-4px cursor-pointer hover:bg-primary/15 dark:hover:bg-primary/25 text-gray-500"
+        @mousedown.prevent="handleRenameCancel"
+      >
+        <SvgIcon icon="mdi:close" :size="14" />
+      </button>
+    </div>
+    <!-- 顶部操作栏：普通模式 -->
+    <div
+      v-else
       class="absolute top-4px left-4px right-4px z-1 flex items-center justify-between pointer-events-none opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
       :class="{ '!pointer-events-auto !opacity-100': selected || moreDropdownShow }"
     >
@@ -179,8 +245,17 @@ function handleMoreSelect(key: string) {
       />
     </div>
 
-    <!-- 名称：外层 div 占满宽度，NTooltip 的 inline span 通过 :deep 改为 block -->
-    <div class="file-name-tooltip w-full text-center text-13px px-4px">
+    <!-- 名称：内联重命名模式 -->
+    <div v-if="isRenamingThis" class="w-full px-4px" @click.stop>
+      <NInput
+        ref="renameInputRef"
+        v-model:value="renameName"
+        size="small"
+        @keydown="handleRenameKeydown"
+      />
+    </div>
+    <!-- 名称：普通展示模式 -->
+    <div v-else class="file-name-tooltip w-full text-center text-13px px-4px">
       <NTooltip trigger="hover" placement="bottom">
         <template #trigger>
           <NEllipsis :line-clamp="2" :tooltip="false">

@@ -27,9 +27,7 @@ const transferPanelRef = ref<InstanceType<typeof TransferPanel>>();
 const totalCount = ref(0);
 
 // 重命名状态
-const renameDialogVisible = ref(false);
-const renameFile = ref<Api.Disk.FileItem | null>(null);
-const renameNewName = ref('');
+const renamingFile = ref<Api.Disk.FileItem | null>(null);
 
 // 显示容量开关
 const showCapacity = ref(true);
@@ -312,9 +310,8 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
 function handleFileAction(action: string, file: Api.Disk.FileItem) {
   switch (action) {
     case 'rename':
-      renameFile.value = file;
-      renameNewName.value = file.fileName;
-      renameDialogVisible.value = true;
+      diskStore.startRenaming(file.fileId, file.fileName);
+      renamingFile.value = file;
       break;
     case 'copy':
       diskStore.openMoveCopyDialog('copy', [file]);
@@ -336,12 +333,29 @@ function handleFileAction(action: string, file: Api.Disk.FileItem) {
   }
 }
 
-async function handleRenameConfirm() {
-  if (!renameFile.value || !renameNewName.value.trim()) return;
-  const { error } = await fetchRenameFile(renameFile.value.fileId, renameNewName.value.trim());
+function handleToolbarRename() {
+  const selectedFileIds = diskStore.selectedFiles;
+  if (selectedFileIds.length !== 1) return;
+
+  const file = diskStore.currentFileList.find(f => f.fileId === selectedFileIds[0]);
+  if (!file) return;
+
+  diskStore.startRenaming(file.fileId, file.fileName);
+  renamingFile.value = file;
+}
+
+async function handleRenameConfirm(newName: string) {
+  if (!renamingFile.value || !newName.trim()) return;
+  if (newName.trim() === renamingFile.value.fileName) {
+    diskStore.cancelRenaming();
+    renamingFile.value = null;
+    return;
+  }
+  const { error } = await fetchRenameFile(renamingFile.value.fileId, newName.trim());
   if (!error) {
     window.$message?.success($t('page.disk.moveCopy.renameSuccess'));
-    renameDialogVisible.value = false;
+    diskStore.cancelRenaming();
+    renamingFile.value = null;
     getFileList();
   }
 }
@@ -453,6 +467,7 @@ onMounted(async () => {
           <Toolbar
             @search="handleSearch"
             @refresh="handleRefresh"
+            @rename="handleToolbarRename"
             @show-transfer="transferPanelRef?.showDefault()"
           />
           <!-- Breadcrumb -->
@@ -470,6 +485,8 @@ onMounted(async () => {
               @file-download="handleFileAction('download', $event)"
               @file-delete="handleFileAction('delete', $event)"
               @file-rename="handleFileAction('rename', $event)"
+              @file-rename-confirm="handleRenameConfirm"
+              @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
               @file-copy="handleFileAction('copy', $event)"
               @file-move="handleFileAction('move', $event)"
               @refresh="handleRefresh"
@@ -485,6 +502,8 @@ onMounted(async () => {
               @file-download="handleFileAction('download', $event)"
               @file-delete="handleFileAction('delete', $event)"
               @file-rename="handleFileAction('rename', $event)"
+              @file-rename-confirm="handleRenameConfirm"
+              @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
               @file-copy="handleFileAction('copy', $event)"
               @file-move="handleFileAction('move', $event)"
               @refresh="handleRefresh"
@@ -499,19 +518,6 @@ onMounted(async () => {
 
     <!-- Move/Copy Dialog -->
     <MoveCopyDialog @success="getFileList" />
-
-    <!-- Rename Dialog -->
-    <NModal
-      v-model:show="renameDialogVisible"
-      preset="dialog"
-      :title="$t('page.disk.toolbar.rename')"
-      positive-text="确认"
-      negative-text="取消"
-      :disabled="!renameNewName.trim()"
-      @positive-click="handleRenameConfirm"
-    >
-      <NInput v-model:value="renameNewName" :placeholder="$t('page.disk.moveCopy.renamePlaceholder')" />
-    </NModal>
   </TableSiderLayout>
 </template>
 

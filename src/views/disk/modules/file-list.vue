@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DataTableColumns } from 'naive-ui';
+import { NInput } from 'naive-ui';
 import { h, computed, ref, watch, nextTick } from 'vue';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 import { $t } from '@/locales';
@@ -8,6 +9,7 @@ import FileIcon from './file-icon.vue';
 import FileEmpty from './file-empty.vue';
 import DiskContextMenu from './context-menu.vue';
 import { formatFileSize } from '@/utils/format';
+import SvgIcon from '@/components/custom/svg-icon.vue';
 import { resolveNameConflict } from '../utils/resolve-name-conflict';
 
 defineOptions({
@@ -34,6 +36,8 @@ interface Emits {
   (e: 'fileCreated', name: string): void;
   (e: 'folderCreated', name: string): void;
   (e: 'refresh'): void;
+  (e: 'fileRenameConfirm', newName: string): void;
+  (e: 'fileRenameCancel'): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -44,6 +48,55 @@ const isMobile = breakpoints.smaller('sm');
 
 // 是否显示空状态
 const showEmpty = computed(() => props.files.length === 0 && !props.loading);
+
+// --- 内联重命名 ---
+const renameName = ref('');
+const isRenaming = ref(false);
+const renameInputRef = ref<InstanceType<typeof NInput>>();
+
+watch(() => diskStore.renamingFileId, val => {
+  if (!val) {
+    isRenaming.value = false;
+    return;
+  }
+  const file = props.files.find(f => f.fileId === val);
+  if (file) {
+    renameName.value = file.fileName;
+    isRenaming.value = false;
+    nextTick(() => {
+      nextTick(() => {
+        renameInputRef.value?.focus();
+      });
+    });
+  }
+});
+
+function handleRenameConfirm() {
+  if (isRenaming.value) return;
+  const name = renameName.value.trim();
+  if (!name) {
+    diskStore.cancelRenaming();
+    emit('fileRenameCancel');
+    return;
+  }
+  isRenaming.value = true;
+  emit('fileRenameConfirm', name);
+}
+
+function handleRenameCancel() {
+  if (isRenaming.value) return;
+  diskStore.cancelRenaming();
+  emit('fileRenameCancel');
+}
+
+function handleRenameKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleRenameConfirm();
+  } else if (e.key === 'Escape') {
+    handleRenameCancel();
+  }
+}
 
 const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
   const cols: DataTableColumns<Api.Disk.FileItem> = [
@@ -58,6 +111,39 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
       align: 'left',
       ellipsis: true,
       render: row => {
+        const isRenamingThis = diskStore.renamingFileId === row.fileId;
+        if (isRenamingThis) {
+          return h('div', { class: 'flex items-center gap-8px w-full' }, [
+            h(FileIcon, {
+              fileType: row.isFolder ? 'folder' : row.fileType,
+              extension: row.fileExtension,
+              size: 'small'
+            }),
+            h(NInput, {
+              ref: (el: any) => { renameInputRef.value = el; },
+              value: renameName.value,
+              'onUpdate:value': (val: string) => { renameName.value = val; },
+              size: 'small',
+              class: 'max-w-300px',
+              onClick: (e: Event) => e.stopPropagation(),
+              onKeydown: handleRenameKeydown
+            }),
+            h('button', {
+              class: 'flex items-center justify-center w-22px h-22px rd-4px cursor-pointer border-none bg-primary/10 hover:bg-primary/20 text-primary dark:bg-primary/20 dark:hover:bg-primary/30',
+              onClick: (e: Event) => { e.stopPropagation(); handleRenameConfirm(); },
+              onMousedown: (e: Event) => e.preventDefault()
+            }, [
+              h(SvgIcon, { icon: 'mdi:check', size: 14 })
+            ]),
+            h('button', {
+              class: 'flex items-center justify-center w-22px h-22px rd-4px cursor-pointer border-none bg-primary/10 hover:bg-primary/20 text-gray-500 dark:bg-primary/20 dark:hover:bg-primary/30',
+              onClick: (e: Event) => { e.stopPropagation(); handleRenameCancel(); },
+              onMousedown: (e: Event) => e.preventDefault()
+            }, [
+              h(SvgIcon, { icon: 'mdi:close', size: 14 })
+            ])
+          ]);
+        }
         return h('div', { class: 'flex items-center gap-8px' }, [
           h(FileIcon, {
             fileType: row.isFolder ? 'folder' : row.fileType,

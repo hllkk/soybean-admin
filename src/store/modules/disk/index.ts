@@ -67,6 +67,10 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   // 内联创建状态
   const creatingType = ref<'file' | 'folder' | null>(null);
 
+  // 内联重命名状态
+  const renamingFileId = ref<CommonType.IdType | null>(null);
+  const renamingName = ref('');
+
   // 移动/复制弹窗状态
   const moveCopyDialogVisible = ref(false);
   const moveCopyMode = ref<'copy' | 'move'>('copy');
@@ -233,6 +237,18 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     creatingType.value = null;
   }
 
+  // 开始内联重命名
+  function startRenaming(fileId: CommonType.IdType, currentName: string) {
+    renamingFileId.value = fileId;
+    renamingName.value = currentName;
+  }
+
+  // 取消内联重命名
+  function cancelRenaming() {
+    renamingFileId.value = null;
+    renamingName.value = '';
+  }
+
   // 打开移动/复制弹窗
   function openMoveCopyDialog(mode: 'copy' | 'move', files: Api.Disk.FileItem[]) {
     moveCopyMode.value = mode;
@@ -286,6 +302,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     currentFileList,
     selectedFiles,
     creatingType,
+    renamingFileId,
+    renamingName,
     moveCopyDialogVisible,
     moveCopyMode,
     moveCopyFiles,
@@ -308,6 +326,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     clearSelection,
     startCreating,
     cancelCreating,
+    startRenaming,
+    cancelRenaming,
     openMoveCopyDialog,
     closeMoveCopyDialog,
     addUploadTasks,

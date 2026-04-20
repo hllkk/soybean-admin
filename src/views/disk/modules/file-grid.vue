@@ -33,6 +33,8 @@ interface Emits {
   (e: 'refresh'): void;
   (e: 'fileCreated', name: string): void;
   (e: 'folderCreated', name: string): void;
+  (e: 'fileRenameConfirm', newName: string): void;
+  (e: 'fileRenameCancel'): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -314,6 +316,8 @@ watch(
           @download="handleAction('download', file)"
           @delete="handleAction('delete', file)"
           @rename="handleAction('rename', file)"
+          @rename-confirm="(_fileId, newName) => emit('fileRenameConfirm', newName)"
+          @rename-cancel="emit('fileRenameCancel')"
           @copy="handleAction('copy', file)"
           @move="handleAction('move', file)"
         />
