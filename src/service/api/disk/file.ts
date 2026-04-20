@@ -138,10 +138,12 @@ export function fetchRenameFile(fileId: CommonType.IdType, newName: string) {
 
 /** 删除文件(移到回收站) */
 export function fetchDeleteFile(fileIds: CommonType.IdType[]) {
+  // 将ID转换为数字类型（后端期望 []int64）
+  const numericIds = fileIds.map(id => (typeof id === 'string' ? parseInt(id, 10) : id));
   return request<{ success: boolean; message: string }>({
     url: '/file-meta/delete',
     method: 'delete',
-    data: { fileIds }
+    data: { fileIds: numericIds }
   });
 }
 
