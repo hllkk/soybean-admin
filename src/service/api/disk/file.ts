@@ -1,6 +1,7 @@
 import { useAuthStore } from '@/store/modules/auth';
 import { useDiskStore } from '@/store/modules/disk';
 import { request } from '@/service/request';
+import { getServiceBaseURL } from '@/utils/service';
 
 /** 获取文件列表 */
 export function fetchGetFileList(params?: Api.Disk.FileSearchParams) {
@@ -186,5 +187,7 @@ export function fetchResolvePath(path: string) {
 
 /** 获取文件预览URL */
 export function getPreviewUrl(fileId: CommonType.IdType): string {
-  return `/disk/preview/file/${fileId}`;
+  const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
+  const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
+  return `${baseURL}/preview/file/${fileId}`;
 }

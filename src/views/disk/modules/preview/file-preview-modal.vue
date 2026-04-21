@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, defineAsyncComponent } from 'vue';
+import { computed, ref, defineAsyncComponent, watch } from 'vue';
 import { NModal, NButton, NSpace } from 'naive-ui';
 import { getPreviewCategory } from '@/utils/file-type';
 import type { PreviewCategory } from '@/utils/file-type';
 import { getPreviewUrl } from '@/service/api/disk/file';
+import { request } from '@/service/request';
 
 defineOptions({ name: 'FilePreviewModal' });
 
@@ -30,15 +31,13 @@ const showModal = computed({
 });
 
 const isFullscreen = ref(false);
+const blobUrl = ref('');
+const loadingBlob = ref(false);
+const blobError = ref('');
 
 const previewCategory = computed<PreviewCategory>(() => {
   if (!props.file) return 'unknown';
   return getPreviewCategory(props.file.fileName);
-});
-
-const previewUrl = computed(() => {
-  if (!props.file) return '';
-  return getPreviewUrl(props.file.fileId);
 });
 
 const fileSize = computed(() => {
@@ -49,6 +48,76 @@ const fileSize = computed(() => {
   if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 });
+
+/** 需要通过 blob URL 加载的文件类型（HTML 原生标签无法发送 auth header） */
+const needsBlobUrl = computed(() => {
+  return ['image', 'pdf', 'video', 'audio'].includes(previewCategory.value);
+});
+
+/** 代码类型直接用 fetch + auth header（CodeViewer 内部处理） */
+const directUrl = computed(() => {
+  if (!props.file) return '';
+  return getPreviewUrl(props.file.fileId);
+});
+
+function revokeBlobUrl() {
+  if (blobUrl.value) {
+    URL.revokeObjectURL(blobUrl.value);
+    blobUrl.value = '';
+  }
+}
+
+async function fetchBlobUrl() {
+  if (!props.file) return;
+
+  revokeBlobUrl();
+  loadingBlob.value = true;
+  blobError.value = '';
+
+  try {
+    const url = getPreviewUrl(props.file.fileId);
+    const response = await request<any, 'blob'>({
+      url,
+      method: 'get',
+      responseType: 'blob'
+    });
+
+    if (response.data && response.data instanceof Blob) {
+      blobUrl.value = URL.createObjectURL(response.data);
+    } else {
+      blobError.value = '文件加载失败：响应格式异常';
+    }
+  } catch {
+    blobError.value = '文件加载失败，请检查网络连接';
+  } finally {
+    loadingBlob.value = false;
+  }
+}
+
+/** 传给各预览组件的 URL */
+const componentUrl = computed(() => {
+  if (needsBlobUrl.value) return blobUrl.value;
+  return directUrl.value;
+});
+
+watch(
+  () => props.file,
+  () => {
+    if (props.file && needsBlobUrl.value) {
+      fetchBlobUrl();
+    }
+  }
+);
+
+watch(
+  () => props.visible,
+  val => {
+    if (!val) {
+      revokeBlobUrl();
+      blobError.value = '';
+    }
+  }
+);
 
 function toggleFullscreen() {
   isFullscreen.value = !isFullscreen.value;
@@ -97,33 +166,43 @@ const modalStyle = computed(() => {
 
       <!-- Body -->
       <div class="preview-body">
-        <template v-if="!file">
-          <div class="flex items-center justify-center h-full text-gray-400">未选择文件</div>
+        <!-- Blob loading state -->
+        <div v-if="needsBlobUrl && loadingBlob" class="flex items-center justify-center h-full">
+          <NSpin size="large" />
+        </div>
+        <div v-else-if="needsBlobUrl && blobError" class="flex items-center justify-center h-full text-red-400">
+          {{ blobError }}
+        </div>
+
+        <!-- Preview components -->
+        <template v-else-if="file">
+          <template v-if="previewCategory === 'image'">
+            <ImageViewer :url="componentUrl" :file-name="file.fileName" />
+          </template>
+          <template v-else-if="previewCategory === 'pdf'">
+            <PdfViewer :url="componentUrl" :file-name="file.fileName" />
+          </template>
+          <template v-else-if="previewCategory === 'code'">
+            <CodeViewer :url="componentUrl" :file-name="file.fileName" />
+          </template>
+          <template v-else-if="previewCategory === 'video'">
+            <VideoPlayer :url="componentUrl" :file-name="file.fileName" />
+          </template>
+          <template v-else-if="previewCategory === 'audio'">
+            <AudioPlayer :url="componentUrl" :file-name="file.fileName" />
+          </template>
+          <template v-else-if="previewCategory === 'office'">
+            <OfficeViewer :file="file" />
+          </template>
+          <template v-else>
+            <div class="flex flex-col items-center justify-center h-full gap-4">
+              <SvgIcon icon="mdi:file-question-outline" :size="48" class="text-gray-300" />
+              <span class="text-gray-400">不支持预览此类型文件</span>
+            </div>
+          </template>
         </template>
-        <template v-else-if="previewCategory === 'image'">
-          <ImageViewer :url="previewUrl" :file-name="file.fileName" />
-        </template>
-        <template v-else-if="previewCategory === 'pdf'">
-          <PdfViewer :url="previewUrl" :file-name="file.fileName" />
-        </template>
-        <template v-else-if="previewCategory === 'code'">
-          <CodeViewer :url="previewUrl" :file-name="file.fileName" />
-        </template>
-        <template v-else-if="previewCategory === 'video'">
-          <VideoPlayer :url="previewUrl" :file-name="file.fileName" />
-        </template>
-        <template v-else-if="previewCategory === 'audio'">
-          <AudioPlayer :url="previewUrl" :file-name="file.fileName" />
-        </template>
-        <template v-else-if="previewCategory === 'office'">
-          <OfficeViewer :file="file" />
-        </template>
-        <template v-else>
-          <div class="flex flex-col items-center justify-center h-full gap-4">
-            <SvgIcon icon="mdi:file-question-outline" :size="48" class="text-gray-300" />
-            <span class="text-gray-400">不支持预览此类型文件</span>
-          </div>
-        </template>
+
+        <div v-else class="flex items-center justify-center h-full text-gray-400">未选择文件</div>
       </div>
     </div>
   </NModal>
