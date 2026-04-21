@@ -9,7 +9,7 @@ interface Props {
   fileName: string;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
 const isLoading = ref(true);
 const loadError = ref<string | null>(null);

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { getMonacoLanguage } from '@/utils/file-type';
+import { localStg } from '@/utils/storage';
 
 defineOptions({ name: 'CodeViewer' });
 
@@ -23,7 +24,12 @@ const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
 
 onMounted(async () => {
   try {
-    const response = await fetch(props.url);
+    const token = localStg.get('token');
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(props.url, { headers });
     if (!response.ok) {
       errorMsg.value = `加载失败: ${response.statusText}`;
       loading.value = false;

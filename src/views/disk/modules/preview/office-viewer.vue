@@ -40,22 +40,23 @@ onMounted(async () => {
     script.src = `${docServerUrl}/web-apps/apps/api/documents/api.js`;
     script.async = true;
 
-    script.onload = () => {
+    script.addEventListener('load', () => {
       const DocsAPI = (window as any).DocsAPI;
       if (DocsAPI && editorReady.value) {
-        new DocsAPI.DocEditor('office-editor-placeholder', data);
+        const docEditor = new DocsAPI.DocEditor('office-editor-placeholder', data);
+        void docEditor;
       }
       loading.value = false;
-    };
+    });
 
-    script.onerror = () => {
+    script.addEventListener('error', () => {
       errorMsg.value = 'OnlyOffice 服务不可用，请确认服务已启动';
       loading.value = false;
-    };
+    });
 
     editorReady.value = true;
     document.head.appendChild(script);
-  } catch (err) {
+  } catch {
     errorMsg.value = 'OnlyOffice 服务不可用，请确认服务已启动';
     loading.value = false;
   }

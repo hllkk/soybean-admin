@@ -10,7 +10,7 @@ interface Props {
   fileName: string;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
 const containerRef = ref<HTMLDivElement>();
 let viewerInstance: Viewer | null = null;
