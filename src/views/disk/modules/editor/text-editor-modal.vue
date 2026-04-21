@@ -18,10 +18,9 @@ defineOptions({ name: 'TextEditorModal' });
 interface Props {
   visible: boolean;
   file: Api.Disk.PreviewFileInfo | null;
-  fileList?: Api.Disk.FileItem[];
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void;
   (e: 'saved'): void;
