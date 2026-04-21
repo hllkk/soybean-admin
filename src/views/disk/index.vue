@@ -5,6 +5,7 @@ import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList, fetchGetQuota } from '@/service/api/disk';
+import { getPreviewCategory } from '@/utils/file-type';
 import FileTypeMenu from './modules/file-type-menu.vue';
 import Toolbar from './modules/toolbar.vue';
 import Breadcrumb from './modules/breadcrumb.vue';
@@ -13,6 +14,7 @@ import FileList from './modules/file-list.vue';
 import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
 import FilePreviewModal from './modules/preview/file-preview-modal.vue';
+import TextEditorModal from './modules/editor/text-editor-modal.vue';
 
 defineOptions({
   name: 'DiskPage'
@@ -33,6 +35,10 @@ const renamingFile = ref<Api.Disk.FileItem | null>(null);
 // 文件预览
 const previewVisible = ref(false);
 const previewFile = ref<Api.Disk.PreviewFileInfo | null>(null);
+
+// 文本编辑器
+const editorVisible = ref(false);
+const editorFile = ref<Api.Disk.PreviewFileInfo | null>(null);
 
 // 显示容量开关
 const showCapacity = ref(true);
@@ -319,7 +325,22 @@ function handleRefresh() {
 }
 
 function handleFileDblClick(file: Api.Disk.FileItem) {
-  if (!file.isFolder) {
+  if (file.isFolder) return;
+
+  const category = getPreviewCategory(file.fileName);
+
+  // 代码和 Markdown 文件打开编辑器
+  if (category === 'code' || category === 'markdown') {
+    editorFile.value = {
+      fileId: file.fileId,
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      fileExtension: file.fileExtension,
+      filePath: file.filePath
+    };
+    editorVisible.value = true;
+  } else {
+    // 其他文件使用预览 Modal
     previewFile.value = {
       fileId: file.fileId,
       fileName: file.fileName,
@@ -579,6 +600,15 @@ onMounted(async () => {
     <FilePreviewModal
       v-model:visible="previewVisible"
       :file="previewFile"
+      :file-list="fileList"
+    />
+
+    <!-- Text Editor Modal -->
+    <TextEditorModal
+      v-model:visible="editorVisible"
+      :file="editorFile"
+      :file-list="fileList"
+      @saved="getFileList"
     />
   </TableSiderLayout>
 </template>

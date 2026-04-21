@@ -1,5 +1,5 @@
 /** 文件预览分类 */
-export type PreviewCategory = 'image' | 'pdf' | 'video' | 'audio' | 'office' | 'code' | 'unknown';
+export type PreviewCategory = 'image' | 'pdf' | 'video' | 'audio' | 'office' | 'code' | 'markdown' | 'unknown';
 
 /** Office 文档子类型 */
 export type OfficeType = 'word' | 'excel' | 'ppt';
@@ -12,6 +12,8 @@ const VIDEO_EXTS = ['mp4', 'webm', 'ogg', 'ogv', 'flv', 'avi', 'mkv', 'mov', 'wm
 
 const AUDIO_EXTS = ['mp3', 'wav', 'flac', 'aac', 'ogg', 'oga', 'm4a', 'wma', 'ape', 'opus'];
 
+const MARKDOWN_EXTS = ['md', 'markdown'];
+
 const OFFICE_EXTS: Record<OfficeType, string[]> = {
   word: ['doc', 'docx'],
   excel: ['xls', 'xlsx'],
@@ -21,7 +23,7 @@ const OFFICE_EXTS: Record<OfficeType, string[]> = {
 const CODE_EXTS = [
   'txt', 'log', 'json', 'xml', 'yaml', 'yml', 'toml', 'ini', 'cfg', 'conf',
   'py', 'go', 'js', 'ts', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'sh', 'bash',
-  'sql', 'md', 'markdown', 'css', 'scss', 'less', 'html', 'htm', 'vue',
+  'sql', 'css', 'scss', 'less', 'html', 'htm', 'vue',
   'jsx', 'tsx', 'rs', 'rb', 'php', 'swift', 'kt', 'scala', 'lua', 'pl',
   'r', 'dart', 'properties', 'env', 'gitignore', 'dockerignore', 'editorconfig'
 ];
@@ -38,6 +40,7 @@ export function getPreviewCategory(filename: string): PreviewCategory {
   if (VIDEO_EXTS.includes(lower)) return 'video';
   if (AUDIO_EXTS.includes(lower)) return 'audio';
   if (getAllOfficeExts().includes(lower)) return 'office';
+  if (MARKDOWN_EXTS.includes(lower)) return 'markdown';
   if (CODE_EXTS.includes(lower)) return 'code';
 
   return 'unknown';
@@ -88,4 +91,10 @@ export function getExtension(filename: string): string | undefined {
 
 function getAllOfficeExts(): string[] {
   return Object.values(OFFICE_EXTS).flat();
+}
+
+/** 判断文件是否为音频文件 */
+export function isAudioFile(filename: string): boolean {
+  const ext = getExtension(filename)?.toLowerCase();
+  return ext ? AUDIO_EXTS.includes(ext) : false;
 }

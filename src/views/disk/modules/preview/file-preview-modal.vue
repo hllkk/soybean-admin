@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, defineAsyncComponent, watch } from 'vue';
-import { NModal, NButton, NSpace } from 'naive-ui';
-import { getPreviewCategory } from '@/utils/file-type';
+import { NModal, NButton, NSpace, useDialog } from 'naive-ui';
+import { getPreviewCategory, isAudioFile } from '@/utils/file-type';
 import type { PreviewCategory } from '@/utils/file-type';
 import { getPreviewUrl } from '@/service/api/disk/file';
 import { request } from '@/service/request';
@@ -11,6 +11,7 @@ defineOptions({ name: 'FilePreviewModal' });
 interface Props {
   visible: boolean;
   file: Api.Disk.PreviewFileInfo | null;
+  fileList?: Api.Disk.FileItem[];
 }
 
 const props = defineProps<Props>();
@@ -18,12 +19,15 @@ const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void;
 }>();
 
+const dialog = useDialog();
+
 const ImageViewer = defineAsyncComponent(() => import('./image-viewer.vue'));
 const PdfViewer = defineAsyncComponent(() => import('./pdf-viewer.vue'));
 const CodeViewer = defineAsyncComponent(() => import('./code-viewer.vue'));
 const VideoPlayer = defineAsyncComponent(() => import('./video-player.vue'));
 const AudioPlayer = defineAsyncComponent(() => import('./audio-player.vue'));
 const OfficeViewer = defineAsyncComponent(() => import('./office-viewer.vue'));
+const MarkdownViewer = defineAsyncComponent(() => import('./markdown-viewer.vue'));
 
 const showModal = computed({
   get: () => props.visible,
@@ -34,6 +38,11 @@ const isFullscreen = ref(false);
 const blobUrl = ref('');
 const loadingBlob = ref(false);
 const blobError = ref('');
+
+// Code editor state
+const codeViewerRef = ref<InstanceType<typeof CodeViewer> | null>(null);
+const isEditMode = ref(false);
+const isContentModified = ref(false);
 
 const previewCategory = computed<PreviewCategory>(() => {
   if (!props.file) return 'unknown';
@@ -49,15 +58,23 @@ const fileSize = computed(() => {
   return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 });
 
-/** 需要通过 blob URL 加载的文件类型（HTML 原生标签无法发送 auth header） */
+/** 需要通过 blob URL 加载的文件类型 */
 const needsBlobUrl = computed(() => {
   return ['image', 'pdf', 'video', 'audio'].includes(previewCategory.value);
 });
 
-/** 代码类型直接用 fetch + auth header（CodeViewer 内部处理） */
+/** 代码/Markdown 类型直接用 fetch + auth header */
 const directUrl = computed(() => {
   if (!props.file) return '';
   return getPreviewUrl(props.file.fileId);
+});
+
+/** 音频播放列表：当前目录下所有音频文件 */
+const audioFiles = computed(() => {
+  if (!props.fileList) return undefined;
+  return props.fileList
+    .filter(f => !f.isFolder && isAudioFile(f.fileName))
+    .map(f => ({ fileId: f.fileId, fileName: f.fileName }));
 });
 
 function revokeBlobUrl() {
@@ -106,6 +123,9 @@ watch(
     if (props.file && needsBlobUrl.value) {
       fetchBlobUrl();
     }
+    // 文件切换时重置编辑状态
+    isEditMode.value = false;
+    isContentModified.value = false;
   }
 );
 
@@ -115,6 +135,8 @@ watch(
     if (!val) {
       revokeBlobUrl();
       blobError.value = '';
+      isEditMode.value = false;
+      isContentModified.value = false;
     }
   }
 );
@@ -123,7 +145,36 @@ function toggleFullscreen() {
   isFullscreen.value = !isFullscreen.value;
 }
 
+function toggleEditMode() {
+  isEditMode.value = !isEditMode.value;
+}
+
+function handleContentModified(modified: boolean) {
+  isContentModified.value = modified;
+}
+
+function handleSave() {
+  codeViewerRef.value?.save();
+}
+
 function handleClose() {
+  if (isContentModified.value) {
+    dialog.warning({
+      title: '未保存的修改',
+      content: '文件已修改但未保存，是否保存后再关闭？',
+      positiveText: '保存并关闭',
+      negativeText: '放弃修改',
+      onPositiveClick: () => {
+        codeViewerRef.value?.save();
+        emit('update:visible', false);
+      },
+      onNegativeClick: () => {
+        isContentModified.value = false;
+        emit('update:visible', false);
+      }
+    });
+    return;
+  }
   emit('update:visible', false);
 }
 
@@ -139,7 +190,7 @@ const modalStyle = computed(() => {
   <NModal
     v-model:show="showModal"
     :closable="false"
-    :mask-closable="true"
+    :mask-closable="!isContentModified"
     :style="modalStyle"
     class="file-preview-modal"
   >
@@ -147,10 +198,26 @@ const modalStyle = computed(() => {
       <!-- Header -->
       <div class="preview-header">
         <div class="header-left">
+          <span v-if="isContentModified" class="modified-dot" />
           <span class="file-name">{{ file?.fileName || '文件预览' }}</span>
           <span v-if="file" class="file-size">{{ fileSize }}</span>
         </div>
         <NSpace align="center" :size="4" class="header-right">
+          <!-- Code edit toggle -->
+          <template v-if="previewCategory === 'code' && file?.fileId">
+            <NButton size="small" :type="isEditMode ? 'primary' : 'default'" @click="toggleEditMode">
+              <template #icon>
+                <SvgIcon :icon="isEditMode ? 'mdi:eye-outline' : 'mdi:pencil-outline'" :size="16" />
+              </template>
+              {{ isEditMode ? '查看' : '编辑' }}
+            </NButton>
+            <NButton v-if="isEditMode && isContentModified" size="small" type="primary" @click="handleSave">
+              <template #icon>
+                <SvgIcon icon="mdi:content-save" :size="16" />
+              </template>
+              保存
+            </NButton>
+          </template>
           <NButton quaternary size="small" @click="toggleFullscreen">
             <template #icon>
               <SvgIcon :icon="isFullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'" :size="20" />
@@ -183,13 +250,23 @@ const modalStyle = computed(() => {
             <PdfViewer :url="componentUrl" :file-name="file.fileName" />
           </template>
           <template v-else-if="previewCategory === 'code'">
-            <CodeViewer :url="componentUrl" :file-name="file.fileName" />
+            <CodeViewer
+              ref="codeViewerRef"
+              :url="componentUrl"
+              :file-name="file.fileName"
+              :file-id="file.fileId"
+              :is-edit-mode="isEditMode"
+              @content-modified="handleContentModified"
+            />
+          </template>
+          <template v-else-if="previewCategory === 'markdown'">
+            <MarkdownViewer :url="componentUrl" :file-name="file.fileName" />
           </template>
           <template v-else-if="previewCategory === 'video'">
             <VideoPlayer :url="componentUrl" :file-name="file.fileName" />
           </template>
           <template v-else-if="previewCategory === 'audio'">
-            <AudioPlayer :url="componentUrl" :file-name="file.fileName" />
+            <AudioPlayer :url="componentUrl" :file-name="file.fileName" :audio-file-list="audioFiles" />
           </template>
           <template v-else-if="previewCategory === 'office'">
             <OfficeViewer :file="file" />
@@ -243,10 +320,18 @@ const modalStyle = computed(() => {
 
 .header-left {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   overflow: hidden;
   min-width: 0;
+}
+
+.modified-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #f0a020;
+  flex-shrink: 0;
 }
 
 .file-name {
