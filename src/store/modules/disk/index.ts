@@ -76,6 +76,10 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const moveCopyMode = ref<'copy' | 'move'>('copy');
   const moveCopyFiles = ref<Api.Disk.FileItem[]>([]);
 
+  // 文件预览状态
+  const textPreviewVisible = ref(false);
+  const textPreviewRow = ref<Api.Disk.FileItem | null>(null);
+
   // 计算属性：面包屑路径显示
   const breadcrumbPath = computed(() => {
     return currentPath.value.map(item => item.fileName);
@@ -307,6 +311,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     moveCopyDialogVisible,
     moveCopyMode,
     moveCopyFiles,
+    textPreviewVisible,
+    textPreviewRow,
     // computed
     breadcrumbPath,
     hasUploadTask,

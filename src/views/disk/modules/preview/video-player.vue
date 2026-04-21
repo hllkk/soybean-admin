@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* oxlint-disable eslint-plugin-import/no-named-as-default-member */
 import { ref, onMounted, onUnmounted } from 'vue';
 import Artplayer from 'artplayer';
 import Hls from 'hls.js';
@@ -41,9 +42,9 @@ function playHls(video: HTMLVideoElement, url: string, art: Artplayer) {
   hlsInstance.loadSource(url);
   hlsInstance.attachMedia(video);
 
-  hlsInstance.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+  hlsInstance.on(Hls.Events.MANIFEST_PARSED, (_event: string, data: { levels: { height: number }[] }) => {
     if (data.levels.length > 1) {
-      const qualities = data.levels.map((level, index) => ({
+      const qualities = data.levels.map((level: { height: number }, index: number) => ({
         html: `${level.height}p`,
         value: index,
         default: index === data.levels.length - 1

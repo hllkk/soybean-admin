@@ -12,10 +12,12 @@ export function fetchFileTree(path?: string) {
 
 /** 保存文件并创建历史快照 */
 export function fetchSaveWithHistory(data: { fileId: CommonType.IdType; content: string }) {
+  // 确保 fileId 为数字类型（后端期望 int64）
+  const fileIdNum = typeof data.fileId === 'string' ? parseInt(data.fileId, 10) : data.fileId;
   return request<Editor.SaveResult>({
     url: '/file-meta/history/save',
     method: 'post',
-    data
+    data: { fileId: fileIdNum, content: data.content }
   });
 }
 

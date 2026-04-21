@@ -14,7 +14,7 @@ import FileList from './modules/file-list.vue';
 import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
 import FilePreviewModal from './modules/preview/file-preview-modal.vue';
-import TextEditorModal from './modules/editor/text-editor-modal.vue';
+import TextPreview from '@/components/preview/text-preview.vue';
 
 defineOptions({
   name: 'DiskPage'
@@ -35,10 +35,6 @@ const renamingFile = ref<Api.Disk.FileItem | null>(null);
 // 文件预览
 const previewVisible = ref(false);
 const previewFile = ref<Api.Disk.PreviewFileInfo | null>(null);
-
-// 文本编辑器
-const editorVisible = ref(false);
-const editorFile = ref<Api.Disk.PreviewFileInfo | null>(null);
 
 // 显示容量开关
 const showCapacity = ref(true);
@@ -329,16 +325,10 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
 
   const category = getPreviewCategory(file.fileName);
 
-  // 代码和 Markdown 文件打开编辑器
+  // 代码和 Markdown 文件使用新的 TextPreview
   if (category === 'code' || category === 'markdown') {
-    editorFile.value = {
-      fileId: file.fileId,
-      fileName: file.fileName,
-      fileSize: file.fileSize,
-      fileExtension: file.fileExtension,
-      filePath: file.filePath
-    };
-    editorVisible.value = true;
+    diskStore.textPreviewRow = file;
+    diskStore.textPreviewVisible = true;
   } else {
     // 其他文件使用预览 Modal
     previewFile.value = {
@@ -603,13 +593,8 @@ onMounted(async () => {
       :file-list="fileList"
     />
 
-    <!-- Text Editor Modal -->
-    <TextEditorModal
-      v-model:visible="editorVisible"
-      :file="editorFile"
-      :file-list="fileList"
-      @saved="getFileList"
-    />
+    <!-- Text Preview (opsMaster version) -->
+    <TextPreview />
   </TableSiderLayout>
 </template>
 
