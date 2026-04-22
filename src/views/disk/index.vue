@@ -13,8 +13,6 @@ import FileGrid from './modules/file-grid.vue';
 import FileList from './modules/file-list.vue';
 import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
-import FilePreviewModal from './modules/preview/file-preview-modal.vue';
-import TextPreview from '@/components/preview/text-preview.vue';
 
 defineOptions({
   name: 'DiskPage'

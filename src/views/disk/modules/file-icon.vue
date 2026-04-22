@@ -72,6 +72,7 @@ const extensionIconMap: Record<string, string> = {
   aac: audioIcon,
   ogg: audioIcon,
   wma: audioIcon,
+  ape: audioIcon,
   // 压缩包
   zip: zipIcon,
   rar: zipIcon,
