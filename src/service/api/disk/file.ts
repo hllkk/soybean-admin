@@ -30,6 +30,19 @@ export function fetchGetFileList(params?: Api.Disk.FileSearchParams) {
   });
 }
 
+/** 将 MIME 类型转换为前端文件分类 */
+function contentTypeToFileType(contentType: string): string {
+  if (!contentType) return 'other';
+  const ct = contentType.toLowerCase();
+  if (ct.startsWith('image/')) return 'image';
+  if (ct.startsWith('video/')) return 'video';
+  if (ct.startsWith('audio/')) return 'audio';
+  if (ct === 'application/pdf') return 'document';
+  if (ct.startsWith('text/')) return 'document';
+  if (ct.includes('word') || ct.includes('spreadsheet') || ct.includes('presentation') || ct.includes('document')) return 'document';
+  return 'other';
+}
+
 /** 将后端 FileListResponse 转换为前端 FileItem 格式 */
 export function mapBackendFileList(backendData: { list: any[]; total: number }) {
   const list: Api.Disk.FileItem[] = (backendData.list || []).map(item => ({
@@ -39,14 +52,16 @@ export function mapBackendFileList(backendData: { list: any[]; total: number }) 
     updateTime: item.updateTime || '',
     fileId: item.id,
     fileName: item.name,
-    fileType: item.contentType || (item.isDir ? 'folder' : 'other'),
+    fileType: item.isDir ? 'folder' : contentTypeToFileType(item.contentType),
     fileSize: item.size,
     fileExtension: item.extendName,
     parentId: null,
     filePath: item.filePath,
     modifyTime: item.updateTime,
     isFolder: item.isDir,
-    icon: item.isDir ? 'material-symbols:folder' : getFileIcon(item.extendName)
+    icon: item.isDir ? 'material-symbols:folder' : getFileIcon(item.extendName),
+    mediaCover: item.mediaCover || false,
+    showCover: item.showCover || false
   }));
 
   return { rows: list, total: backendData.total || 0 };

@@ -117,7 +117,9 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
             h(FileIcon, {
               fileType: row.isFolder ? 'folder' : row.fileType,
               extension: row.fileExtension,
-              size: 'small'
+              size: 'small',
+              fileId: row.fileId,
+              mediaCover: row.mediaCover
             }),
             h(NInput, {
               ref: (el: any) => { renameInputRef.value = el; },
@@ -148,7 +150,9 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
           h(FileIcon, {
             fileType: row.isFolder ? 'folder' : row.fileType,
             extension: row.fileExtension,
-            size: 'small'
+            size: 'small',
+            fileId: row.fileId,
+            mediaCover: row.mediaCover
           }),
           h('span', { class: 'truncate' }, row.fileName)
         ]);

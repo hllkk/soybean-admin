@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import apkIcon from '@/assets/imgs/file-icons/apk.png';
 import audioIcon from '@/assets/imgs/file-icons/audio.png';
@@ -19,6 +19,8 @@ import txtIcon from '@/assets/imgs/file-icons/txt.png';
 import videoIcon from '@/assets/imgs/file-icons/video.png';
 import xlsIcon from '@/assets/imgs/file-icons/xls.png';
 import zipIcon from '@/assets/imgs/file-icons/zip.png';
+import { getServiceBaseURL } from '@/utils/service';
+import { getToken } from '@/store/modules/auth/shared';
 
 defineOptions({
   name: 'FileIcon'
@@ -28,93 +30,37 @@ interface Props {
   fileType: string;
   extension?: string;
   size?: 'small' | 'medium' | 'large';
+  fileId?: CommonType.IdType;
+  mediaCover?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   extension: undefined,
-  size: 'medium'
+  size: 'medium',
+  fileId: undefined,
+  mediaCover: false
 });
 
-/** 扩展名 → 图标映射 */
 const extensionIconMap: Record<string, string> = {
-  // 文档
-  pdf: pdfIcon,
-  doc: docIcon,
-  docx: docIcon,
-  xls: xlsIcon,
-  xlsx: xlsIcon,
-  csv: xlsIcon,
-  ppt: pptIcon,
-  pptx: pptIcon,
-  txt: txtIcon,
-  md: txtIcon,
-  log: txtIcon,
-  // 图片
-  jpg: imageIcon,
-  jpeg: imageIcon,
-  png: imageIcon,
-  gif: imageIcon,
-  webp: imageIcon,
-  svg: imageIcon,
-  bmp: imageIcon,
-  ico: imageIcon,
-  // 视频
-  mp4: videoIcon,
-  avi: videoIcon,
-  mov: videoIcon,
-  mkv: videoIcon,
-  wmv: videoIcon,
-  flv: flvIcon,
-  // 音频
-  mp3: audioIcon,
-  wav: audioIcon,
-  flac: audioIcon,
-  aac: audioIcon,
-  ogg: audioIcon,
-  wma: audioIcon,
-  ape: audioIcon,
-  // 压缩包
-  zip: zipIcon,
-  rar: zipIcon,
-  '7z': zipIcon,
-  tar: zipIcon,
-  gz: zipIcon,
-  // 代码
-  json: codeIcon,
-  js: codeIcon,
-  ts: codeIcon,
-  vue: codeIcon,
-  html: codeIcon,
-  css: codeIcon,
-  py: codeIcon,
-  java: codeIcon,
-  go: codeIcon,
-  xml: codeIcon,
-  yaml: codeIcon,
-  yml: codeIcon,
-  sql: codeIcon,
-  // 安装包 / 可执行
-  apk: apkIcon,
-  exe: exeIcon,
-  msi: exeIcon,
-  dmg: dmgIcon,
-  // 字体
-  ttf: ttfIcon,
-  otf: ttfIcon,
-  woff: ttfIcon,
-  woff2: ttfIcon,
-  // 种子
+  pdf: pdfIcon, doc: docIcon, docx: docIcon, xls: xlsIcon, xlsx: xlsIcon, csv: xlsIcon,
+  ppt: pptIcon, pptx: pptIcon, txt: txtIcon, md: txtIcon, log: txtIcon,
+  jpg: imageIcon, jpeg: imageIcon, png: imageIcon, gif: imageIcon, webp: imageIcon,
+  svg: imageIcon, bmp: imageIcon, ico: imageIcon,
+  mp4: videoIcon, avi: videoIcon, mov: videoIcon, mkv: videoIcon, wmv: videoIcon, flv: flvIcon,
+  mp3: audioIcon, wav: audioIcon, flac: audioIcon, aac: audioIcon, ogg: audioIcon,
+  wma: audioIcon, ape: audioIcon,
+  zip: zipIcon, rar: zipIcon, '7z': zipIcon, tar: zipIcon, gz: zipIcon,
+  json: codeIcon, js: codeIcon, ts: codeIcon, vue: codeIcon, html: codeIcon,
+  css: codeIcon, py: codeIcon, java: codeIcon, go: codeIcon, xml: codeIcon,
+  yaml: codeIcon, yml: codeIcon, sql: codeIcon,
+  apk: apkIcon, exe: exeIcon, msi: exeIcon, dmg: dmgIcon,
+  ttf: ttfIcon, otf: ttfIcon, woff: ttfIcon, woff2: ttfIcon,
   torrent: btIcon
 };
 
-/** 文件类型分类 → 图标映射（扩展名未命中时使用） */
 const fileTypeIconMap: Record<string, string> = {
-  folder: folderIcon,
-  image: imageIcon,
-  document: docIcon,
-  video: videoIcon,
-  audio: audioIcon,
-  other: defaultIcon
+  folder: folderIcon, image: imageIcon, document: docIcon,
+  video: videoIcon, audio: audioIcon, other: defaultIcon
 };
 
 const iconSizeMap: Record<string, number> = {
@@ -123,24 +69,70 @@ const iconSizeMap: Record<string, number> = {
   large: 80
 };
 
-const icon = computed(() => {
-  if (props.fileType === 'folder') {
-    return folderIcon;
-  }
+const thumbnailError = ref(false);
 
+const icon = computed(() => {
+  if (props.fileType === 'folder') return folderIcon;
   if (props.extension) {
     const ext = props.extension.toLowerCase();
-    if (extensionIconMap[ext]) {
-      return extensionIconMap[ext];
-    }
+    if (extensionIconMap[ext]) return extensionIconMap[ext];
   }
-
   return fileTypeIconMap[props.fileType] || defaultIcon;
 });
 
 const iconSize = computed(() => iconSizeMap[props.size]);
+
+const isVideo = computed(() => props.fileType === 'video' || props.fileType === 'audio');
+
+const thumbnailUrl = computed(() => {
+  if (!props.mediaCover || !props.fileId || props.fileType === 'folder') return '';
+  if (thumbnailError.value) return '';
+  const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
+  const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
+  const token = getToken();
+  const separator = isVideo.value ? '/view/cover' : '/view/thumbnail';
+  return `${baseURL}${separator}?id=${props.fileId}&token=${token}`;
+});
+
+const showThumbnail = computed(() => thumbnailUrl.value !== '');
+
+const showPlayIcon = computed(() => showThumbnail.value && props.fileType === 'video');
+
+function handleThumbnailError() {
+  thumbnailError.value = true;
+}
 </script>
 
 <template>
-  <img :src="icon" :width="iconSize" :height="iconSize" class="shrink-0 select-none" draggable="false" />
+  <!-- 缩略图容器：固定尺寸 + 居中裁剪 -->
+  <div
+    v-if="showThumbnail"
+    class="shrink-0 select-none rd-4px relative overflow-hidden"
+    :style="{ width: `${iconSize}px`, height: `${iconSize}px` }"
+  >
+    <img
+      :src="thumbnailUrl"
+      class="w-full h-full object-cover object-center"
+      draggable="false"
+      @error="handleThumbnailError"
+    />
+    <!-- 视频播放图标 -->
+    <div
+      v-if="showPlayIcon"
+      class="absolute inset-0 flex items-center justify-center"
+    >
+      <div class="w-7 h-7 rd-full flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <icon-mdi-play class="text-white text-5" />
+      </div>
+    </div>
+  </div>
+  <!-- 静态图标 -->
+  <img
+    v-else
+    :src="icon"
+    :width="iconSize"
+    :height="iconSize"
+    class="shrink-0 select-none"
+    draggable="false"
+  />
 </template>

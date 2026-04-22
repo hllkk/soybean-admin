@@ -15,6 +15,9 @@
 - 组件顺序: 导入 → defineOptions → Props → Hooks → 状态 → 方法 → 模板
 - 国际化: 先定义类型再写翻译
 - 样式: UnoCSS, 无法实现的样式用SCSS
+- 组件: 组件化, 一个功能一个组件
+- 响应式: 组件状态响应用户交互
+- 兼容: 组件在不同浏览器和设备上都能正常工作
 
 ## 验证命令
 - typecheck: pnpm typecheck

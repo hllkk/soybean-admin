@@ -243,6 +243,8 @@ function handleMoreSelect(key: string) {
       <FileIcon
         :file-type="file.isFolder ? 'folder' : file.fileType"
         :extension="file.fileExtension"
+        :file-id="file.fileId"
+        :media-cover="file.mediaCover"
         size="large"
       />
     </div>

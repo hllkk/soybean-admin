@@ -37,6 +37,10 @@ declare namespace Api {
       fileUrl?: string;
       /** 文件图标 */
       icon?: string;
+      /** 是否有媒体封面/缩略图 */
+      mediaCover?: boolean;
+      /** 是否显示封面 */
+      showCover?: boolean;
     }>;
 
     /** 文件列表响应 */
