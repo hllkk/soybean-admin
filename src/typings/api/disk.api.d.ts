@@ -41,7 +41,39 @@ declare namespace Api {
       mediaCover?: boolean;
       /** 是否显示封面 */
       showCover?: boolean;
+      /** 音乐信息 */
+      music?: MusicInfo;
+      /** 视频信息 */
+      video?: VideoInfo;
     }>;
+
+    /** 音乐信息 */
+    type MusicInfo = {
+      /** 歌曲名称 */
+      songName: string;
+      /** 歌手 */
+      singer: string;
+      /** 专辑 */
+      album: string;
+      /** 封面 Base64 编码 */
+      coverBase64?: string;
+    };
+
+    /** 视频信息 */
+    type VideoInfo = {
+      /** 视频宽度 */
+      width?: number;
+      /** 视频高度 */
+      height?: number;
+      /** 视频码率 */
+      bitrate?: string;
+      /** 视频格式 */
+      format?: string;
+      /** 视频帧率 */
+      frameRate?: number;
+      /** 视频时长 */
+      duration?: string;
+    };
 
     /** 文件列表响应 */
     type FileList = Common.PaginatingQueryRecord<FileItem>;

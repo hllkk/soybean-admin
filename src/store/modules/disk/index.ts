@@ -80,6 +80,10 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const textPreviewVisible = ref(false);
   const textPreviewRow = ref<Api.Disk.FileItem | null>(null);
 
+  // 音频预览状态
+  const audioPreviewVisible = ref(false);
+  const audioPreviewRow = ref<Api.Disk.FileItem | null>(null);
+
   // 计算属性：面包屑路径显示
   const breadcrumbPath = computed(() => {
     return currentPath.value.map(item => item.fileName);
@@ -313,6 +317,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     moveCopyFiles,
     textPreviewVisible,
     textPreviewRow,
+    audioPreviewVisible,
+    audioPreviewRow,
     // computed
     breadcrumbPath,
     hasUploadTask,

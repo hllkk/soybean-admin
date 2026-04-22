@@ -13,6 +13,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppProvider: typeof import('./../components/common/app-provider.vue')['default']
+    AudioPreview: typeof import('./../components/preview/audio-preview.vue')['default']
     BetterScroll: typeof import('./../components/custom/better-scroll.vue')['default']
     ButtonIcon: typeof import('./../components/custom/button-icon.vue')['default']
     ClickCaptcha: typeof import('./../components/captcha/ClickCaptcha.vue')['default']
@@ -59,8 +60,6 @@ declare module 'vue' {
     IconMdiKeyboardEsc: typeof import('~icons/mdi/keyboard-esc')['default']
     IconMdiKeyboardReturn: typeof import('~icons/mdi/keyboard-return')['default']
     IconMdiPlay: typeof import('~icons/mdi/play')['default']
-    'IconMdiPlay\"': typeof import('~icons/mdi/play/"')['default']
-    'IconMdiPlayclass=\"textWhite\"': typeof import('~icons/mdi/playclass=/"text-white/"')['default']
     IconMdiPlus: typeof import('~icons/mdi/plus')['default']
     IconMdiRefresh: typeof import('~icons/mdi/refresh')['default']
     IconMdiRestore: typeof import('~icons/mdi/restore')['default']
@@ -171,6 +170,7 @@ declare module 'vue' {
 // For TSX support
 declare global {
   const AppProvider: typeof import('./../components/common/app-provider.vue')['default']
+  const AudioPreview: typeof import('./../components/preview/audio-preview.vue')['default']
   const BetterScroll: typeof import('./../components/custom/better-scroll.vue')['default']
   const ButtonIcon: typeof import('./../components/custom/button-icon.vue')['default']
   const ClickCaptcha: typeof import('./../components/captcha/ClickCaptcha.vue')['default']
@@ -217,8 +217,6 @@ declare global {
   const IconMdiKeyboardEsc: typeof import('~icons/mdi/keyboard-esc')['default']
   const IconMdiKeyboardReturn: typeof import('~icons/mdi/keyboard-return')['default']
   const IconMdiPlay: typeof import('~icons/mdi/play')['default']
-  const 'IconMdiPlay\"': typeof import('~icons/mdi/play/"')['default']
-  const 'IconMdiPlayclass=\"textWhite\"': typeof import('~icons/mdi/playclass=/"text-white/"')['default']
   const IconMdiPlus: typeof import('~icons/mdi/plus')['default']
   const IconMdiRefresh: typeof import('~icons/mdi/refresh')['default']
   const IconMdiRestore: typeof import('~icons/mdi/restore')['default']

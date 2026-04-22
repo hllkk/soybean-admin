@@ -61,7 +61,9 @@ export function mapBackendFileList(backendData: { list: any[]; total: number }) 
     isFolder: item.isDir,
     icon: item.isDir ? 'material-symbols:folder' : getFileIcon(item.extendName),
     mediaCover: item.mediaCover || false,
-    showCover: item.showCover || false
+    showCover: item.showCover || false,
+    music: item.music,
+    video: item.video
   }));
 
   return { rows: list, total: backendData.total || 0 };

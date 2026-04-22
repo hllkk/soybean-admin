@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList, fetchGetQuota } from '@/service/api/disk';
+import { getServiceBaseURL } from '@/utils/service';
+import { getToken } from '@/store/modules/auth/shared';
 import { getPreviewCategory } from '@/utils/file-type';
 import FileTypeMenu from './modules/file-type-menu.vue';
 import Toolbar from './modules/toolbar.vue';
@@ -33,6 +35,32 @@ const renamingFile = ref<Api.Disk.FileItem | null>(null);
 // 文件预览
 const previewVisible = ref(false);
 const previewFile = ref<Api.Disk.PreviewFileInfo | null>(null);
+
+// 当前目录下的音频文件列表（用于播放列表）
+const audioPlaylist = computed(() => {
+  const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
+  const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
+  const token = getToken();
+
+  return fileList.value
+    .filter(file => file.fileType === 'audio' && !file.isFolder)
+    .map(file => ({
+      id: file.fileId,
+      title: file.music?.songName || file.fileName.replace(/\.[^.]+$/, ''),
+      artist: file.music?.singer || '未知歌手',
+      album: file.music?.album || '',
+      cover: file.mediaCover ? `${baseURL}/view/cover?id=${file.fileId}&token=${token}` : '',
+      src: `${baseURL}/preview/file/${file.fileId}?token=${token}`,
+      duration: undefined, // 后端暂未返回时长，由 audio 元素获取
+      lyrics: undefined // 后端暂不支持歌词，可后续扩展单独接口获取
+    }));
+});
+
+// 当前播放曲目在播放列表中的索引
+const currentAudioIndex = computed(() => {
+  if (!diskStore.audioPreviewRow) return 0;
+  return audioPlaylist.value.findIndex(item => String(item.id) === String(diskStore.audioPreviewRow?.fileId));
+});
 
 // 显示容量开关
 const showCapacity = ref(true);
@@ -327,6 +355,10 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
   if (category === 'code' || category === 'markdown') {
     diskStore.textPreviewRow = file;
     diskStore.textPreviewVisible = true;
+  } else if (category === 'audio') {
+    // 音频文件使用 AudioPreview
+    diskStore.audioPreviewRow = file;
+    diskStore.audioPreviewVisible = true;
   } else {
     // 其他文件使用预览 Modal
     previewFile.value = {
@@ -591,6 +623,30 @@ onMounted(async () => {
       :file-list="fileList"
     />
 
+    <!-- Audio Preview Overlay -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="diskStore.audioPreviewVisible"
+          class="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          @click.self="diskStore.audioPreviewVisible = false; diskStore.audioPreviewRow = null;"
+        >
+          <AudioPreview
+            v-if="diskStore.audioPreviewRow && audioPlaylist.length > 0"
+            :playlist="audioPlaylist"
+            :initial-index="currentAudioIndex"
+          />
+          <!-- 关闭按钮 -->
+          <button
+            class="absolute top-20px right-20px w-40px h-40px rd-full flex-center bg-white/20 dark:bg-black/40 backdrop-blur-sm text-white hover:bg-white/30 dark:hover:bg-black/50 transition-all"
+            @click="diskStore.audioPreviewVisible = false; diskStore.audioPreviewRow = null;"
+          >
+            <SvgIcon icon="mdi:close" :size="24" />
+          </button>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- Text Preview (opsMaster version) -->
     <TextPreview />
   </TableSiderLayout>
@@ -605,5 +661,16 @@ onMounted(async () => {
 }
 :deep(.n-divider) {
   margin: 0 !important;
+}
+
+// 音频预览遮罩层过渡动画
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
