@@ -217,3 +217,21 @@ export function fetchSaveFileContent(data: { fileId: string | number; content: s
     data
   });
 }
+
+/** 生成视频流播放 token */
+export function fetchGenerateStreamToken(fileId: string) {
+  return request<{ token: string; expiresIn: number }>({
+    url: '/stream/token',
+    method: 'post',
+    data: { fileId }
+  });
+}
+
+/** 续期视频流播放 token */
+export function fetchRenewStreamToken(token: string) {
+  return request<{ token: string; expiresIn: number }>({
+    url: '/stream/renew',
+    method: 'post',
+    data: { token }
+  });
+}

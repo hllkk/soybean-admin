@@ -5,6 +5,7 @@ import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList, fetchGetQuota } from '@/service/api/disk';
+import { fetchGenerateStreamToken } from '@/service/api/disk';
 import { getServiceBaseURL } from '@/utils/service';
 import { getToken } from '@/store/modules/auth/shared';
 import { getPreviewCategory } from '@/utils/file-type';
@@ -15,6 +16,7 @@ import FileGrid from './modules/file-grid.vue';
 import FileList from './modules/file-list.vue';
 import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
+import VideoPreview from '@/components/preview/video-preview.vue';
 
 defineOptions({
   name: 'DiskPage'
@@ -67,6 +69,33 @@ const showCapacity = ref(true);
 
 // Audio compact mode state
 const isAudioCompact = ref(false);
+
+// 视频预览状态
+const videoStreamToken = ref('');
+const videoStreamBaseUrl = computed(() => {
+  const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
+  const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
+  return `${baseURL}/stream/video/${diskStore.videoPreviewRow?.fileId}`;
+});
+
+function handleVideoClose() {
+  diskStore.videoPreviewVisible = false;
+  diskStore.videoPreviewRow = null;
+  videoStreamToken.value = '';
+}
+
+function handleVideoTokenUpdate(token: string) {
+  videoStreamToken.value = token;
+}
+
+async function openVideoPreview(file: Api.Disk.FileItem) {
+  const res = await fetchGenerateStreamToken(String(file.fileId));
+  if (res.data) {
+    videoStreamToken.value = res.data.token;
+    diskStore.videoPreviewRow = file;
+    diskStore.videoPreviewVisible = true;
+  }
+}
 
 function handleAudioOverlayClick() {
   if (!isAudioCompact.value) {
@@ -375,6 +404,9 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
     // 音频文件使用 AudioPreview
     diskStore.audioPreviewRow = file;
     diskStore.audioPreviewVisible = true;
+  } else if (category === 'video') {
+    // 视频文件使用 VideoPreview
+    openVideoPreview(file);
   } else {
     // 其他文件使用预览 Modal
     previewFile.value = {
@@ -657,6 +689,18 @@ onMounted(async () => {
           />
         </div>
       </Transition>
+    </Teleport>
+
+    <!-- Video Preview Overlay -->
+    <Teleport to="body">
+      <VideoPreview
+        v-if="diskStore.videoPreviewVisible && diskStore.videoPreviewRow && videoStreamToken"
+        :src="videoStreamBaseUrl"
+        :file-name="diskStore.videoPreviewRow.fileName"
+        :stream-token="videoStreamToken"
+        @close="handleVideoClose"
+        @token-update="handleVideoTokenUpdate"
+      />
     </Teleport>
 
     <!-- Text Preview (opsMaster version) -->

@@ -163,6 +163,7 @@ declare module 'vue' {
     ThemeSchemaSwitch: typeof import('./../components/common/theme-schema-switch.vue')['default']
     UploadTrigger: typeof import('./../components/custom/upload-trigger.vue')['default']
     VditorEditor: typeof import('./../components/preview/vditor-editor.vue')['default']
+    VideoPreview: typeof import('./../components/preview/video-preview.vue')['default']
     WangEditor: typeof import('./../components/custom/wang-editor.vue')['default']
     WaveBg: typeof import('./../components/custom/wave-bg.vue')['default']
   }
@@ -321,6 +322,7 @@ declare global {
   const ThemeSchemaSwitch: typeof import('./../components/common/theme-schema-switch.vue')['default']
   const UploadTrigger: typeof import('./../components/custom/upload-trigger.vue')['default']
   const VditorEditor: typeof import('./../components/preview/vditor-editor.vue')['default']
+  const VideoPreview: typeof import('./../components/preview/video-preview.vue')['default']
   const WangEditor: typeof import('./../components/custom/wang-editor.vue')['default']
   const WaveBg: typeof import('./../components/custom/wave-bg.vue')['default']
 }
