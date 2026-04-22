@@ -38,6 +38,8 @@ interface Emits {
   (e: 'ended'): void;
   (e: 'timeupdate', time: number): void;
   (e: 'trackChange', track: PlaylistItem): void;
+  (e: 'close'): void;
+  (e: 'compactChange', isCompact: boolean): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -61,6 +63,17 @@ const playModes: { mode: PlayMode; icon: string; label: string }[] = [
   { mode: 'loop', icon: 'mdi:repeat', label: '列表循环' },
   { mode: 'random', icon: 'mdi:shuffle', label: '随机播放' }
 ];
+
+// Compact mode state
+const compactMode = ref(false);
+const showCompactPlaylist = ref(false);
+const isMobile = ref(false);
+const compactPos = ref({ x: 0, y: 0 });
+const isDragging = ref(false);
+let dragStartX = 0;
+let dragStartY = 0;
+let startPosX = 0;
+let startPosY = 0;
 
 // 律动条数据 - 32个频率段，使用模拟动画
 const frequencyData = ref<number[]>(Array(32).fill(0));
@@ -287,6 +300,59 @@ async function playNext() {
   await handleTrackClick(newIndex);
 }
 
+// Compact mode methods
+function toggleCompactMode() {
+  compactMode.value = !compactMode.value;
+  if (compactMode.value) {
+    initCompactPosition();
+    showCompactPlaylist.value = false;
+    showVolumeSlider.value = false;
+  }
+  emit('compactChange', compactMode.value);
+}
+
+function initCompactPosition() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const playerWidth = isMobile.value ? vw - 20 : 400;
+  compactPos.value = {
+    x: Math.max(10, (vw - playerWidth) / 2),
+    y: Math.max(10, vh * 0.12)
+  };
+}
+
+function handleCompactDragStart(e: MouseEvent | TouchEvent) {
+  if ((e.target as HTMLElement).closest('button, input, .progress-track, .compact-playlist-wrap')) return;
+  isDragging.value = true;
+  const clientX = e instanceof MouseEvent ? e.clientX : e.touches[0].clientX;
+  const clientY = e instanceof MouseEvent ? e.clientY : e.touches[0].clientY;
+  dragStartX = clientX;
+  dragStartY = clientY;
+  startPosX = compactPos.value.x;
+  startPosY = compactPos.value.y;
+}
+
+function handleCompactDragMove(e: MouseEvent | TouchEvent) {
+  if (!isDragging.value) return;
+  e.preventDefault();
+  const clientX = e instanceof MouseEvent ? e.clientX : e.touches[0].clientX;
+  const clientY = e instanceof MouseEvent ? e.clientY : e.touches[0].clientY;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  compactPos.value = {
+    x: Math.max(0, Math.min(vw - 100, startPosX + (clientX - dragStartX))),
+    y: Math.max(0, Math.min(vh - 60, startPosY + (clientY - dragStartY)))
+  };
+}
+
+function handleCompactDragEnd() {
+  isDragging.value = false;
+}
+
+function checkMobile() {
+  isMobile.value = window.innerWidth < 640;
+}
+
 // 进度条拖拽
 function handleProgressDragStart(e: MouseEvent | TouchEvent) {
   isDraggingProgress.value = true;
@@ -501,6 +567,20 @@ onMounted(() => {
   document.addEventListener('mouseup', handleProgressDragEnd);
   document.addEventListener('touchmove', handleProgressDragMove);
   document.addEventListener('touchend', handleProgressDragEnd);
+  document.addEventListener('mousemove', handleCompactDragMove);
+  document.addEventListener('mouseup', handleCompactDragEnd);
+  document.addEventListener('touchmove', handleCompactDragMove, { passive: false });
+  document.addEventListener('touchend', handleCompactDragEnd);
+
+  // Mobile detection
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+
+  if (isMobile.value) {
+    compactMode.value = true;
+    initCompactPosition();
+    emit('compactChange', true);
+  }
 
   if (audioRef.value) {
     audioRef.value.volume = volume.value / 100;
@@ -520,6 +600,11 @@ onUnmounted(() => {
   document.removeEventListener('mouseup', handleProgressDragEnd);
   document.removeEventListener('touchmove', handleProgressDragMove);
   document.removeEventListener('touchend', handleProgressDragEnd);
+  document.removeEventListener('mousemove', handleCompactDragMove);
+  document.removeEventListener('mouseup', handleCompactDragEnd);
+  document.removeEventListener('touchmove', handleCompactDragMove);
+  document.removeEventListener('touchend', handleCompactDragEnd);
+  window.removeEventListener('resize', checkMobile);
 
   // 清理 canplaythrough 事件监听器
   if (audioRef.value && currentPlayHandler) {
@@ -533,9 +618,27 @@ onUnmounted(() => {
 
 <template>
   <div
+    v-if="!compactMode"
     class="audio-player relative flex gap-20px rd-20px p-24px bg-white/85 dark:bg-black/65 backdrop-blur-xl shadow-2xl"
     style="width: 600px;"
   >
+    <!-- 关闭按钮 -->
+    <button
+      class="absolute top-12px right-12px w-32px h-32px rd-full flex-center bg-black/10 dark:bg-white/15 text-gray-500 dark:text-gray-300 hover:bg-red-500/80 hover:text-white transition-all duration-200 z-10"
+      @click="emit('close')"
+    >
+      <SvgIcon icon="mdi:close" :size="18" />
+    </button>
+
+    <!-- 精简模式按钮 -->
+    <button
+      class="absolute top-12px right-48px w-32px h-32px rd-full flex-center bg-black/10 dark:bg-white/15 text-gray-500 dark:text-gray-300 hover:bg-[rgb(var(--primary-color))]/15 hover:text-[rgb(var(--primary-color))] transition-all duration-200 z-10"
+      title="精简模式"
+      @click="toggleCompactMode"
+    >
+      <SvgIcon icon="mdi:arrow-collapse" :size="18" />
+    </button>
+
     <!-- 左侧：唱片和控制区域 -->
     <div class="flex flex-col gap-16px items-center" style="width: 55%;">
       <!-- 黑胶唱片区域（带环绕律动条） -->
@@ -833,17 +936,255 @@ onUnmounted(() => {
     </div>
 
     <!-- 音频元素 -->
-    <audio
-      ref="audioRef"
-      :src="currentTrack.src"
-      class="hidden"
-      @timeupdate="handleTimeUpdate"
-      @loadedmetadata="handleLoadedMetadata"
-      @ended="handleEnded"
-      @play="handleAudioPlay"
-      @pause="handleAudioPause"
-    />
   </div>
+
+  <!-- Compact Mode -->
+  <Teleport to="body">
+    <div
+      v-if="compactMode"
+      class="fixed z-[99999]"
+      :style="{
+        top: compactPos.y + 'px',
+        left: compactPos.x + 'px',
+        userSelect: isDragging ? 'none' : 'auto',
+        cursor: isDragging ? 'grabbing' : 'grab',
+        width: isMobile ? 'calc(100vw - 20px)' : 'auto'
+      }"
+      @mousedown="handleCompactDragStart"
+      @touchstart="handleCompactDragStart"
+    >
+      <!-- Main compact bar -->
+      <div
+        class="compact-bar flex items-center gap-8px p-8px rd-12px bg-white/92 dark:bg-gray-900/92 backdrop-blur-xl shadow-2xl border border-gray-200/40 dark:border-gray-700/40"
+        :class="isMobile ? 'w-full' : 'max-w-420px'"
+      >
+        <!-- Thumbnail -->
+        <div
+          class="w-44px h-44px rd-8px overflow-hidden flex-shrink-0 shadow-md relative group"
+          @click.stop="togglePlay"
+        >
+          <img
+            v-if="currentTrack.cover"
+            :src="currentTrack.cover"
+            :alt="currentTrack.title"
+            class="w-full h-full object-cover"
+          />
+          <div
+            v-else
+            class="w-full h-full flex-center bg-gradient-to-br from-[rgb(var(--primary-500-color))] to-[rgb(var(--primary-700-color))]"
+          >
+            <SvgIcon icon="mdi:music-note" :size="18" class="text-white" />
+          </div>
+          <div class="absolute inset-0 flex-center bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity">
+            <SvgIcon :icon="isPlaying ? 'mdi:pause' : 'mdi:play'" :size="22" class="text-white" />
+          </div>
+        </div>
+
+        <!-- Right side: top-bottom structure -->
+        <div class="flex-1 min-w-0 flex flex-col gap-4px">
+          <!-- Top: title, artist-album, play controls -->
+          <div class="flex items-center gap-4px">
+            <div class="flex-1 min-w-0">
+              <p class="text-13px font-medium truncate text-gray-800 dark:text-gray-100">
+                {{ currentTrack.title }}
+              </p>
+              <p class="text-11px truncate text-gray-500 dark:text-gray-400">
+                {{ currentTrack.artist }}{{ currentTrack.album ? ` - ${currentTrack.album}` : '' }}
+              </p>
+            </div>
+            <!-- Play controls -->
+            <div class="flex items-center gap-0 flex-shrink-0">
+              <button
+                v-if="playlist.length > 1"
+                class="w-26px h-26px rd-full flex-center hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors"
+                @click.stop="playPrev"
+              >
+                <SvgIcon icon="mdi:skip-previous" :size="16" class="text-gray-600 dark:text-gray-300" />
+              </button>
+              <button
+                class="w-30px h-30px rd-full flex-center bg-[rgb(var(--primary-color))] text-white shadow-sm transition-transform hover:scale-110"
+                @click.stop="togglePlay"
+              >
+                <SvgIcon :icon="isPlaying ? 'mdi:pause' : 'mdi:play'" :size="16" :class="isPlaying ? '' : 'ml-1px'" />
+              </button>
+              <button
+                v-if="playlist.length > 1"
+                class="w-26px h-26px rd-full flex-center hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors"
+                @click.stop="playNext"
+              >
+                <SvgIcon icon="mdi:skip-next" :size="16" class="text-gray-600 dark:text-gray-300" />
+              </button>
+            </div>
+            <!-- Close button -->
+            <button
+              class="w-24px h-24px rd-full flex-center hover:bg-red-500/20 text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors flex-shrink-0 ml-2px"
+              @click.stop="emit('close')"
+            >
+              <SvgIcon icon="mdi:close" :size="14" />
+            </button>
+            <!-- Expand button (PC only) -->
+            <button
+              v-if="!isMobile"
+              class="w-24px h-24px rd-full flex-center hover:bg-[rgb(var(--primary-color))]/15 text-gray-400 dark:text-gray-500 hover:text-[rgb(var(--primary-color))] transition-colors flex-shrink-0"
+              title="展开模式"
+              @click.stop="toggleCompactMode"
+            >
+              <SvgIcon icon="mdi:arrow-expand" :size="14" />
+            </button>
+          </div>
+
+          <!-- Bottom: progress, volume, mode, playlist -->
+          <div class="flex items-center gap-4px">
+            <span class="text-10px text-gray-400 dark:text-gray-500 flex-shrink-0 w-30px">{{ formatTime(currentTime) }}</span>
+            <div
+              class="progress-track compact-progress relative h-4px rd-full cursor-pointer flex-1 overflow-visible"
+              @mousedown.stop="handleProgressDragStart"
+              @touchstart.stop="handleProgressDragStart"
+            >
+              <div class="absolute inset-0 rd-full bg-gray-300/80 dark:bg-gray-600/60" />
+              <div
+                class="absolute left-0 top-0 h-full rd-full bg-gradient-to-r from-[rgb(var(--primary-color))] to-[rgb(var(--primary-400-color))]"
+                :style="{ width: progressPercent + '%' }"
+              />
+              <div
+                class="absolute top-1/2 -translate-y-1/2 w-10px h-10px rd-full bg-white shadow ring-1.5 ring-[rgb(var(--primary-color))]/60"
+                :style="{ left: `calc(${progressPercent}% - 5px)` }"
+              />
+            </div>
+            <span class="text-10px text-gray-400 dark:text-gray-500 flex-shrink-0 w-30px text-right">{{ formatTime(duration) }}</span>
+
+            <!-- Volume -->
+            <div class="relative flex-shrink-0">
+              <button
+                class="w-24px h-24px rd-full flex-center hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors"
+                @click.stop="showVolumeSlider = !showVolumeSlider"
+              >
+                <SvgIcon :icon="volume === 0 ? 'mdi:volume-off' : volume < 50 ? 'mdi:volume-medium' : 'mdi:volume-high'" :size="15" class="text-gray-500 dark:text-gray-400" />
+              </button>
+              <Transition name="slide-up">
+                <div
+                  v-if="showVolumeSlider"
+                  class="absolute bottom-32px left-1/2 -translate-x-1/2 w-100px h-30px rd-8px px-8px flex items-center gap-4px bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50"
+                  @mousedown.stop
+                  @touchstart.stop
+                  @click.stop
+                >
+                  <SvgIcon :icon="volume === 0 ? 'mdi:volume-off' : 'mdi:volume-medium'" :size="12" class="text-gray-400 flex-shrink-0" />
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    :value="volume"
+                    class="compact-volume-slider flex-1"
+                    @input="handleVolumeInput"
+                  />
+                  <span class="text-9px text-gray-400 w-18px text-right flex-shrink-0">{{ volume }}</span>
+                </div>
+              </Transition>
+            </div>
+
+            <!-- Play mode -->
+            <div class="relative flex-shrink-0">
+              <button
+                class="w-24px h-24px rd-full flex-center hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors"
+                :class="playMode !== 'loop' ? 'text-[rgb(var(--primary-color))]' : 'text-gray-500 dark:text-gray-400'"
+                @click.stop="togglePlayMode"
+              >
+                <SvgIcon :icon="playModes.find(m => m.mode === playMode)?.icon || 'mdi:repeat'" :size="15" />
+              </button>
+              <div
+                class="absolute bottom-32px left-1/2 -translate-x-1/2 px-6px py-3px rd-4px text-10px whitespace-nowrap bg-gray-800/90 dark:bg-gray-200/90 text-white dark:text-gray-800 opacity-0 transition-opacity pointer-events-none z-10"
+                :class="{ 'opacity-100': showModeTip }"
+              >
+                {{ playModes.find(m => m.mode === playMode)?.label }}
+              </div>
+            </div>
+
+            <!-- Playlist toggle -->
+            <button
+              class="w-24px h-24px rd-full flex-center hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors flex-shrink-0"
+              :class="showCompactPlaylist ? 'text-[rgb(var(--primary-color))]' : 'text-gray-500 dark:text-gray-400'"
+              @click.stop="showCompactPlaylist = !showCompactPlaylist"
+            >
+              <SvgIcon icon="mdi:playlist-music" :size="15" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Playlist dropdown -->
+      <Transition name="compact-playlist">
+        <div
+          v-if="showCompactPlaylist"
+          class="compact-playlist-wrap mt-4px rd-10px bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-2xl border border-gray-200/40 dark:border-gray-700/40 overflow-hidden"
+          :class="isMobile ? 'w-full' : 'max-w-420px'"
+          @mousedown.stop
+          @touchstart.stop
+        >
+          <!-- Playlist header -->
+          <div class="px-12px py-6px flex items-center justify-between border-b border-gray-100/60 dark:border-gray-800/60">
+            <span class="text-12px font-medium text-gray-600 dark:text-gray-300">播放列表</span>
+            <span class="text-11px text-gray-400">{{ playlist.length }} 首</span>
+          </div>
+          <div class="overflow-y-auto" style="max-height: 240px;">
+            <div
+              v-for="(track, index) in playlist"
+              :key="track.id"
+              class="flex items-center gap-0 px-10px py-7px cursor-pointer transition-all duration-200"
+              :class="index === currentTrackIndex ? 'bg-[rgb(var(--primary-color))]/10' : 'hover:bg-gray-100/60 dark:hover:bg-gray-800/40'"
+              @click="handleTrackClick(index)"
+            >
+              <!-- Current playing indicator: vertical line -->
+              <div
+                class="w-3px rd-full flex-shrink-0 mr-8px"
+                :class="index === currentTrackIndex ? 'bg-[rgb(var(--primary-color))] h-14px' : 'bg-transparent h-14px'"
+              />
+
+              <!-- Sequence number or playing animation -->
+              <span
+                class="text-12px w-20px text-center flex-shrink-0"
+                :class="index === currentTrackIndex ? 'text-[rgb(var(--primary-color))]' : 'text-gray-400 dark:text-gray-500'"
+              >
+                <template v-if="index === currentTrackIndex && isPlaying">
+                  <div class="flex items-center justify-center gap-1px">
+                    <div class="w-2px h-8px rd-full bg-[rgb(var(--primary-color))] animate-pulse" />
+                    <div class="w-2px h-5px rd-full bg-[rgb(var(--primary-color))] animate-pulse" style="animation-delay: 0.12s;" />
+                    <div class="w-2px h-8px rd-full bg-[rgb(var(--primary-color))] animate-pulse" style="animation-delay: 0.24s;" />
+                  </div>
+                </template>
+                <template v-else>{{ index + 1 }}</template>
+              </span>
+
+              <!-- Song name -->
+              <span
+                class="text-13px truncate flex-1 min-w-0 ml-6px"
+                :class="index === currentTrackIndex ? 'text-[rgb(var(--primary-color))] font-medium' : 'text-gray-700 dark:text-gray-200'"
+              >
+                {{ track.title }}
+              </span>
+
+              <!-- Artist - Album -->
+              <span class="text-11px truncate ml-8px flex-shrink-0 text-gray-400 dark:text-gray-500 max-w-40%">
+                {{ track.artist }}{{ track.album ? ` - ${track.album}` : '' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </div>
+  </Teleport>
+
+  <!-- Audio element (shared between both modes) -->
+  <audio
+    ref="audioRef"
+    :src="currentTrack.src"
+    class="hidden"
+    @timeupdate="handleTimeUpdate"
+    @loadedmetadata="handleLoadedMetadata"
+    @ended="handleEnded"
+    @play="handleAudioPlay"
+    @pause="handleAudioPause"
+  />
 </template>
 
 <style scoped lang="scss">
@@ -943,4 +1284,58 @@ onUnmounted(() => {
 
 .slide-up-enter-active, .slide-up-leave-active { transition: all 0.2s ease; }
 .slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
+
+// Compact mode styles
+.compact-bar {
+  transition: box-shadow 0.2s ease;
+  &:hover {
+    box-shadow: 0 8px 32px rgb(0 0 0 / 15), 0 2px 8px rgb(0 0 0 / 10);
+  }
+}
+
+.compact-progress {
+  &:hover > div:last-child {
+    transform: translateY(-50%) scale(1.2);
+  }
+}
+
+.compact-volume-slider {
+  appearance: none;
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  outline: none;
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: rgb(var(--primary-color));
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 20);
+  }
+  &::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+  }
+}
+
+.compact-playlist-wrap {
+  .overflow-y-auto {
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar-thumb { background: rgb(var(--primary-color) / 25); border-radius: 2px; }
+  }
+}
+
+// Compact playlist transition
+.compact-playlist-enter-active,
+.compact-playlist-leave-active {
+  transition: all 0.25s ease;
+}
+.compact-playlist-enter-from,
+.compact-playlist-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
 </style>

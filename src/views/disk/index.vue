@@ -65,6 +65,22 @@ const currentAudioIndex = computed(() => {
 // 显示容量开关
 const showCapacity = ref(true);
 
+// Audio compact mode state
+const isAudioCompact = ref(false);
+
+function handleAudioOverlayClick() {
+  if (!isAudioCompact.value) {
+    diskStore.audioPreviewVisible = false;
+    diskStore.audioPreviewRow = null;
+  }
+}
+
+function handleAudioClose() {
+  diskStore.audioPreviewVisible = false;
+  diskStore.audioPreviewRow = null;
+  isAudioCompact.value = false;
+}
+
 // 配额信息
 const quotaInfo = ref<Api.Disk.QuotaInfo>({
   usedSpace: 0,
@@ -628,21 +644,17 @@ onMounted(async () => {
       <Transition name="fade">
         <div
           v-if="diskStore.audioPreviewVisible"
-          class="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-          @click.self="diskStore.audioPreviewVisible = false; diskStore.audioPreviewRow = null;"
+          class="fixed inset-0 z-9999 flex items-center justify-center"
+          :class="isAudioCompact ? 'pointer-events-none' : 'bg-black/40 backdrop-blur-sm'"
+          @click.self="handleAudioOverlayClick"
         >
           <AudioPreview
             v-if="diskStore.audioPreviewRow && audioPlaylist.length > 0"
             :playlist="audioPlaylist"
             :initial-index="currentAudioIndex"
+            @close="handleAudioClose"
+            @compact-change="isAudioCompact = $event"
           />
-          <!-- 关闭按钮 -->
-          <button
-            class="absolute top-20px right-20px w-40px h-40px rd-full flex-center bg-white/20 dark:bg-black/40 backdrop-blur-sm text-white hover:bg-white/30 dark:hover:bg-black/50 transition-all"
-            @click="diskStore.audioPreviewVisible = false; diskStore.audioPreviewRow = null;"
-          >
-            <SvgIcon icon="mdi:close" :size="24" />
-          </button>
         </div>
       </Transition>
     </Teleport>
