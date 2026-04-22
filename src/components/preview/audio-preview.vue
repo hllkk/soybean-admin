@@ -1076,6 +1076,7 @@ onUnmounted(() => {
                     max="100"
                     :value="volume"
                     class="compact-volume-slider flex-1"
+                    :style="{ '--vol': volume + '%' }"
                     @input="handleVolumeInput"
                   />
                   <span class="text-9px text-gray-400 w-18px text-right flex-shrink-0">{{ volume }}</span>
@@ -1302,9 +1303,13 @@ onUnmounted(() => {
 .compact-volume-slider {
   appearance: none;
   height: 4px;
-  background: #e0e0e0;
-  border-radius: 2px;
+  background: transparent;
   outline: none;
+  &::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right, rgb(var(--primary-color)) 0%, rgb(var(--primary-color)) var(--vol), #e0e0e0 var(--vol));
+  }
   &::-webkit-slider-thumb {
     appearance: none;
     width: 12px;
@@ -1313,10 +1318,7 @@ onUnmounted(() => {
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 1px 3px rgb(0 0 0 / 20);
-  }
-  &::-webkit-slider-runnable-track {
-    height: 4px;
-    border-radius: 2px;
+    margin-top: -4px;
   }
 }
 
