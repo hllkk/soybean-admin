@@ -250,6 +250,7 @@ declare namespace Api {
       maxUploadSize?: number;
       allowedExtensions?: string[];
       trashRetentionDays?: number;
+      storageQuota?: number;
       onlyOffice?: OnlyOfficeSettings;
       videoTranscode?: VideoTranscodeSettings;
     }

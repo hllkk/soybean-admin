@@ -17,6 +17,7 @@ import FileList from './modules/file-list.vue';
 import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
 import VideoPreview from '@/components/preview/video-preview.vue';
+import FilePreviewOverlay from '@/components/preview/file-preview-overlay.vue';
 
 defineOptions({
   name: 'DiskPage'
@@ -664,11 +665,10 @@ onMounted(async () => {
     <!-- Move/Copy Dialog -->
     <MoveCopyDialog @success="getFileList" />
 
-    <!-- File Preview Modal -->
-    <FilePreviewModal
+    <!-- File Preview Overlay -->
+    <FilePreviewOverlay
       v-model:visible="previewVisible"
       :file="previewFile"
-      :file-list="fileList"
     />
 
     <!-- Audio Preview Overlay -->

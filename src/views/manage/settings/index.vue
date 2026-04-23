@@ -136,6 +136,28 @@ async function loadConfig() {
         verifyInaccuracy: settings.general.verifyInaccuracy || 40
       };
     }
+    if (settings?.disk) {
+      config.value.disk = {
+        maxUploadSize: settings.disk.maxUploadSize || 100,
+        allowedFileTypes: (settings.disk.allowedExtensions || []).join(','),
+        storageQuota: settings.disk.storageQuota || 10,
+        diskName: settings.disk.diskName || '',
+        diskLogo: '',
+        shareLinkPasswordRequired: false,
+        shareLinkPasswordMinLength: 6,
+        uploadLinkPasswordRequired: false,
+        uploadLinkPasswordMinLength: 6,
+        syncEnabled: false,
+        onlyOfficeEnabled: settings.disk.onlyOffice?.enable || false,
+        onlyOfficeUrl: settings.disk.onlyOffice?.serverUrl || '',
+        onlyOfficeSecret: settings.disk.onlyOffice?.tokenSecret || '',
+        onlyOfficeCallbackUrl: settings.disk.onlyOffice?.callbackUrl || '',
+        videoTranscodeEnabled: settings.disk.videoTranscode?.enable || false,
+        ffmpegPath: settings.disk.videoTranscode?.ffmpegPath || '',
+        transcodeThreads: settings.disk.videoTranscode?.threads || 4,
+        transcodePreset: settings.disk.videoTranscode?.preset || 'medium'
+      };
+    }
   } catch (error) {
     console.error('加载配置失败:', error);
   }
@@ -145,6 +167,7 @@ async function handleSave() {
   loading.value = true;
   try {
     // 构建后端需要的 Settings 结构
+    const disk = config.value.disk;
     const settings: Api.SystemManage.Settings = {
       general: {
         systemName: config.value.general.systemName,
@@ -159,8 +182,27 @@ async function handleSave() {
         verifyCodeExp: config.value.general.verifyCodeExp,
         verifyCodeTokenExp: config.value.general.verifyCodeTokenExp,
         verifyInaccuracy: config.value.general.verifyInaccuracy
+      },
+      disk: {
+        diskName: disk.diskName,
+        maxUploadSize: disk.maxUploadSize,
+        allowedExtensions: disk.allowedFileTypes
+          ? disk.allowedFileTypes.split(',').map(s => s.trim()).filter(Boolean)
+          : [],
+        storageQuota: disk.storageQuota,
+        onlyOffice: {
+          enable: disk.onlyOfficeEnabled,
+          serverUrl: disk.onlyOfficeUrl,
+          tokenSecret: disk.onlyOfficeSecret,
+          callbackUrl: disk.onlyOfficeCallbackUrl
+        },
+        videoTranscode: {
+          enable: disk.videoTranscodeEnabled,
+          ffmpegPath: disk.ffmpegPath,
+          threads: disk.transcodeThreads,
+          preset: disk.transcodePreset
+        }
       }
-      // 其他模块配置根据需要添加
     };
 
     await fetchUpdateSystemSettings(settings);
