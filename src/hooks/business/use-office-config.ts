@@ -60,9 +60,15 @@ export function useOfficeConfig(shareId?: string) {
 
   /**
    * 获取回调服务器基础 URL
+   * 如果后端没有配置，使用当前页面的 origin + /api
+   * OnlyOffice 容器需要完整的绝对 URL
    */
   function getCallbackBaseUrl(): string {
-    return config.value?.callbackServer ?? '/api';
+    if (config.value?.callbackServer) {
+      return config.value.callbackServer.replace(/\/$/, '');
+    }
+    // 自动补全：使用当前页面的 origin
+    return `${window.location.origin}/api`;
   }
 
   /**

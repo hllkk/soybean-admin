@@ -78,13 +78,24 @@ const transcodePresetOptions = [
             <NSwitch v-model:value="configModel.onlyOfficeEnabled" />
           </NFormItem>
           <NFormItem label="OnlyOffice地址" path="onlyOfficeUrl">
-            <NInput v-model:value="configModel.onlyOfficeUrl" placeholder="请输入OnlyOffice服务地址" class="max-w-400px" />
+            <NInput v-model:value="configModel.onlyOfficeUrl" placeholder="如: http://192.168.1.100:8080/office" class="max-w-400px" />
           </NFormItem>
           <NFormItem label="Secret密钥" path="onlyOfficeSecret">
-            <NInput v-model:value="configModel.onlyOfficeSecret" type="password" placeholder="请输入Secret密钥" class="max-w-400px" />
+            <NInput v-model:value="configModel.onlyOfficeSecret" type="password" placeholder="与OnlyOffice容器JWT_SECRET一致" class="max-w-400px" />
           </NFormItem>
           <NFormItem label="回调地址" path="onlyOfficeCallbackUrl">
-            <NInput v-model:value="configModel.onlyOfficeCallbackUrl" placeholder="请输入回调地址" class="max-w-400px" />
+            <NInput v-model:value="configModel.onlyOfficeCallbackUrl" placeholder="如: http://192.168.1.100:3000/api (OnlyOffice容器可访问的后端地址)" class="max-w-400px" />
+            <template #label>
+              <NTooltip trigger="hover">
+                <template #trigger>
+                  <span class="flex items-center gap-4px">
+                    回调地址
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  </span>
+                </template>
+                OnlyOffice容器需要能访问此地址来保存文档。请填写后端服务的完整地址（含协议和端口），如: http://后端IP:端口/api
+              </NTooltip>
+            </template>
           </NFormItem>
         </NForm>
       </NTabPane>

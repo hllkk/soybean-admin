@@ -159,7 +159,7 @@ function buildEditorConfig(): EditorConfig {
     );
   } else {
     docUrl = getOfficePreviewUrl(
-      username,
+      userInfo.value.userId,
       file.path,
       file.name,
       userToken,
@@ -172,6 +172,12 @@ function buildEditorConfig(): EditorConfig {
   if (!props.readOnly) {
     callbackUrl = getOfficeCallbackUrl(callbackBaseUrl, userToken, username, file.id);
   }
+
+  // [DIAG] 打印 OnlyOffice 实际使用的配置
+  console.log('[Office诊断] callbackBaseUrl:', callbackBaseUrl);
+  console.log('[Office诊断] docUrl:', docUrl);
+  console.log('[Office诊断] file.path:', file.path, 'file.name:', file.name, 'file.suffix:', file.suffix);
+  console.log('[Office诊断] callbackUrl:', callbackUrl);
 
   const editorConfig: EditorConfig = {
     document: {

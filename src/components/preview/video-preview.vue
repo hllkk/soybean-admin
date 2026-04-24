@@ -9,7 +9,6 @@ defineOptions({
 
 interface Props {
   src: string;
-  fileName: string;
   streamToken: string;
 }
 

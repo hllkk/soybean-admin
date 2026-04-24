@@ -96,7 +96,7 @@ export function getOfficeCallbackBaseUrl(callbackServer?: string): string {
 
 /**
  * 获取 Office 回调 URL
- * @param callbackServer 回调服务器地址
+ * @param callbackServer 回调服务器地址 (如 http://172.21.10.40:8888/api/v1)
  * @param token 用户 token
  * @param username 用户名
  * @param fileId 文件 ID
@@ -111,38 +111,55 @@ export function getOfficeCallbackUrl(
   const baseUrl = getOfficeCallbackBaseUrl(callbackServer);
   const params = new URLSearchParams();
 
-  if (token) params.set('jmal-token', token);
+  if (token) params.set('token', token);
   if (username) params.set('name', username);
   if (fileId) params.set('fileId', String(fileId));
 
-  return `${baseUrl}/office/track?${params.toString()}`;
+  return `${baseUrl}/office/callback?${params.toString()}`;
 }
 
 /**
  * 获取文档预览 URL
- * @param username 用户名
- * @param filePath 文件路径
- * @param fileName 文件名
+ * @param userId 用户ID (数字)
+ * @param filePath 文件路径 (如 "/Ai 给出的逻辑")
+ * @param fileName 文件名 (如 "角色_1774948863323.xlsx")
  * @param token 用户 token
- * @param baseUrl API 基础 URL
+ * @param baseUrl API 基础 URL (如 http://172.21.10.40:8888/api/v1)
  * @returns 预览 URL
  */
 export function getOfficePreviewUrl(
-  username: string,
+  userId: CommonType.IdType,
   filePath: string,
   fileName: string,
   token?: string,
   baseUrl?: string
 ): string {
   const apiBase = baseUrl || DEFAULT_CALLBACK_SERVER;
-  // 编码路径和文件名
-  const encodedPath = encodeURIComponent(filePath).replace(/%5C|%2F/g, '/');
+
+  // 规范化路径：确保以 / 开头，去掉末尾的 /
+  let normalizedPath = filePath;
+  if (!normalizedPath.startsWith('/')) {
+    normalizedPath = '/' + normalizedPath;
+  }
+  normalizedPath = normalizedPath.replace(/\/+$/, '');
+
+  // 编码路径（保留 / 作为分隔符）
+  const encodedPath = normalizedPath
+    .split('/')
+    .map(part => encodeURIComponent(part))
+    .join('/');
+
+  // 编码文件名
   const encodedName = encodeURIComponent(fileName);
 
-  let url = `${apiBase}/file/${username}${encodedPath}${encodedName}`;
+  // 完整路径: /{userId}/{path}/{filename}
+  // 例如: /424818778103877/Ai%20给出的逻辑/角色_1774948863323.xlsx
+  const fullPath = `${userId}${encodedPath}/${encodedName}`;
+
+  let url = `${apiBase}/file/${fullPath}`;
 
   if (token) {
-    url += `?jmal-token=${token}&name=${username}`;
+    url += `?token=${token}`;
   }
 
   return url;
@@ -188,7 +205,7 @@ export function getOfficeHistoryPreviewUrl(
 
   if (historyId) params.set('id', String(historyId));
   if (username) params.set('name', username);
-  if (token) params.set('jmal-token', token);
+  if (token) params.set('token', token);  // 使用 token 参数名
 
   return `${baseUrl}/history/preview/file?${params.toString()}`;
 }
