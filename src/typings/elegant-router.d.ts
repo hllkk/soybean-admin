@@ -39,6 +39,7 @@ declare module "@elegant-router/types" {
     "manage_settings": "/manage/settings";
     "manage_user": "/manage/user";
     "notice-user": "/notice-user";
+    "share": "/share";
     "user-center": "/user-center";
   };
 
@@ -83,6 +84,7 @@ declare module "@elegant-router/types" {
     | "login"
     | "manage"
     | "notice-user"
+    | "share"
     | "user-center"
   >;
 
@@ -121,6 +123,7 @@ declare module "@elegant-router/types" {
     | "manage_role"
     | "manage_settings"
     | "manage_user"
+    | "share"
   >;
 
   /**

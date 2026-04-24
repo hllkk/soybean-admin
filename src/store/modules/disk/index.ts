@@ -76,6 +76,10 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const moveCopyMode = ref<'copy' | 'move'>('copy');
   const moveCopyFiles = ref<Api.Disk.FileItem[]>([]);
 
+  // 分享弹窗状态
+  const shareDialogVisible = ref(false);
+  const shareFile = ref<Api.Disk.FileItem | null>(null);
+
   // 文件预览状态
   const textPreviewVisible = ref(false);
   const textPreviewRow = ref<Api.Disk.FileItem | null>(null);
@@ -274,6 +278,18 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     moveCopyFiles.value = [];
   }
 
+  // 打开分享弹窗
+  function openShareDialog(file: Api.Disk.FileItem) {
+    shareFile.value = file;
+    shareDialogVisible.value = true;
+  }
+
+  // 关闭分享弹窗
+  function closeShareDialog() {
+    shareDialogVisible.value = false;
+    shareFile.value = null;
+  }
+
   // 获取上传中的任务数
   const uploadingCount = computed(() =>
     transferList.value.filter(item => item.transferType === 'upload' && item.status !== 'completed').length
@@ -319,6 +335,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     moveCopyDialogVisible,
     moveCopyMode,
     moveCopyFiles,
+    shareDialogVisible,
+    shareFile,
     textPreviewVisible,
     textPreviewRow,
     audioPreviewVisible,
@@ -348,6 +366,8 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     cancelRenaming,
     openMoveCopyDialog,
     closeMoveCopyDialog,
+    openShareDialog,
+    closeShareDialog,
     addUploadTasks,
     clearAllTransfers,
     $reset,

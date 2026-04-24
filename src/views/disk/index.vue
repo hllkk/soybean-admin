@@ -17,6 +17,8 @@ import FileGrid from './modules/file-grid.vue';
 import FileList from './modules/file-list.vue';
 import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
+import ShareDialog from './modules/share-dialog.vue';
+import ShareResultDialog from './modules/share-result-dialog.vue';
 import VideoPreview from '@/components/preview/video-preview.vue';
 import FilePreviewOverlay from '@/components/preview/file-preview-overlay.vue';
 import ImagePreview from '@/components/preview/image-preview.vue';
@@ -41,6 +43,10 @@ const renamingFile = ref<Api.Disk.FileItem | null>(null);
 // 文件预览
 const previewVisible = ref(false);
 const previewFile = ref<Api.Disk.PreviewFileInfo | null>(null);
+
+// 分享结果
+const shareResultVisible = ref(false);
+const shareResult = ref<Api.Disk.ShareResult | null>(null);
 
 // 当前目录下的音频文件列表（用于播放列表）
 const audioPlaylist = computed(() => {
@@ -461,7 +467,7 @@ function handleFileAction(action: string, file: Api.Disk.FileItem) {
       handleDeleteFile(file);
       break;
     case 'share':
-      window.$message?.info(`${$t('page.disk.toolbar.share')}: ${file.fileName}`);
+      diskStore.openShareDialog(file);
       break;
     case 'download':
       handleDownload([file]);
@@ -528,6 +534,18 @@ async function handleDownload(files: Api.Disk.FileItem[]) {
 function handleToolbarDownload() {
   const selectedFiles = diskStore.currentFileList.filter(f => diskStore.selectedFiles.includes(f.fileId));
   handleDownload(selectedFiles);
+}
+
+/** 分享成功处理 */
+function handleShareSuccess(result: Api.Disk.ShareResult) {
+  shareResult.value = result;
+  shareResultVisible.value = true;
+}
+
+/** 分享取消处理 */
+function handleShareCancelled() {
+  shareResult.value = null;
+  getFileList();
 }
 
 function handleToolbarRename() {
@@ -748,6 +766,16 @@ onMounted(async () => {
 
     <!-- Move/Copy Dialog -->
     <MoveCopyDialog @success="getFileList" />
+
+    <!-- Share Dialog -->
+    <ShareDialog @success="handleShareSuccess" />
+
+    <!-- Share Result Dialog -->
+    <ShareResultDialog
+      v-model:visible="shareResultVisible"
+      :result="shareResult"
+      @cancelled="handleShareCancelled"
+    />
 
     <!-- File Preview Overlay -->
     <FilePreviewOverlay

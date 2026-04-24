@@ -259,6 +259,15 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'share',
+    path: '/share',
+    component: 'layout.base$view.share',
+    meta: {
+      title: 'share',
+      i18nKey: 'route.share'
+    }
+  },
+  {
     name: 'user-center',
     path: '/user-center',
     component: 'layout.base$view.user-center',

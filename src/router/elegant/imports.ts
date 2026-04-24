@@ -38,4 +38,5 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   manage_role: () => import("@/views/manage/role/index.vue"),
   manage_settings: () => import("@/views/manage/settings/index.vue"),
   manage_user: () => import("@/views/manage/user/index.vue"),
+  share: () => import("@/views/share/index.vue"),
 };

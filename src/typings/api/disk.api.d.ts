@@ -265,5 +265,83 @@ declare namespace Api {
       /** 文件路径 */
       filePath?: string;
     };
+
+    /** 创建分享请求参数 */
+    type CreateShareParams = {
+      /** 文件ID（必须为数字，后端期望 int64） */
+      fileId: number;
+      /** 是否私密分享 */
+      isPrivate: boolean;
+      /** 有效期 */
+      validity: string;
+      /** 自定义天数（可选） */
+      customDays?: number;
+      /** 提取码（私密分享时） */
+      extractionCode?: string;
+      /** 自动生成提取码 */
+      autoFillExtractCode?: boolean;
+      /** 自定义分享地址 */
+      customAddress?: string;
+    };
+
+    /** 分享结果 */
+    type ShareResult = {
+      /** 分享ID */
+      shareId: number;
+      /** 短链接ID */
+      shortId: string;
+      /** 分享链接 */
+      link: string;
+      /** 二维码 */
+      qrCode?: string;
+      /** 提取码 */
+      extractionCode: string;
+      /** 过期时间 */
+      expireDate?: string | null;
+      /** 是否私密 */
+      isPrivate: boolean;
+    };
+
+    /** 公开分享信息 */
+    type SharePublicInfo = {
+      /** 分享ID */
+      shareId: number;
+      /** 短链接ID */
+      shortId: string;
+      /** 文件名 */
+      fileName: string;
+      /** 是否文件夹 */
+      isFolder: boolean;
+      /** 是否私密 */
+      isPrivate: boolean;
+      /** 分享者用户名 */
+      sharerName: string;
+      /** 过期时间 */
+      expireDate?: string | null;
+      /** 访问次数 */
+      viewCount: number;
+      /** 下载次数 */
+      downloadCount: number;
+      /** 文件列表 */
+      files: ShareFileItem[];
+    };
+
+    /** 分享文件项 */
+    type ShareFileItem = {
+      /** 文件ID */
+      fileId: number;
+      /** 文件名 */
+      fileName: string;
+      /** 文件大小（字节） */
+      fileSize: number;
+      /** 是否文件夹 */
+      isFolder: boolean;
+      /** 文件类型 */
+      fileType: string;
+      /** 文件扩展名 */
+      fileExtension?: string;
+      /** 修改时间 */
+      modifyTime?: string;
+    };
   }
 }
