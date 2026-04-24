@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { computeFileHash } from './instant-check';
 import {
   getChunkSize,
+  getConcurrency,
   needsChunking,
   getTotalChunks,
   sliceChunk,
@@ -16,9 +17,6 @@ const CHUNK_MAX_RETRIES = 3;
 
 /** Merge retry limit */
 const MERGE_MAX_RETRIES = 2;
-
-/** Per-file chunk concurrency */
-const CHUNK_CONCURRENCY = 3;
 
 /** Retry base delay in ms (exponential backoff: 1s, 2s, 4s) */
 const RETRY_BASE_DELAY = 1000;
@@ -372,7 +370,7 @@ export class UploaderEngine {
       identifier: task.fileHash,
       fileName: task.fileName,
       totalSize: task.fileSize,
-      totalChunks: needsChunking(task.fileSize) ? getTotalChunks(task.fileSize, getChunkSize(task.fileSize)) : 1,
+      totalChunks: needsChunking(task.fileSize) ? getTotalChunks(task.fileSize, await getChunkSize(task.fileSize)) : 1,
       userId,
       currentDirectory,
       relativePath: task.relativePath || task.fileName,
@@ -445,7 +443,7 @@ export class UploaderEngine {
     const abortController = new AbortController();
     task.abortController = abortController;
 
-    const chunkSize = getChunkSize(task.fileSize);
+    const chunkSize = await getChunkSize(task.fileSize);
     task.totalChunks = getTotalChunks(task.fileSize, chunkSize);
 
     this.initSpeedTracker(task.taskId);
@@ -458,7 +456,6 @@ export class UploaderEngine {
       }
     }
 
-    // Upload chunks with concurrency limit of CHUNK_CONCURRENCY
     await this.uploadChunksWithConcurrency(task, pendingChunks, chunkSize, abortController.signal);
   }
 
@@ -484,7 +481,7 @@ export class UploaderEngine {
       }
     };
 
-    const concurrency = Math.min(CHUNK_CONCURRENCY, chunkIndices.length);
+    const concurrency = Math.min(await getConcurrency(), chunkIndices.length);
     for (let i = 0; i < concurrency; i += 1) {
       executing.push(uploadNext());
     }

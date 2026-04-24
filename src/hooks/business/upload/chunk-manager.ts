@@ -1,11 +1,60 @@
+import { fetchUploadConfig } from '@/service/api/disk/file';
+
 const MB = 1024 * 1024;
 
-/** 动态分片策略：根据文件大小确定分片大小 */
-export function getChunkSize(fileSize: number): number {
+/** 默认分片配置（后端未返回时使用） */
+const DEFAULT_CHUNK_SIZES = { small: 10, medium: 20, large: 50 };
+
+let cachedConfig: Api.Disk.UploadConfig | null = null;
+let configPromise: Promise<Api.Disk.UploadConfig> | null = null;
+
+const DEFAULT_CONFIG: Api.Disk.UploadConfig = {
+  chunkConcurrency: 6,
+  chunkSizeSmall: DEFAULT_CHUNK_SIZES.small,
+  chunkSizeMedium: DEFAULT_CHUNK_SIZES.medium,
+  chunkSizeLarge: DEFAULT_CHUNK_SIZES.large
+};
+
+/** 从后端获取上传配置（带缓存） */
+async function loadUploadConfig(): Promise<Api.Disk.UploadConfig> {
+  if (cachedConfig) return cachedConfig;
+  if (configPromise) return configPromise;
+
+  configPromise = (async () => {
+    const { data, error } = await fetchUploadConfig();
+    if (!error && data) {
+      cachedConfig = data;
+      return data;
+    }
+    return DEFAULT_CONFIG;
+  })();
+
+  return configPromise;
+}
+
+/** 获取分片大小配置（异步） */
+export async function getChunkSizes(): Promise<{ small: number; medium: number; large: number }> {
+  const config = await loadUploadConfig();
+  return {
+    small: config.chunkSizeSmall || DEFAULT_CHUNK_SIZES.small,
+    medium: config.chunkSizeMedium || DEFAULT_CHUNK_SIZES.medium,
+    large: config.chunkSizeLarge || DEFAULT_CHUNK_SIZES.large
+  };
+}
+
+/** 获取并发数配置（异步） */
+export async function getConcurrency(): Promise<number> {
+  const config = await loadUploadConfig();
+  return config.chunkConcurrency || 6;
+}
+
+/** 动态分片策略：根据文件大小和后端配置确定分片大小 */
+export async function getChunkSize(fileSize: number): Promise<number> {
+  const sizes = await getChunkSizes();
   if (fileSize < 10 * MB) return 0;
-  if (fileSize < 100 * MB) return 5 * MB;
-  if (fileSize < 1024 * MB) return 10 * MB;
-  return 20 * MB;
+  if (fileSize < 100 * MB) return sizes.small * MB;
+  if (fileSize < 1024 * MB) return sizes.medium * MB;
+  return sizes.large * MB;
 }
 
 /** 是否需要分片 */

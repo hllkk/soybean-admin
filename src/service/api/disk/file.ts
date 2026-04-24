@@ -79,6 +79,14 @@ function getFileIcon(ext?: string): string {
   return 'material-symbols:description';
 }
 
+/** 获取上传配置 (GET /file-meta/upload-config) */
+export function fetchUploadConfig() {
+  return request<Api.Disk.UploadConfig>({
+    url: '/file-meta/upload-config',
+    method: 'get'
+  });
+}
+
 /** 秒传/断点检测 (GET /file-meta/upload) */
 export function fetchCheckFile(params: Api.Disk.FileCheckParams) {
   return request<Api.Disk.FileCheckResponse>({

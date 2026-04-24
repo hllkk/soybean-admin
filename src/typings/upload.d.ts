@@ -1,5 +1,17 @@
 declare namespace Api {
   namespace Disk {
+    /** 上传配置（从后端获取） */
+    type UploadConfig = {
+      /** 分片并发上传数 */
+      chunkConcurrency: number;
+      /** 10-100MB 文件分片大小 (MB) */
+      chunkSizeSmall: number;
+      /** 100MB-1GB 文件分片大小 (MB) */
+      chunkSizeMedium: number;
+      /** >1GB 文件分片大小 (MB) */
+      chunkSizeLarge: number;
+    };
+
     /** 上传任务状态 */
     type UploadTaskStatus =
       | 'pending'
