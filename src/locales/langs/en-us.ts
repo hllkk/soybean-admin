@@ -285,6 +285,7 @@ const local: App.I18n.Schema = {
     init: 'Init',
     spread: 'Share',
     about: 'About',
+    'share-access': 'File Share',
     'user-center': 'User Center',
     'adminUserCenter': 'User Center',
     'diskUserCenter': 'User Center',
@@ -1514,6 +1515,28 @@ const local: App.I18n.Schema = {
         sevenDays: '7 Days',
         thirtyDays: '30 Days'
       }
+    },
+    share: {
+      verifyTitle: 'Enter Extraction Code',
+      sharer: 'Sharer',
+      inputExtractionCode: 'Enter the 4-digit code to access the file',
+      extractionCodePlaceholder: 'Enter code',
+      verifyAndAccess: 'Verify & Access',
+      verifyTip: 'The code is provided by the sharer. Contact them if you don\'t have it',
+      forever: 'Forever',
+      expire: 'Expires',
+      viewCount: 'Views',
+      downloadCount: 'Downloads',
+      previewNotAllowed: 'Preview is not supported. Please download to view',
+      previewNotAllowedTip: 'Shared files cannot be previewed. Please download to view',
+      folderDownloadTip: 'Folders cannot be downloaded individually. Use package download',
+      noFiles: 'No files',
+      folder: 'Folder',
+      downloadAll: 'Download All as Package',
+      shareExpired: 'Share Expired',
+      shareExpiredTip: 'This share link does not exist or has expired. Contact the sharer for a new link',
+      goHome: 'Go Home',
+      loginMyDisk: 'Login to My Disk'
     }
   },
   form: {

@@ -1,18 +1,30 @@
-import type { CustomRoute } from '@elegant-router/types';
+import type { ElegantConstRoute } from '@elegant-router/types';
 import { layouts, views } from '../elegant/imports';
-import { getRoutePath, transformElegantRoutesToVueRoutes } from '../elegant/transform';
+import { transformElegantRoutesToVueRoutes } from '../elegant/transform';
 
-export const ROOT_ROUTE: CustomRoute = {
+export const ROOT_ROUTE: ElegantConstRoute = {
   name: 'root',
   path: '/',
-  redirect: getRoutePath(import.meta.env.VITE_ROUTE_HOME) || '/admin',
   meta: {
     title: 'root',
     constant: true
   }
 };
 
-const NOT_FOUND_ROUTE: CustomRoute = {
+/** 分享访问页面路由（公开访问，无需登录） */
+const SHARE_ROUTE: ElegantConstRoute = {
+  name: 'share-access',
+  path: '/s/:shortId',
+  component: 'layout.blank$view.share',
+  meta: {
+    title: 'share-access',
+    i18nKey: 'route.share-access',
+    constant: true,
+    hideInMenu: true
+  }
+};
+
+const NOT_FOUND_ROUTE: ElegantConstRoute = {
   name: 'not-found',
   path: '/:pathMatch(.*)*',
   component: 'layout.blank$view.404',
@@ -23,7 +35,7 @@ const NOT_FOUND_ROUTE: CustomRoute = {
 };
 
 /** builtin routes, it must be constant and setup in vue-router */
-const builtinRoutes: CustomRoute[] = [ROOT_ROUTE, NOT_FOUND_ROUTE];
+const builtinRoutes: ElegantConstRoute[] = [ROOT_ROUTE, SHARE_ROUTE, NOT_FOUND_ROUTE];
 
 /** create builtin vue routes */
 export function createBuiltinVueRoutes() {

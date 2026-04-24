@@ -281,6 +281,7 @@ const local: App.I18n.Schema = {
     init: '初始化',
     spread: '分享',
     about: '关于',
+    'share-access': '文件分享',
     'user-center': '个人中心',
     'adminUserCenter': '个人中心',
     'diskUserCenter': '个人中心',
@@ -1506,6 +1507,28 @@ const local: App.I18n.Schema = {
         sevenDays: '7天',
         thirtyDays: '30天'
       }
+    },
+    share: {
+      verifyTitle: '请输入提取码',
+      sharer: '分享者',
+      inputExtractionCode: '请输入4位提取码以访问文件',
+      extractionCodePlaceholder: '输入提取码',
+      verifyAndAccess: '验证并访问',
+      verifyTip: '提取码由分享者提供，请联系分享者获取',
+      forever: '永久有效',
+      expire: '有效期',
+      viewCount: '访问次数',
+      downloadCount: '下载次数',
+      previewNotAllowed: '分享文件不支持预览，请下载后查看',
+      previewNotAllowedTip: '分享文件不支持预览，请下载后查看',
+      folderDownloadTip: '文件夹不支持单独下载，请使用打包下载',
+      noFiles: '暂无文件',
+      folder: '文件夹',
+      downloadAll: '打包下载全部文件',
+      shareExpired: '分享已失效',
+      shareExpiredTip: '此分享链接不存在或已过期，请联系分享者获取新的分享链接',
+      goHome: '返回首页',
+      loginMyDisk: '登录我的网盘'
     }
   },
   form: {

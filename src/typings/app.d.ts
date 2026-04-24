@@ -1301,6 +1301,28 @@ declare namespace App {
             thirtyDays: string;
           };
         };
+        share: {
+          verifyTitle: string;
+          sharer: string;
+          inputExtractionCode: string;
+          extractionCodePlaceholder: string;
+          verifyAndAccess: string;
+          verifyTip: string;
+          forever: string;
+          expire: string;
+          viewCount: string;
+          downloadCount: string;
+          previewNotAllowed: string;
+          previewNotAllowedTip: string;
+          folderDownloadTip: string;
+          noFiles: string;
+          folder: string;
+          downloadAll: string;
+          shareExpired: string;
+          shareExpiredTip: string;
+          goHome: string;
+          loginMyDisk: string;
+        };
       };
       form: {
         required: string;

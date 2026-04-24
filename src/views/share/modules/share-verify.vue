@@ -7,7 +7,8 @@ defineOptions({
 });
 
 interface Props {
-  shortId: string;
+  /** 短链接ID（父组件传递，本组件暂未使用） */
+  shortId?: string;
   shareInfo: Api.Disk.SharePublicInfo | null;
 }
 
@@ -15,14 +16,14 @@ interface Emits {
   (e: 'verify', code: string): void;
 }
 
-const props = defineProps<Props>();
+const _props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const extractionCode = ref('');
 const loading = ref(false);
 
 // 提交验证
-async function handleVerify() {
+function handleVerify() {
   if (!extractionCode.value || extractionCode.value.length !== 4) {
     window.$message?.warning('请输入4位提取码');
     return;

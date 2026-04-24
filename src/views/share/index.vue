@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { $t } from '@/locales';
 import { fetchGetSharePublic, fetchVerifyShare } from '@/service/api/disk/share-public';
 import ShareVerify from './modules/share-verify.vue';
 import ShareList from './modules/share-list.vue';
