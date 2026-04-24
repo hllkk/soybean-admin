@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { getPreviewCategory } from '@/utils/file-type';
 import OfficePreview from './office-preview.vue';
+import PdfPreview from './pdf-preview.vue';
 
 defineOptions({
   name: 'FilePreviewOverlay'
@@ -36,6 +37,10 @@ const previewCategory = computed(() => {
 const docSaved = ref(true);
 const showSaveDialog = ref(false);
 const loading = ref(true);
+
+function handlePdfReady() {
+  loading.value = false;
+}
 
 function handleOfficeEdit(saved: boolean) {
   docSaved.value = saved;
@@ -109,7 +114,7 @@ onUnmounted(() => {
     >
       <!-- Loading -->
       <div
-        v-if="loading && previewCategory === 'office'"
+        v-if="loading && (previewCategory === 'office' || previewCategory === 'pdf')"
         class="absolute inset-0 flex-center z-10"
       >
         <NSpin size="large">
@@ -119,8 +124,11 @@ onUnmounted(() => {
         </NSpin>
       </div>
 
-      <!-- Close button -->
-      <div class="absolute top-0 right-0 z-2003 flex-center p-8px">
+      <!-- Close button (hidden for PDF - viewer has its own close) -->
+      <div
+        v-if="previewCategory !== 'pdf'"
+        class="absolute top-0 right-0 z-2003 flex-center p-8px"
+      >
         <NButton
           quaternary
           circle
@@ -146,6 +154,12 @@ onUnmounted(() => {
           @edit="handleOfficeEdit"
           @close="beforeClose"
           @error="handleOfficeError"
+        />
+        <PdfPreview
+          v-else-if="previewCategory === 'pdf'"
+          :file-id="file?.fileId"
+          @ready="handlePdfReady"
+          @close="beforeClose"
         />
         <div v-else class="flex-center h-full">
           <NResult status="info" title="暂不支持预览此类型文件">
