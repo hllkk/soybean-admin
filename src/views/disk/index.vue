@@ -408,8 +408,8 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
   } else if (category === 'video') {
     // 视频文件使用 VideoPreview
     openVideoPreview(file);
-  } else {
-    // 其他文件使用预览 Modal
+  } else if (category === 'office' || category === 'pdf') {
+    // Office 和 PDF 文件使用预览 Modal
     previewFile.value = {
       fileId: file.fileId,
       fileName: file.fileName,
@@ -418,6 +418,12 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
       filePath: file.filePath
     };
     previewVisible.value = true;
+  } else {
+    window.$notification?.destroyAll();
+    window.$notification?.warning({
+      content: '暂不支持预览此类型文件',
+      duration: 3000
+    });
   }
 }
 

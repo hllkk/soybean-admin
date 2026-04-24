@@ -162,11 +162,11 @@ onUnmounted(() => {
           @close="beforeClose"
         />
         <div v-else class="flex-center h-full">
-          <NResult status="info" title="暂不支持预览此类型文件">
-            <template #footer>
-              <NButton @click="close">关闭</NButton>
+          <NSpin size="large">
+            <template #description>
+              <span class="text-gray-300">加载中...</span>
             </template>
-          </NResult>
+          </NSpin>
         </div>
       </div>
     </div>
