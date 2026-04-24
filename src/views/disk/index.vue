@@ -5,6 +5,7 @@ import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList, fetchGetQuota } from '@/service/api/disk';
+import { fetchIsAllowDownload, fetchIsAllowPackageDownload } from '@/service/api/disk/file';
 import { fetchGenerateStreamToken } from '@/service/api/disk';
 import { getServiceBaseURL } from '@/utils/service';
 import { getToken } from '@/store/modules/auth/shared';
@@ -463,11 +464,70 @@ function handleFileAction(action: string, file: Api.Disk.FileItem) {
       window.$message?.info(`${$t('page.disk.toolbar.share')}: ${file.fileName}`);
       break;
     case 'download':
-      window.$message?.info(`${$t('page.disk.toolbar.download')}: ${file.fileName}`);
+      handleDownload([file]);
       break;
     default:
       break;
   }
+}
+
+/** 触发浏览器下载（通过隐藏 <a> 标签） */
+function triggerBrowserDownload(downloadUrl: string) {
+  const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
+  const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
+  const fullUrl = `${baseURL}${downloadUrl}`;
+
+  const link = document.createElement('a');
+  link.href = fullUrl;
+  link.style.display = 'none';
+  link.target = '_blank';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/**
+ * 统一下载入口 — 智能路由
+ * 单文件(非文件夹) → 直接下载；多文件或含文件夹 → 打包ZIP下载
+ */
+async function handleDownload(files: Api.Disk.FileItem[]) {
+  if (files.length === 0) {
+    window.$message?.warning($t('common.selectFileFirst'));
+    return;
+  }
+
+  // 智能路由：单文件且非文件夹 → 直接下载
+  if (files.length === 1 && !files[0].isFolder) {
+    const { data, error } = await fetchIsAllowDownload([files[0].fileId]);
+    if (error || !data?.allowDownload) {
+      window.$message?.error('下载失败，请稍后重试');
+      return;
+    }
+    triggerBrowserDownload(data.downloadUrl);
+    return;
+  }
+
+  // 多文件或包含文件夹 → 打包下载
+  window.$loading?.startLoading('正在准备下载...');
+
+  const fileIds = files.map(f => f.fileId);
+  const { data, error } = await fetchIsAllowPackageDownload(fileIds);
+
+  window.$loading?.endLoading();
+
+  if (error || !data?.allowDownload) {
+    window.$message?.error('下载失败，请稍后重试');
+    return;
+  }
+
+  triggerBrowserDownload(data.downloadUrl);
+  diskStore.clearSelection();
+}
+
+/** 工具栏下载 — 取选中的文件调用统一入口 */
+function handleToolbarDownload() {
+  const selectedFiles = diskStore.currentFileList.filter(f => diskStore.selectedFiles.includes(f.fileId));
+  handleDownload(selectedFiles);
 }
 
 function handleToolbarRename() {
@@ -635,6 +695,7 @@ onMounted(async () => {
           <Toolbar
             @search="handleSearch"
             @refresh="handleRefresh"
+            @download="handleToolbarDownload"
             @delete="handleToolbarDelete"
             @rename="handleToolbarRename"
             @show-transfer="transferPanelRef?.showDefault()"

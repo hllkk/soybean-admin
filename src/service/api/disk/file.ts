@@ -218,6 +218,26 @@ export function fetchSaveFileContent(data: { fileId: string | number; content: s
   });
 }
 
+/** 请求单文件下载令牌 */
+export function fetchIsAllowDownload(fileIds: CommonType.IdType[]) {
+  const userId = Number(useAuthStore().userInfo.userId);
+  return request<Api.Disk.DownloadResponse>({
+    url: '/file-meta/isAllowDownload',
+    method: 'post',
+    data: { userId, fileIds }
+  });
+}
+
+/** 请求打包下载令牌 */
+export function fetchIsAllowPackageDownload(fileIds: CommonType.IdType[]) {
+  const userId = Number(useAuthStore().userInfo.userId);
+  return request<Api.Disk.PackageDownloadResponse>({
+    url: '/file-meta/isAllowPackageDownload',
+    method: 'post',
+    data: { userId, fileIds }
+  });
+}
+
 /** 生成视频流播放 token */
 export function fetchGenerateStreamToken(fileId: string) {
   return request<{ token: string; expiresIn: number }>({

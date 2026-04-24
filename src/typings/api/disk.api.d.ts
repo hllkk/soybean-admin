@@ -224,6 +224,34 @@ declare namespace Api {
       remainingSpace: number;
     };
 
+    /** 单文件下载响应 */
+    type DownloadResponse = {
+      /** 是否允许下载 */
+      allowDownload: boolean;
+      /** 是否重定向 */
+      isRedirect: boolean;
+      /** 重定向地址 */
+      redirectUrl: string;
+      /** 下载地址（含 token） */
+      downloadUrl: string;
+    };
+
+    /** 打包下载响应 */
+    type PackageDownloadResponse = {
+      /** 是否允许下载 */
+      allowDownload: boolean;
+      /** 下载地址（含 token） */
+      downloadUrl: string;
+      /** 文件数量 */
+      fileCount: number;
+      /** 文件夹数量 */
+      folderCount: number;
+      /** 总大小（字节） */
+      totalSize: number;
+      /** 扫描耗时（毫秒） */
+      scanTime: number;
+    };
+
     /** 预览文件信息 */
     type PreviewFileInfo = {
       /** 文件ID */
