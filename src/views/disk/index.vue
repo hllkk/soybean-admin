@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
@@ -18,6 +18,7 @@ import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
 import VideoPreview from '@/components/preview/video-preview.vue';
 import FilePreviewOverlay from '@/components/preview/file-preview-overlay.vue';
+import ImagePreview from '@/components/preview/image-preview.vue';
 
 defineOptions({
   name: 'DiskPage'
@@ -30,6 +31,7 @@ const { loading, startLoading, endLoading } = useLoading();
 
 const fileList = ref<Api.Disk.FileItem[]>([]);
 const transferPanelRef = ref<InstanceType<typeof TransferPanel>>();
+const imagePreviewRef = ref<InstanceType<typeof ImagePreview>>();
 const totalCount = ref(0);
 
 // 重命名状态
@@ -96,6 +98,18 @@ async function openVideoPreview(file: Api.Disk.FileItem) {
     diskStore.videoPreviewRow = file;
     diskStore.videoPreviewVisible = true;
   }
+}
+
+function openImagePreview(file: Api.Disk.FileItem) {
+  const images = fileList.value
+    .filter(f => !f.isFolder && getPreviewCategory(f.fileName) === 'image')
+    .map(f => ({ fileId: f.fileId, fileName: f.fileName }));
+
+  const initialIndex = images.findIndex(img => String(img.fileId) === String(file.fileId));
+
+  nextTick(() => {
+    imagePreviewRef.value?.show(images, initialIndex >= 0 ? initialIndex : 0);
+  });
 }
 
 function handleAudioOverlayClick() {
@@ -408,6 +422,9 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
   } else if (category === 'video') {
     // 视频文件使用 VideoPreview
     openVideoPreview(file);
+  } else if (category === 'image') {
+    // 图片文件使用 ImagePreview
+    openImagePreview(file);
   } else if (category === 'office' || category === 'pdf') {
     // Office 和 PDF 文件使用预览 Modal
     previewFile.value = {
@@ -711,6 +728,9 @@ onMounted(async () => {
 
     <!-- Text Preview (opsMaster version) -->
     <TextPreview />
+
+    <!-- Image Preview -->
+    <ImagePreview ref="imagePreviewRef" />
   </TableSiderLayout>
 </template>
 
