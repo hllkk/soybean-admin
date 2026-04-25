@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { resolveNameConflict } from '../utils/resolve-name-conflict';
+import { getSelectId } from '../utils/file-select';
 import FileCard from './file-card.vue';
 import FileEmpty from './file-empty.vue';
 import DiskContextMenu from './context-menu.vue';
@@ -93,25 +94,29 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
   }
 }
 
-function handleSelect(file: Api.Disk.FileItem) {
-  // 如果提供了 selectedFiles prop，则通过 emit 更新
+// 更新选中状态（统一处理本地和全局选中）
+function updateSelection(selectId: CommonType.IdType, add: boolean) {
   if (props.selectedFiles !== undefined) {
-    const index = props.selectedFiles.indexOf(file.fileId);
-    if (index === -1) {
-      emit('selectionChange', [...props.selectedFiles, file.fileId]);
+    // 使用本地选中状态
+    if (add) {
+      emit('selectionChange', [...props.selectedFiles, selectId]);
     } else {
-      emit('selectionChange', props.selectedFiles.filter(id => id !== file.fileId));
+      emit('selectionChange', props.selectedFiles.filter(id => id !== selectId));
     }
   } else {
-    // 否则使用 diskStore
-    const index = diskStore.selectedFiles.indexOf(file.fileId);
-    if (index === -1) {
-      diskStore.setSelectedFiles([...diskStore.selectedFiles, file.fileId]);
+    // 使用全局 diskStore
+    if (add) {
+      diskStore.setSelectedFiles([...diskStore.selectedFiles, selectId]);
     } else {
-      const newSelected = diskStore.selectedFiles.filter(id => id !== file.fileId);
-      diskStore.setSelectedFiles(newSelected);
+      diskStore.setSelectedFiles(diskStore.selectedFiles.filter(id => id !== selectId));
     }
   }
+}
+
+function handleSelect(file: Api.Disk.FileItem) {
+  const selectId = getSelectId(file);
+  const isCurrentlySelected = currentSelectedFiles.value.includes(selectId);
+  updateSelection(selectId, !isCurrentlySelected);
 }
 
 function handleAction(action: string, file: Api.Disk.FileItem) {
@@ -146,14 +151,15 @@ function handleContextMenu(e: MouseEvent) {
   const target = (e.target as HTMLElement).closest('[data-file-id]');
   if (target) {
     const fileId = (target as HTMLElement).dataset.fileId!;
-    const file = props.files.find(f => String(f.fileId) === fileId);
+    const file = props.files.find(f => String(getSelectId(f)) === fileId);
     if (file) {
-      if (!currentSelectedFiles.value.includes(file.fileId)) {
+      const selectId = getSelectId(file);
+      if (!currentSelectedFiles.value.includes(selectId)) {
         // 根据是否使用本地选中状态来更新
         if (props.selectedFiles !== undefined) {
-          emit('selectionChange', [file.fileId]);
+          emit('selectionChange', [selectId]);
         } else {
-          diskStore.setSelectedFiles([file.fileId]);
+          diskStore.setSelectedFiles([selectId]);
         }
       }
       ctxState.value = { visible: true, x: e.clientX, y: e.clientY, type: 'file', targetFile: file };
@@ -342,8 +348,8 @@ watch(
           v-for="file in files"
           :key="file.fileId"
           :file="file"
-          :selected="isSelected(file.fileId)"
-          :data-file-id="String(file.fileId)"
+          :selected="isSelected(getSelectId(file))"
+          :data-file-id="String(getSelectId(file))"
           @click="handleFileClick(file)"
           @dblclick="handleFileDblClick(file)"
           @select="handleSelect(file)"

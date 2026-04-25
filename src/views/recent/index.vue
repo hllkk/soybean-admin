@@ -30,10 +30,13 @@ const recentList = ref<Api.Disk.RecentItem[]>([]);
 // 本地选中状态（不污染 diskStore）
 const selectedFiles = ref<CommonType.IdType[]>([]);
 
-// 将 RecentItem 转换为 FileItem 格式
+// 将 RecentItem 转换为 FileItem 格式（用于复用文件组件）
+// fileId：真正的文件ID（用于缩略图显示）
+// recordId：访问记录ID（用于删除操作）
 function convertToFileItem(item: Api.Disk.RecentItem): Api.Disk.FileItem {
   return {
-    fileId: item.recordId,
+    fileId: item.fileId,
+    recordId: item.recordId,
     fileName: item.fileName,
     fileType: item.fileType,
     fileExtension: item.fileExtension,
@@ -156,7 +159,8 @@ function handleFileAction(action: string, file: Api.Disk.FileItem) {
       window.$message?.info('下载功能开发中');
       break;
     case 'delete':
-      selectedFiles.value = [file.fileId];
+      // 删除操作使用 recordId（访问记录ID），而非 fileId（文件ID）
+      selectedFiles.value = [file.recordId!];
       handleClearRecent();
       break;
   }

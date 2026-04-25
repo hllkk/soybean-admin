@@ -17,6 +17,8 @@ declare namespace Api {
     type FileItem = Common.CommonRecord<{
       /** 文件ID */
       fileId: CommonType.IdType;
+      /** 访问记录ID（最近访问场景使用，用于删除记录而非文件） */
+      recordId?: CommonType.IdType;
       /** 文件名 */
       fileName: string;
       /** 文件类型 (folder/image/document/video/audio/other) */

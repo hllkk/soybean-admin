@@ -5,12 +5,13 @@ import { h, computed, ref, watch, nextTick } from 'vue';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import FileIcon from './file-icon.vue';
-import FileEmpty from './file-empty.vue';
-import DiskContextMenu from './context-menu.vue';
 import { formatFileSize } from '@/utils/format';
 import SvgIcon from '@/components/custom/svg-icon.vue';
 import { resolveNameConflict } from '../utils/resolve-name-conflict';
+import { getSelectId } from '../utils/file-select';
+import FileIcon from './file-icon.vue';
+import FileEmpty from './file-empty.vue';
+import DiskContextMenu from './context-menu.vue';
 
 defineOptions({
   name: 'FileList'
@@ -286,18 +287,19 @@ function handleContextSelect(key: string) {
 }
 
 function getRowProps(row: Api.Disk.FileItem) {
+  const selectId = getSelectId(row);
   return {
     style: 'cursor: pointer',
     ondblclick: () => handleRowDblClick(row),
     oncontextmenu: (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!currentSelectedFiles.value.includes(row.fileId)) {
+      if (!currentSelectedFiles.value.includes(selectId)) {
         // 根据是否使用本地选中状态来更新
         if (props.selectedFiles !== undefined) {
-          emit('selectionChange', [row.fileId]);
+          emit('selectionChange', [selectId]);
         } else {
-          diskStore.setSelectedFiles([row.fileId]);
+          diskStore.setSelectedFiles([selectId]);
         }
       }
       ctxState.value = { visible: true, x: e.clientX, y: e.clientY, type: 'file', targetFile: row };
@@ -306,7 +308,7 @@ function getRowProps(row: Api.Disk.FileItem) {
 }
 
 function getRowKey(row: Api.Disk.FileItem) {
-  return row.fileId;
+  return getSelectId(row);
 }
 
 // --- 内联创建 ---
