@@ -28,7 +28,8 @@ interface Emits {
   (e: 'removeShare'): void;
   (e: 'removeFavorite'): void;
   (e: 'download'): void;
-  (e: 'clearRecent'): void;
+  (e: 'clearRecent'): void;   // 删除选中的最近访问记录
+  (e: 'clearAll'): void;      // 清空全部最近访问记录
   (e: 'emptyTrash'): void;
 }
 
@@ -151,7 +152,7 @@ function handleSelectionAction(key: string) {
 function handleClearAll() {
   switch (props.pageType) {
     case 'recent':
-      emit('clearRecent');
+      emit('clearAll');
       break;
     case 'trash':
       emit('emptyTrash');

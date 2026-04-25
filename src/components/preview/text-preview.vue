@@ -582,10 +582,12 @@ async function fetchFiles(directory: string): Promise<TabNode[]> {
       return {
         key: f.id,
         label: f.name,
-        isLeaf: !f.isDir,
-        // 文件夹：hasChildren=true时设置空数组触发懒加载，hasChildren=false时设置空数组表示无子节点
-        // 文件：isLeaf=true，不需要children属性
-        children: f.isDir ? [] : undefined,
+        // 文件：isLeaf=true
+        // 文件夹：hasChildren=true时isLeaf=false触发懒加载，hasChildren=false时isLeaf=true表示无子节点
+        isLeaf: !f.isDir || (f.isDir && !f.hasChildren),
+        // 有子节点的文件夹：children=[]触发懒加载
+        // 无子节点的文件夹或文件：children=undefined
+        children: f.isDir && f.hasChildren ? [] : undefined,
         file: {
           fileId: f.id,
           fileName: f.name,
