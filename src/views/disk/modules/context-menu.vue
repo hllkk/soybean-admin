@@ -12,9 +12,13 @@ interface Props {
   x: number;
   y: number;
   type: 'file' | 'area';
+  /** 页面类型，用于区分收藏/取消收藏菜单 */
+  pageType?: 'disk' | 'favorite' | 'recent' | 'my-share' | 'trash';
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  pageType: 'disk'
+});
 
 const visible = defineModel<boolean>('visible');
 
@@ -24,11 +28,19 @@ const emit = defineEmits<{
 
 const { SvgIconVNode } = useSvgIcon();
 
+// 是否在收藏页面
+const isFavoritePage = computed(() => props.pageType === 'favorite');
+
 const fileOptions = computed<DropdownOption[]>(() => [
   {
     label: $t('page.disk.contextMenu.open'),
     key: 'open',
     icon: SvgIconVNode({ icon: 'mdi:open-in-new', fontSize: 18 })
+  },
+  {
+    label: isFavoritePage.value ? $t('page.disk.contextMenu.removeFavorite') : $t('page.disk.contextMenu.addFavorite'),
+    key: isFavoritePage.value ? 'removeFavorite' : 'addFavorite',
+    icon: SvgIconVNode({ icon: isFavoritePage.value ? 'mdi:star-off-outline' : 'mdi:star-outline', fontSize: 18 })
   },
   {
     label: $t('page.disk.contextMenu.download'),

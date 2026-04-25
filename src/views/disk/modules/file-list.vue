@@ -23,12 +23,15 @@ interface Props {
   disableCreate?: boolean;
   /** 外部选中的文件ID列表（特殊页面使用，覆盖 diskStore） */
   selectedFiles?: CommonType.IdType[];
+  /** 页面类型，用于区分收藏/取消收藏菜单 */
+  pageType?: 'disk' | 'favorite' | 'recent' | 'my-share' | 'trash';
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   disableCreate: false,
-  selectedFiles: undefined
+  selectedFiles: undefined,
+  pageType: 'disk'
 });
 
 interface Emits {
@@ -39,6 +42,7 @@ interface Emits {
   (e: 'fileRename', file: Api.Disk.FileItem): void;
   (e: 'fileCopy', file: Api.Disk.FileItem): void;
   (e: 'fileMove', file: Api.Disk.FileItem): void;
+  (e: 'fileFavorite', file: Api.Disk.FileItem): void;
   (e: 'fileCreated', name: string): void;
   (e: 'folderCreated', name: string): void;
   (e: 'refresh'): void;
@@ -269,6 +273,8 @@ function handleContextSelect(key: string) {
     case 'move': if (file) emit('fileMove', file); break;
     case 'rename': if (file) emit('fileRename', file); break;
     case 'delete': if (file) emit('fileDelete', file); break;
+    case 'addFavorite': if (file) emit('fileFavorite', file); break;
+    case 'removeFavorite': if (file) emit('fileFavorite', file); break;
     case 'view-grid': diskStore.setViewMode('grid'); break;
     case 'view-list': diskStore.setViewMode('list'); break;
     case 'sort-name': applySort('name'); break;
@@ -432,6 +438,7 @@ function handleCreateKeydown(e: KeyboardEvent) {
       :x="ctxState.x"
       :y="ctxState.y"
       :type="ctxState.type"
+      :page-type="pageType"
       @select="handleContextSelect"
     />
   </div>

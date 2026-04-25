@@ -179,6 +179,12 @@ function handleRemoveFavorite() {
   });
 }
 
+// 取消单个文件收藏（右键菜单）
+function handleRemoveFavoriteFile(file: Api.Disk.FileItem) {
+  selectedFiles.value = [file.fileId];
+  handleRemoveFavorite();
+}
+
 // 下载功能提示
 function handleDownloadTip() {
   window.$message?.info('下载功能开发中');
@@ -239,10 +245,12 @@ getData();
             :files="favoriteList"
             :loading="loading"
             :selected-files="selectedFiles"
+            page-type="favorite"
             disable-create
             @file-dbl-click="handleFileDblClick"
             @file-download="handleFileAction('download', $event)"
             @file-delete="handleFileAction('removeFavorite', $event)"
+            @file-favorite="handleRemoveFavoriteFile"
             @selection-change="handleSelectionChange"
             @refresh="getData"
           />
@@ -253,10 +261,12 @@ getData();
             :files="favoriteList"
             :loading="loading"
             :selected-files="selectedFiles"
+            page-type="favorite"
             disable-create
             @file-dbl-click="handleFileDblClick"
             @file-download="handleFileAction('download', $event)"
             @file-delete="handleFileAction('removeFavorite', $event)"
+            @file-favorite="handleRemoveFavoriteFile"
             @selection-change="handleSelectionChange"
             @refresh="getData"
           />

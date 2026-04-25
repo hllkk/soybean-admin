@@ -1452,7 +1452,9 @@ const local: App.I18n.Schema = {
         sortSize: '大小',
         sortTime: '修改时间',
         refresh: '刷新',
-        reload: '重新加载页面'
+        reload: '重新加载页面',
+        addFavorite: '添加收藏',
+        removeFavorite: '取消收藏'
       },
       form: {
         folderName: {

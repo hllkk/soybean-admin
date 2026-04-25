@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
+import { fetchGetRecentList, fetchDeleteRecent, fetchClearRecent } from '@/service/api/disk';
 import SimpleToolbar from '../disk/modules/simple-toolbar.vue';
 import FileGrid from '../disk/modules/file-grid.vue';
 import FileList from '../disk/modules/file-list.vue';
@@ -14,6 +15,14 @@ defineOptions({
 
 const diskStore = useDiskStore();
 const { loading, startLoading, endLoading } = useLoading();
+
+// 搜索参数
+const searchParams = ref<Api.Disk.RecentListParams>({
+  pageNum: 1,
+  pageSize: 100,
+  sortField: null,
+  sortOrder: null
+});
 
 // 最近访问列表
 const recentList = ref<Api.Disk.RecentItem[]>([]);
@@ -29,7 +38,7 @@ function convertToFileItem(item: Api.Disk.RecentItem): Api.Disk.FileItem {
     fileType: item.fileType,
     fileExtension: item.fileExtension,
     fileSize: item.fileSize,
-    filePath: item.originalPath,
+    filePath: item.filePath,
     parentId: null,
     isFolder: item.isFolder,
     modifyTime: item.visitTime,
@@ -37,7 +46,7 @@ function convertToFileItem(item: Api.Disk.RecentItem): Api.Disk.FileItem {
     updateTime: item.visitTime,
     createBy: '',
     updateBy: '',
-    mediaCover: item.mediaCover
+    mediaCover: item.hasMediaCover
   };
 }
 
@@ -50,113 +59,24 @@ const selectedCount = computed(() => selectedFiles.value.length);
 // 是否显示空状态
 const showEmpty = computed(() => recentList.value.length === 0 && !loading.value);
 
-// 获取最近访问列表（Mock 数据）
+// 获取最近访问列表
 async function getData() {
   startLoading();
-  // TODO: 调用后端 API
-  // const { data, error } = await fetchGetRecentList(searchParams.value);
-
-  // 模拟 API 响应延迟
-  await new Promise(resolve => setTimeout(resolve, 300));
-
-  // 使用 Mock 数据
-  recentList.value = getMockRecentList();
+  const { data, error } = await fetchGetRecentList(searchParams.value);
   endLoading();
-}
 
-// Mock 数据
-function getMockRecentList(): Api.Disk.RecentItem[] {
-  return [
-    {
-      recordId: 1,
-      fileId: 101,
-      fileName: '项目报告.docx',
-      fileType: 'document',
-      fileExtension: 'docx',
-      isFolder: false,
-      fileSize: 256000,
-      visitTime: '2024-04-24 10:30:00',
-      originalPath: '/文档/项目报告.docx',
-      mediaCover: false
-    },
-    {
-      recordId: 2,
-      fileId: 102,
-      fileName: '产品截图',
-      fileType: 'folder',
-      isFolder: true,
-      fileSize: 0,
-      visitTime: '2024-04-23 16:45:00',
-      originalPath: '/设计素材/产品截图',
-      mediaCover: false
-    },
-    {
-      recordId: 3,
-      fileId: 103,
-      fileName: '宣传视频.mp4',
-      fileType: 'video',
-      fileExtension: 'mp4',
-      isFolder: false,
-      fileSize: 52428800,
-      visitTime: '2024-04-22 14:20:00',
-      originalPath: '/视频/宣传视频.mp4',
-      mediaCover: true
-    },
-    {
-      recordId: 4,
-      fileId: 104,
-      fileName: '系统架构图.png',
-      fileType: 'image',
-      fileExtension: 'png',
-      isFolder: false,
-      fileSize: 1536000,
-      visitTime: '2024-04-21 09:15:00',
-      originalPath: '/设计素材/系统架构图.png',
-      mediaCover: true
-    },
-    {
-      recordId: 5,
-      fileId: 105,
-      fileName: '背景音乐.mp3',
-      fileType: 'audio',
-      fileExtension: 'mp3',
-      isFolder: false,
-      fileSize: 3145728,
-      visitTime: '2024-04-20 11:30:00',
-      originalPath: '/音频/背景音乐.mp3',
-      mediaCover: false
-    },
-    {
-      recordId: 6,
-      fileId: 106,
-      fileName: '配置文件.json',
-      fileType: 'other',
-      fileExtension: 'json',
-      isFolder: false,
-      fileSize: 2048,
-      visitTime: '2024-04-19 08:00:00',
-      originalPath: '/配置文件.json',
-      mediaCover: false
-    },
-    {
-      recordId: 7,
-      fileId: 107,
-      fileName: '数据分析.xlsx',
-      fileType: 'document',
-      fileExtension: 'xlsx',
-      isFolder: false,
-      fileSize: 102400,
-      visitTime: '2024-04-18 15:30:00',
-      originalPath: '/文档/数据分析.xlsx',
-      mediaCover: false
-    }
-  ];
+  if (!error && data) {
+    recentList.value = data.rows || [];
+  } else {
+    recentList.value = [];
+  }
 }
 
 // 处理排序
 function handleSort(field: string, order: 'asc' | 'desc') {
-  // TODO: 实现排序
-  console.log('Sort:', field, order);
+  searchParams.value.sortField = field as 'visitTime' | 'fileName' | 'size';
+  searchParams.value.sortOrder = order;
+  getData();
 }
 
 // 切换视图
@@ -175,7 +95,7 @@ function handleSelectionChange(files: CommonType.IdType[]) {
 }
 
 // 清除选中项的访问记录
-function handleClearRecent() {
+async function handleClearRecent() {
   const selectedIds = selectedFiles.value;
   if (selectedIds.length === 0) return;
 
@@ -185,10 +105,17 @@ function handleClearRecent() {
     positiveText: $t('common.confirm'),
     negativeText: $t('common.cancel'),
     onPositiveClick: async () => {
-      // TODO: 调用后端 API 删除选中记录
-      recentList.value = recentList.value.filter(item => !selectedIds.includes(item.recordId));
-      selectedFiles.value = [];
-      window.$message?.success('已删除访问记录');
+      startLoading();
+      const { error } = await fetchDeleteRecent(selectedIds);
+      endLoading();
+
+      if (!error) {
+        recentList.value = recentList.value.filter(item => !selectedIds.includes(item.recordId));
+        selectedFiles.value = [];
+        window.$message?.success('已删除访问记录');
+      } else {
+        window.$message?.error('删除失败');
+      }
     }
   });
 }
@@ -201,10 +128,17 @@ function handleClearAll() {
     positiveText: $t('common.confirm'),
     negativeText: $t('common.cancel'),
     onPositiveClick: async () => {
-      // TODO: 调用后端 API 清空所有记录
-      recentList.value = [];
-      selectedFiles.value = [];
-      window.$message?.success('已清空全部访问记录');
+      startLoading();
+      const { error } = await fetchClearRecent();
+      endLoading();
+
+      if (!error) {
+        recentList.value = [];
+        selectedFiles.value = [];
+        window.$message?.success('已清空全部访问记录');
+      } else {
+        window.$message?.error('清空失败');
+      }
     }
   });
 }
@@ -265,6 +199,7 @@ getData();
             :files="fileList"
             :loading="loading"
             :selected-files="selectedFiles"
+            page-type="recent"
             disable-create
             @file-dbl-click="handleFileDblClick"
             @file-download="handleFileAction('download', $event)"
@@ -279,6 +214,7 @@ getData();
             :files="fileList"
             :loading="loading"
             :selected-files="selectedFiles"
+            page-type="recent"
             disable-create
             @file-dbl-click="handleFileDblClick"
             @file-download="handleFileAction('download', $event)"

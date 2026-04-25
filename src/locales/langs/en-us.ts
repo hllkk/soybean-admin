@@ -1460,7 +1460,9 @@ const local: App.I18n.Schema = {
         sortSize: 'Size',
         sortTime: 'Modified Time',
         refresh: 'Refresh',
-        reload: 'Reload Page'
+        reload: 'Reload Page',
+        addFavorite: 'Add to Favorites',
+        removeFavorite: 'Remove from Favorites'
       },
       form: {
         folderName: {

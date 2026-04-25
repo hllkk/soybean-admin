@@ -8,6 +8,7 @@ import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, 
 import { fetchIsAllowDownload, fetchIsAllowPackageDownload } from '@/service/api/disk/file';
 import { fetchGenerateStreamToken } from '@/service/api/disk';
 import { fetchGetShareInfo } from '@/service/api/disk/share';
+import { fetchAddRecent } from '@/service/api/disk/recent';
 import { getServiceBaseURL } from '@/utils/service';
 import { getToken } from '@/store/modules/auth/shared';
 import { getPreviewCategory } from '@/utils/file-type';
@@ -417,6 +418,9 @@ function handleRefresh() {
 function handleFileDblClick(file: Api.Disk.FileItem) {
   if (file.isFolder) return;
 
+  // 记录最近访问
+  fetchAddRecent(file.fileId);
+
   const category = getPreviewCategory(file.fileName);
 
   // 代码和 Markdown 文件使用新的 TextPreview
@@ -633,6 +637,11 @@ async function handleDeleteFile(file: Api.Disk.FileItem) {
   });
 }
 
+function handleFileFavorite(file: Api.Disk.FileItem) {
+  // TODO: 调用后端 API 添加收藏
+  window.$message?.success(`已收藏 "${file.fileName}"`);
+}
+
 function handleToolbarDelete() {
   const selectedFileIds = diskStore.selectedFiles;
   if (selectedFileIds.length === 0) return;
@@ -769,6 +778,7 @@ onMounted(async () => {
               v-if="diskStore.viewMode === 'grid'"
               :files="fileList"
               :loading="loading"
+              page-type="disk"
               @file-dbl-click="handleFileDblClick"
               @file-created="handleFileCreated"
               @folder-created="handleFolderCreated"
@@ -780,12 +790,14 @@ onMounted(async () => {
               @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
               @file-copy="handleFileAction('copy', $event)"
               @file-move="handleFileAction('move', $event)"
+              @file-favorite="handleFileFavorite"
               @refresh="handleRefresh"
             />
             <FileList
               v-if="diskStore.viewMode === 'list'"
               :files="fileList"
               :loading="loading"
+              page-type="disk"
               @file-dbl-click="handleFileDblClick"
               @file-created="handleFileCreated"
               @folder-created="handleFolderCreated"
@@ -797,6 +809,7 @@ onMounted(async () => {
               @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
               @file-copy="handleFileAction('copy', $event)"
               @file-move="handleFileAction('move', $event)"
+              @file-favorite="handleFileFavorite"
               @refresh="handleRefresh"
             />
           </div>

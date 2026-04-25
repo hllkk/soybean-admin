@@ -1248,6 +1248,8 @@ declare namespace App {
             sortTime: string;
             refresh: string;
             reload: string;
+            addFavorite: string;
+            removeFavorite: string;
           };
           form: {
             folderName: FormMsg;

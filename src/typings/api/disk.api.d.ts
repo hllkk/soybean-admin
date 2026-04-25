@@ -402,9 +402,9 @@ declare namespace Api {
       /** 访问时间 */
       visitTime: string;
       /** 原路径 */
-      originalPath: string;
+      filePath: string;
       /** 是否有媒体封面 */
-      mediaCover?: boolean;
+      hasMediaCover?: boolean;
     };
 
     /** 最近访问列表参数 */

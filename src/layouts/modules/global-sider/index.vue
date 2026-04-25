@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { GLOBAL_SIDER_MENU_ID } from '@/constants/app';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
+import { useRouteStore } from '@/store/modules/route';
 import GlobalLogo from '../global-logo/index.vue';
 
 defineOptions({
@@ -13,10 +14,11 @@ defineOptions({
 const route = useRoute();
 const appStore = useAppStore();
 const themeStore = useThemeStore();
+const routeStore = useRouteStore();
 
 const isTopHybridSidebarFirst = computed(() => themeStore.layout.mode === 'top-hybrid-sidebar-first');
 const isTopHybridHeaderFirst = computed(() => themeStore.layout.mode === 'top-hybrid-header-first');
-const isDiskLayout = computed(() => route.path.startsWith('/disk'));
+const isDiskLayout = computed(() => routeStore.currentModule === 'disk');
 
 const darkMenu = computed(
   () =>

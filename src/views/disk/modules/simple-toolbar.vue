@@ -102,22 +102,6 @@ const selectionActions = computed(() => {
   }
 });
 
-// 页面标题信息
-const pageTitle = computed(() => {
-  switch (props.pageType) {
-    case 'my-share':
-      return { icon: 'mdi:share-variant', title: $t('page.disk.myShare.title') };
-    case 'recent':
-      return { icon: 'mdi:history', title: $t('page.disk.recent.title') };
-    case 'trash':
-      return { icon: 'mdi:delete-variant', title: $t('page.disk.trash.title') };
-    case 'favorite':
-      return { icon: 'mdi:star', title: $t('page.disk.favorite.title') };
-    default:
-      return { icon: 'mdi:folder', title: '' };
-  }
-});
-
 // 处理排序选择
 function handleSortSelect(key: string) {
   const [field, order] = key.split('-');
@@ -177,48 +161,36 @@ function handleClearAll() {
 </script>
 
 <template>
-  <div class="flex items-center gap-8px px-8px py-12px flex-wrap sm:gap-16px sm:px-16px">
-    <!-- 左侧：标题 -->
-    <div class="flex items-center gap-12px flex-1">
-      <SvgIcon :icon="pageTitle.icon" :size="24" class="text-primary" />
-      <span class="text-16px font-medium">{{ pageTitle.title }}</span>
+  <div class="flex items-center justify-between gap-8px px-8px py-12px flex-wrap sm:gap-16px sm:px-16px">
+    <!-- 左侧：选中状态及操作按钮 -->
+    <div v-if="hasSelection" class="flex items-center gap-8px flex-1">
+      <NTag type="info" round>
+        {{ $t('page.disk.toolbar.selectedCount', { count: selectedCount }) }}
+      </NTag>
+      <NButton quaternary size="small" @click="handleClearSelection">
+        <template #icon>
+          <SvgIcon icon="mdi:close" :size="16" />
+        </template>
+      </NButton>
+      <NButtonGroup>
+        <NButton v-for="action in selectionActions" :key="action.key" @click="handleSelectionAction(action.key)">
+          <template #icon>
+            <SvgIcon :icon="action.icon" :size="18" />
+          </template>
+          <span class="hidden sm:inline">{{ action.label }}</span>
+        </NButton>
+      </NButtonGroup>
     </div>
 
-    <!-- 选中状态 -->
-    <template v-if="hasSelection">
-      <div class="flex items-center gap-8px">
-        <NTag type="info" round>
-          {{ $t('page.disk.toolbar.selectedCount', { count: selectedCount }) }}
-        </NTag>
-        <NButton quaternary size="small" @click="handleClearSelection">
-          <template #icon>
-            <SvgIcon icon="mdi:close" :size="16" />
-          </template>
-        </NButton>
-      </div>
-
-      <!-- 选中操作按钮 -->
-      <div class="flex items-center gap-8px sm:flex-1">
-        <NButtonGroup>
-          <NButton v-for="action in selectionActions" :key="action.key" @click="handleSelectionAction(action.key)">
-            <template #icon>
-              <SvgIcon :icon="action.icon" :size="18" />
-            </template>
-            <span class="hidden sm:inline">{{ action.label }}</span>
-          </NButton>
-        </NButtonGroup>
-      </div>
-    </template>
-
     <!-- 右侧：功能按钮组 -->
-    <div class="flex items-center gap-4px sm:gap-8px flex-shrink-0">
+    <div class="flex items-center gap-4px sm:gap-8px flex-shrink-0 ml-auto">
       <NButtonGroup>
         <!-- 清空全部按钮（仅最近访问和回收站显示，且未选中时） -->
         <NTooltip v-if="!hasSelection && (pageType === 'recent' || pageType === 'trash')" trigger="hover">
           <template #trigger>
             <NButton type="warning" @click="handleClearAll">
               <template #icon>
-                <SvgIcon :icon="pageType === 'recent' ? 'mdi:history-off' : 'mdi:delete-sweep'" :size="18" />
+                <SvgIcon :icon="pageType === 'recent' ? 'icon-park-outline-clear' : 'mdi-delete-sweep'" :size="18" />
               </template>
             </NButton>
           </template>
