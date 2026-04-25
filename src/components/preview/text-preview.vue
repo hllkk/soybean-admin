@@ -78,7 +78,7 @@ const tabs = ref<TabItem[]>([]);
 const activeTab = ref('');
 const treeSelectedKeys = ref<Array<string | number>>([]);
 const treeExpandedKeys = ref<Array<string | number>>([]);
-const collapsed = ref(false);
+const collapsed = ref(true);
 const treeData = ref<TabNode[]>([]);
 const abortControllerMap = new Map<string, AbortController>();
 

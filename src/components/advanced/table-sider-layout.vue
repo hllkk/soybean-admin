@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 
 defineOptions({
@@ -10,7 +11,7 @@ interface Props {
   siderTitle?: string;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   defaultExpanded: false,
   siderTitle: undefined
 });
@@ -18,6 +19,9 @@ withDefaults(defineProps<Props>(), {
 const time = new Date().getTime();
 const breakpoints = useBreakpoints(breakpointsTailwind);
 const isCollapse = breakpoints.smaller('lg');
+
+// 桌面端侧边栏折叠状态，默认关闭（与 defaultExpanded 语义一致）
+const desktopCollapsed = ref(!props.defaultExpanded);
 </script>
 
 <template>
@@ -56,7 +60,13 @@ const isCollapse = breakpoints.smaller('lg');
     </NGridItem>
   </NGrid>
   <NLayout v-else has-sider>
-    <NLayoutSider collapse-mode="transform" :collapsed-width="0" :width="320" show-trigger="bar">
+    <NLayoutSider
+      v-model:collapsed="desktopCollapsed"
+      collapse-mode="transform"
+      :collapsed-width="0"
+      :width="320"
+      show-trigger="bar"
+    >
       <NCard
         :bordered="false"
         size="small"
