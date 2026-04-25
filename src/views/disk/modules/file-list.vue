@@ -19,10 +19,16 @@ defineOptions({
 interface Props {
   files: Api.Disk.FileItem[];
   loading?: boolean;
+  /** 禁用内联创建功能（特殊页面使用） */
+  disableCreate?: boolean;
+  /** 外部选中的文件ID列表（特殊页面使用，覆盖 diskStore） */
+  selectedFiles?: CommonType.IdType[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  loading: false
+  loading: false,
+  disableCreate: false,
+  selectedFiles: undefined
 });
 
 interface Emits {
@@ -38,6 +44,8 @@ interface Emits {
   (e: 'refresh'): void;
   (e: 'fileRenameConfirm', newName: string): void;
   (e: 'fileRenameCancel'): void;
+  /** 选中状态变化（特殊页面使用） */
+  (e: 'selectionChange', selectedFiles: CommonType.IdType[]): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -194,8 +202,18 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
   return cols;
 });
 
+// 获取当前选中列表（优先使用 props，否则使用 diskStore）
+const currentSelectedFiles = computed(() => {
+  return props.selectedFiles ?? diskStore.selectedFiles;
+});
+
 function handleCheckedRowKeysChange(keys: CommonType.IdType[]) {
-  diskStore.setSelectedFiles(keys);
+  // 如果提供了 selectedFiles prop，则通过 emit 更新
+  if (props.selectedFiles !== undefined) {
+    emit('selectionChange', keys);
+  } else {
+    diskStore.setSelectedFiles(keys);
+  }
 }
 
 function handleRowDblClick(row: Api.Disk.FileItem) {
@@ -268,8 +286,13 @@ function getRowProps(row: Api.Disk.FileItem) {
     oncontextmenu: (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!diskStore.selectedFiles.includes(row.fileId)) {
-        diskStore.setSelectedFiles([row.fileId]);
+      if (!currentSelectedFiles.value.includes(row.fileId)) {
+        // 根据是否使用本地选中状态来更新
+        if (props.selectedFiles !== undefined) {
+          emit('selectionChange', [row.fileId]);
+        } else {
+          diskStore.setSelectedFiles([row.fileId]);
+        }
       }
       ctxState.value = { visible: true, x: e.clientX, y: e.clientY, type: 'file', targetFile: row };
     }
@@ -370,7 +393,7 @@ function handleCreateKeydown(e: KeyboardEvent) {
 
     <!-- 内联创建占位行 -->
     <div
-      v-if="diskStore.creatingType && !showEmpty"
+      v-if="!disableCreate && diskStore.creatingType && !showEmpty"
       class="flex items-center gap-8px px-12px py-8px bg-primary/5 dark:bg-primary/10"
     >
       <div class="flex items-center gap-8px flex-1">
@@ -395,7 +418,7 @@ function handleCreateKeydown(e: KeyboardEvent) {
       :columns="columns"
       :data="files"
       :loading="loading"
-      :checked-row-keys="diskStore.selectedFiles"
+      :checked-row-keys="currentSelectedFiles"
       :row-key="getRowKey"
       :row-props="getRowProps"
       size="small"

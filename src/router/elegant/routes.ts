@@ -77,6 +77,15 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'favorite',
+    path: '/favorite',
+    component: 'layout.base$view.favorite',
+    meta: {
+      title: 'favorite',
+      i18nKey: 'route.favorite'
+    }
+  },
+  {
     name: 'iframe-page',
     path: '/iframe-page/:url',
     component: 'layout.base$view.iframe-page',
@@ -269,12 +278,30 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'recent',
+    path: '/recent',
+    component: 'layout.base$view.recent',
+    meta: {
+      title: 'recent',
+      i18nKey: 'route.recent'
+    }
+  },
+  {
     name: 'share',
     path: '/share',
     component: 'layout.base$view.share',
     meta: {
       title: 'share',
       i18nKey: 'route.share'
+    }
+  },
+  {
+    name: 'trash',
+    path: '/trash',
+    component: 'layout.base$view.trash',
+    meta: {
+      title: 'trash',
+      i18nKey: 'route.trash'
     }
   },
   {

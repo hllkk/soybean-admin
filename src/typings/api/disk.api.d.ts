@@ -382,5 +382,77 @@ declare namespace Api {
 
     /** 用户分享列表响应 */
     type MyShareList = Common.PaginatingQueryRecord<MyShareItem>;
+
+    /** 最近访问项 */
+    type RecentItem = {
+      /** 记录ID */
+      recordId: CommonType.IdType;
+      /** 文件ID */
+      fileId: CommonType.IdType;
+      /** 文件名 */
+      fileName: string;
+      /** 文件类型 */
+      fileType: string;
+      /** 文件扩展名 */
+      fileExtension?: string;
+      /** 是否文件夹 */
+      isFolder: boolean;
+      /** 文件大小 */
+      fileSize: number;
+      /** 访问时间 */
+      visitTime: string;
+      /** 原路径 */
+      originalPath: string;
+      /** 是否有媒体封面 */
+      mediaCover?: boolean;
+    };
+
+    /** 最近访问列表参数 */
+    type RecentListParams = {
+      pageNum: number;
+      pageSize: number;
+      sortField?: 'fileName' | 'visitTime' | 'size' | null;
+      sortOrder?: 'asc' | 'desc' | null;
+    };
+
+    /** 最近访问列表响应 */
+    type RecentList = Common.PaginatingQueryRecord<RecentItem>;
+
+    /** 回收站项 */
+    type RecycleItem = {
+      /** 回收站记录ID */
+      recycleId: CommonType.IdType;
+      /** 原文件ID */
+      fileId: CommonType.IdType;
+      /** 文件名 */
+      fileName: string;
+      /** 文件类型 */
+      fileType: string;
+      /** 文件扩展名 */
+      fileExtension?: string;
+      /** 是否文件夹 */
+      isFolder: boolean;
+      /** 文件大小 */
+      fileSize: number;
+      /** 删除时间 */
+      deleteTime: string;
+      /** 原路径 */
+      originalPath: string;
+      /** 剩余保留天数 */
+      expireDays: number;
+      /** 是否有媒体封面 */
+      mediaCover?: boolean;
+    };
+
+    /** 回收站列表参数 */
+    type RecycleListParams = {
+      pageNum: number;
+      pageSize: number;
+      sortField?: 'fileName' | 'deleteTime' | 'size' | null;
+      sortOrder?: 'asc' | 'desc' | null;
+    };
+
+    /** 回收站列表响应 */
+    type RecycleList = Common.PaginatingQueryRecord<RecycleItem>;
   }
 }

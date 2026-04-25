@@ -305,8 +305,8 @@ const local: App.I18n.Schema = {
     system_dict: 'Dict Management',
     system_notice: 'Notice',
     system_setting: 'System Settings',
-    recently: 'Recent',
-    favorite: 'Favorite',
+    recent: 'Recent',
+    favorite: 'Favorites',
     share: 'My Share',
     trash: 'Trash',
     manage: 'System Management',
@@ -1534,6 +1534,21 @@ const local: App.I18n.Schema = {
         expired: 'Expired',
         viewCount: 'Views',
         downloadCount: 'Downloads'
+      },
+      recent: {
+        title: 'Recent',
+        remove: 'Remove',
+        clearAll: 'Clear All'
+      },
+      trash: {
+        title: 'Trash',
+        restore: 'Restore',
+        deletePermanently: 'Delete Permanently',
+        empty: 'Empty Trash'
+      },
+      favorite: {
+        title: 'Favorites',
+        remove: 'Remove from Favorites'
       }
     },
     share: {

@@ -301,7 +301,7 @@ const local: App.I18n.Schema = {
     system_dict: '字典管理',
     system_notice: '通知公告',
     system_setting: '系统设置',
-    recently: '最近访问',
+    recent: '最近访问',
     favorite: '我的收藏',
     share: '我的分享',
     trash: '回收站',
@@ -1526,6 +1526,21 @@ const local: App.I18n.Schema = {
         expired: '已过期',
         viewCount: '访问',
         downloadCount: '下载'
+      },
+      recent: {
+        title: '最近访问',
+        remove: '移除记录',
+        clearAll: '清空全部'
+      },
+      trash: {
+        title: '回收站',
+        restore: '恢复',
+        deletePermanently: '彻底删除',
+        empty: '清空回收站'
+      },
+      favorite: {
+        title: '我的收藏',
+        remove: '取消收藏'
       }
     },
     share: {

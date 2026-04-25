@@ -2,7 +2,7 @@ import { computed, nextTick, ref, shallowRef } from 'vue';
 import type { RouteRecordRaw } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useBoolean } from '@sa/hooks';
-import type { CustomRoute, ElegantConstRoute, LastLevelRouteKey, RouteKey, RouteMap } from '@elegant-router/types';
+import type { ElegantConstRoute, LastLevelRouteKey, RouteKey, RouteMap } from '@elegant-router/types';
 import type { RouteModule } from '@/typings/router.d.ts';
 import { router } from '@/router';
 import { fetchGetConstantRoutes, fetchGetUserRoutes, fetchIsRouteExist } from '@/service/api';

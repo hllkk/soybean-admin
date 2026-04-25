@@ -169,6 +169,7 @@ const routeMap: RouteMap = {
   "about": "/about",
   "admin": "/admin",
   "disk": "/disk",
+  "favorite": "/favorite",
   "iframe-page": "/iframe-page/:url",
   "init": "/init",
   "log": "/log",
@@ -186,7 +187,9 @@ const routeMap: RouteMap = {
   "manage_user": "/manage/user",
   "my-share": "/my-share",
   "notice-user": "/notice-user",
+  "recent": "/recent",
   "share": "/share",
+  "trash": "/trash",
   "user-center": "/user-center"
 };
 

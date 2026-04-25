@@ -15,10 +15,16 @@ defineOptions({
 interface Props {
   files: Api.Disk.FileItem[];
   loading?: boolean;
+  /** 禁用内联创建功能（特殊页面使用） */
+  disableCreate?: boolean;
+  /** 外部选中的文件ID列表（特殊页面使用，覆盖 diskStore） */
+  selectedFiles?: CommonType.IdType[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  loading: false
+  loading: false,
+  disableCreate: false,
+  selectedFiles: undefined
 });
 
 interface Emits {
@@ -35,6 +41,8 @@ interface Emits {
   (e: 'folderCreated', name: string): void;
   (e: 'fileRenameConfirm', newName: string): void;
   (e: 'fileRenameCancel'): void;
+  /** 选中状态变化（特殊页面使用） */
+  (e: 'selectionChange', selectedFiles: CommonType.IdType[]): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -44,8 +52,13 @@ const diskStore = useDiskStore();
 const gridScrollRef = ref<HTMLDivElement>();
 const scrollStyle = ref<Record<string, string>>({});
 
+// 获取当前选中列表（优先使用 props，否则使用 diskStore）
+const currentSelectedFiles = computed(() => {
+  return props.selectedFiles ?? diskStore.selectedFiles;
+});
+
 const isSelected = computed(() => (fileId: CommonType.IdType) => {
-  return diskStore.selectedFiles.includes(fileId);
+  return currentSelectedFiles.value.includes(fileId);
 });
 
 const showEmpty = computed(() => props.files.length === 0 && !props.loading);
@@ -77,12 +90,23 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
 }
 
 function handleSelect(file: Api.Disk.FileItem) {
-  const index = diskStore.selectedFiles.indexOf(file.fileId);
-  if (index === -1) {
-    diskStore.setSelectedFiles([...diskStore.selectedFiles, file.fileId]);
+  // 如果提供了 selectedFiles prop，则通过 emit 更新
+  if (props.selectedFiles !== undefined) {
+    const index = props.selectedFiles.indexOf(file.fileId);
+    if (index === -1) {
+      emit('selectionChange', [...props.selectedFiles, file.fileId]);
+    } else {
+      emit('selectionChange', props.selectedFiles.filter(id => id !== file.fileId));
+    }
   } else {
-    const newSelected = diskStore.selectedFiles.filter(id => id !== file.fileId);
-    diskStore.setSelectedFiles(newSelected);
+    // 否则使用 diskStore
+    const index = diskStore.selectedFiles.indexOf(file.fileId);
+    if (index === -1) {
+      diskStore.setSelectedFiles([...diskStore.selectedFiles, file.fileId]);
+    } else {
+      const newSelected = diskStore.selectedFiles.filter(id => id !== file.fileId);
+      diskStore.setSelectedFiles(newSelected);
+    }
   }
 }
 
@@ -120,8 +144,13 @@ function handleContextMenu(e: MouseEvent) {
     const fileId = (target as HTMLElement).dataset.fileId!;
     const file = props.files.find(f => String(f.fileId) === fileId);
     if (file) {
-      if (!diskStore.selectedFiles.includes(file.fileId)) {
-        diskStore.setSelectedFiles([file.fileId]);
+      if (!currentSelectedFiles.value.includes(file.fileId)) {
+        // 根据是否使用本地选中状态来更新
+        if (props.selectedFiles !== undefined) {
+          emit('selectionChange', [file.fileId]);
+        } else {
+          diskStore.setSelectedFiles([file.fileId]);
+        }
       }
       ctxState.value = { visible: true, x: e.clientX, y: e.clientY, type: 'file', targetFile: file };
       return;
@@ -283,7 +312,7 @@ watch(
       <div class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-16px px-16px pt-16px pb-48px">
         <!-- 内联创建占位卡片 -->
         <div
-          v-if="diskStore.creatingType"
+          v-if="!disableCreate && diskStore.creatingType"
           class="flex flex-col items-center px-8px py-16px rd-8px bg-primary/5 dark:bg-primary/10"
         >
           <div class="mb-8px mt-16px">

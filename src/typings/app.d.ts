@@ -1319,6 +1319,21 @@ declare namespace App {
             viewCount: string;
             downloadCount: string;
           };
+          recent: {
+            title: string;
+            remove: string;
+            clearAll: string;
+          };
+          trash: {
+            title: string;
+            restore: string;
+            deletePermanently: string;
+            empty: string;
+          };
+          favorite: {
+            title: string;
+            remove: string;
+          };
         };
         share: {
           verifyTitle: string;
