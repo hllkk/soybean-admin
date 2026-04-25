@@ -316,7 +316,8 @@ const local: App.I18n.Schema = {
     manage_role: '角色管理',
     manage_settings: '项目设置',
     manage_user: '用户管理',
-    manage_notice: '通知公告'
+    manage_notice: '通知公告',
+    'my-share': '我的分享'
   },
   menu: {
     root: '根目录',
@@ -1506,6 +1507,25 @@ const local: App.I18n.Schema = {
         oneDay: '1天',
         sevenDays: '7天',
         thirtyDays: '30天'
+      },
+      myShare: {
+        title: '我的分享',
+        fileName: '文件名',
+        shareLink: '分享链接',
+        createTime: '创建时间',
+        shareType: '分享方式',
+        expireTime: '过期时间',
+        public: '公开',
+        private: '私密',
+        copyLink: '复制链接',
+        cancelShare: '取消分享',
+        cancelConfirm: '确认取消此分享？',
+        cancelSuccess: '取消分享成功',
+        noShare: '暂无分享记录',
+        forever: '永久有效',
+        expired: '已过期',
+        viewCount: '访问',
+        downloadCount: '下载'
       }
     },
     share: {

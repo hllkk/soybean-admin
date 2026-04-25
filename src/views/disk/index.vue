@@ -7,6 +7,7 @@ import { useDiskStore } from '@/store/modules/disk';
 import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList, fetchGetQuota } from '@/service/api/disk';
 import { fetchIsAllowDownload, fetchIsAllowPackageDownload } from '@/service/api/disk/file';
 import { fetchGenerateStreamToken } from '@/service/api/disk';
+import { fetchGetShareInfo } from '@/service/api/disk/share';
 import { getServiceBaseURL } from '@/utils/service';
 import { getToken } from '@/store/modules/auth/shared';
 import { getPreviewCategory } from '@/utils/file-type';
@@ -451,6 +452,21 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
   }
 }
 
+/** 分享处理：先检查是否已分享，已分享则展示详情，未分享则打开配置 */
+async function handleShareFile(file: Api.Disk.FileItem) {
+  // 先尝试获取已存在的分享信息
+  const { data, error } = await fetchGetShareInfo(file.fileId);
+
+  if (!error && data) {
+    // 文件已分享，直接展示分享详情
+    shareResult.value = data;
+    shareResultVisible.value = true;
+  } else {
+    // 文件未分享或获取失败，打开分享配置对话框
+    diskStore.openShareDialog(file);
+  }
+}
+
 function handleFileAction(action: string, file: Api.Disk.FileItem) {
   switch (action) {
     case 'rename':
@@ -467,7 +483,7 @@ function handleFileAction(action: string, file: Api.Disk.FileItem) {
       handleDeleteFile(file);
       break;
     case 'share':
-      diskStore.openShareDialog(file);
+      handleShareFile(file);
       break;
     case 'download':
       handleDownload([file]);
@@ -534,6 +550,31 @@ async function handleDownload(files: Api.Disk.FileItem[]) {
 function handleToolbarDownload() {
   const selectedFiles = diskStore.currentFileList.filter(f => diskStore.selectedFiles.includes(f.fileId));
   handleDownload(selectedFiles);
+}
+
+/** 工具栏分享 — 选中单个文件时触发 */
+function handleToolbarShare() {
+  const selectedFileIds = diskStore.selectedFiles;
+  if (selectedFileIds.length !== 1) return;
+
+  const file = diskStore.currentFileList.find(f => f.fileId === selectedFileIds[0]);
+  if (!file) return;
+
+  handleShareFile(file);
+}
+
+/** 工具栏批量分享 — 多选时触发 */
+function handleToolbarBatchShare() {
+  const selectedFileIds = diskStore.selectedFiles;
+  if (selectedFileIds.length === 0) return;
+
+  const selectedFiles = diskStore.currentFileList.filter(f => selectedFileIds.includes(f.fileId));
+  if (selectedFiles.length === 0) return;
+
+  // 批量分享：打开分享配置对话框，处理多个文件
+  // 注意：目前分享功能不支持多文件，这里简化为只分享第一个文件
+  // 后续可以扩展为创建多个分享或打包分享
+  handleShareFile(selectedFiles[0]);
 }
 
 /** 分享成功处理 */
@@ -713,6 +754,8 @@ onMounted(async () => {
           <Toolbar
             @search="handleSearch"
             @refresh="handleRefresh"
+            @share="handleToolbarShare"
+            @batch-share="handleToolbarBatchShare"
             @download="handleToolbarDownload"
             @delete="handleToolbarDelete"
             @rename="handleToolbarRename"

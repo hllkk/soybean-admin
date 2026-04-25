@@ -5,6 +5,7 @@ import { transformElegantRoutesToVueRoutes } from '../elegant/transform';
 export const ROOT_ROUTE: ElegantConstRoute = {
   name: 'root',
   path: '/',
+  redirect: '/disk',
   meta: {
     title: 'root',
     constant: true

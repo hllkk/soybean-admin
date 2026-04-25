@@ -1300,6 +1300,25 @@ declare namespace App {
             sevenDays: string;
             thirtyDays: string;
           };
+          myShare: {
+            title: string;
+            fileName: string;
+            shareLink: string;
+            createTime: string;
+            shareType: string;
+            expireTime: string;
+            public: string;
+            private: string;
+            copyLink: string;
+            cancelShare: string;
+            cancelConfirm: string;
+            cancelSuccess: string;
+            noShare: string;
+            forever: string;
+            expired: string;
+            viewCount: string;
+            downloadCount: string;
+          };
         };
         share: {
           verifyTitle: string;

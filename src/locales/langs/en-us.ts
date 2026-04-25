@@ -320,7 +320,8 @@ const local: App.I18n.Schema = {
     manage_role: 'Role Management',
     manage_settings: 'Settings Management',
     manage_user: 'User Management',
-    manage_notice: 'Notice Management'
+    manage_notice: 'Notice Management',
+    'my-share': 'My Shares'
   },
   menu: {
     root: 'Root',
@@ -1514,6 +1515,25 @@ const local: App.I18n.Schema = {
         oneDay: '1 Day',
         sevenDays: '7 Days',
         thirtyDays: '30 Days'
+      },
+      myShare: {
+        title: 'My Shares',
+        fileName: 'File Name',
+        shareLink: 'Share Link',
+        createTime: 'Created',
+        shareType: 'Type',
+        expireTime: 'Expires',
+        public: 'Public',
+        private: 'Private',
+        copyLink: 'Copy Link',
+        cancelShare: 'Cancel Share',
+        cancelConfirm: 'Confirm to cancel this share?',
+        cancelSuccess: 'Share cancelled successfully',
+        noShare: 'No share records',
+        forever: 'Forever',
+        expired: 'Expired',
+        viewCount: 'Views',
+        downloadCount: 'Downloads'
       }
     },
     share: {

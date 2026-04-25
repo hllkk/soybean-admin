@@ -302,7 +302,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     const redirect = getRoutePath(redirectKey);
 
     if (redirect) {
-      const rootRoute: CustomRoute = { ...ROOT_ROUTE, redirect };
+      const rootRoute: ElegantConstRoute = { ...ROOT_ROUTE, redirect };
 
       router.removeRoute(rootRoute.name);
 

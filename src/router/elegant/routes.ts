@@ -249,6 +249,16 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'my-share',
+    path: '/my-share',
+    component: 'layout.disk$view.my-share',
+    meta: {
+      title: 'my-share',
+      i18nKey: 'route.my-share',
+      module: 'disk'
+    }
+  },
+  {
     name: 'notice-user',
     path: '/notice-user',
     component: 'layout.base$view.notice-user',

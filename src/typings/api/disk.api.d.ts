@@ -343,5 +343,44 @@ declare namespace Api {
       /** 修改时间 */
       modifyTime?: string;
     };
+
+    /** 用户分享列表项 */
+    type MyShareItem = {
+      /** 分享ID */
+      shareId: number;
+      /** 短链接ID */
+      shortId: string;
+      /** 文件名 */
+      fileName: string;
+      /** 文件MIME类型 */
+      contentType: string;
+      /** 是否文件夹 */
+      isFolder: boolean;
+      /** 创建时间 */
+      createDate: string;
+      /** 过期时间 */
+      expireDate?: string | null;
+      /** 是否私密 */
+      isPrivate: boolean;
+      /** 访问次数 */
+      viewCount: number;
+      /** 下载次数 */
+      downloadCount: number;
+    };
+
+    /** 用户分享列表请求参数 */
+    type MyShareListParams = {
+      /** 页码 */
+      pageNum: number;
+      /** 每页数量 */
+      pageSize: number;
+      /** 排序字段 */
+      sortField?: 'fileName' | 'createDate' | null;
+      /** 排序方式 */
+      sortOrder?: 'asc' | 'desc' | null;
+    };
+
+    /** 用户分享列表响应 */
+    type MyShareList = Common.PaginatingQueryRecord<MyShareItem>;
   }
 }
