@@ -606,7 +606,14 @@ async function initFile(file: BackendFileItem | Api.Disk.FileItem, fullPath?: st
   const fileId = (file.id ?? file.fileId) as string | number;
   const fileExt = (file.extendName ?? file.fileExtension) ?? '';
 
-  let path = fullPath || file.filePath || `/${fileName}`;
+  // filePath 是目录路径，不含文件名，需要组合构建完整路径
+  let path = fullPath;
+  if (!path) {
+    const filePath = file.filePath || '';
+    // 确保 filePath 不以 / 结尾，避免双斜杠
+    const normalizedPath = filePath.endsWith('/') ? filePath.slice(0, -1) : filePath;
+    path = normalizedPath ? `${normalizedPath}/${fileName}` : `/${fileName}`;
+  }
   if (!path.startsWith('/')) {
     path = `/${path}`;
   }
