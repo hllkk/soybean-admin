@@ -92,6 +92,9 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   const videoPreviewVisible = ref(false);
   const videoPreviewRow = ref<Api.Disk.FileItem | null>(null);
 
+  // 收藏文件ID缓存（用于跨页面状态同步）
+  const favoriteIds = ref<Set<number>>(new Set());
+
   // 计算属性：面包屑路径显示
   const breadcrumbPath = computed(() => {
     return currentPath.value.map(item => item.fileName);
@@ -103,6 +106,9 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
       item => item.transferType === 'upload' && item.status !== 'completed'
     );
   });
+
+  // 计算属性：是否收藏缓存就绪
+  const isFavoriteCacheReady = computed(() => favoriteIds.value.size >= 0);
 
   // 切换文件类型
   function setFileType(type: Api.Disk.FileType) {
@@ -305,6 +311,26 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     transferList.value = [];
   }
 
+  // 添加收藏ID到缓存
+  function addFavoriteIds(ids: number[]) {
+    ids.forEach(id => favoriteIds.value.add(id));
+  }
+
+  // 从缓存移除收藏ID
+  function removeFavoriteIds(ids: number[]) {
+    ids.forEach(id => favoriteIds.value.delete(id));
+  }
+
+  // 判断是否已收藏
+  function isFileFavorite(fileId: number): boolean {
+    return favoriteIds.value.has(fileId);
+  }
+
+  // 清空收藏缓存
+  function clearFavoriteCache() {
+    favoriteIds.value.clear();
+  }
+
   // 重置所有状态
   function $reset() {
     currentFileType.value = 'all';
@@ -343,10 +369,12 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     audioPreviewRow,
     videoPreviewVisible,
     videoPreviewRow,
+    favoriteIds,
     // computed
     breadcrumbPath,
     hasUploadTask,
     uploadingCount,
+    isFavoriteCacheReady,
     // actions
     setFileType,
     enterFolder,
@@ -370,6 +398,10 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     closeShareDialog,
     addUploadTasks,
     clearAllTransfers,
+    addFavoriteIds,
+    removeFavoriteIds,
+    isFileFavorite,
+    clearFavoriteCache,
     $reset,
     // URL同步
     getCurrentPathString,
