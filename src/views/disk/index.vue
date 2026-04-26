@@ -449,15 +449,15 @@ async function handleDeleteFile(file: Api.Disk.FileItem) {
 
 // 添加收藏（乐观更新）
 async function handleAddFavorite(file: Api.Disk.FileItem) {
-  const fileId = file.fileId;
+  const fileId = Number(file.fileId);
 
   // 乐观更新：立即更新 Store 缓存
-  diskStore.addFavoriteIds([fileId as number]);
+  diskStore.addFavoriteIds([fileId]);
 
-  const { error } = await fetchAddFavorite([fileId as number]);
+  const { error } = await fetchAddFavorite([fileId]);
   if (error) {
     // 回滚：从缓存移除
-    diskStore.removeFavoriteIds([fileId as number]);
+    diskStore.removeFavoriteIds([fileId]);
     window.$message?.error('收藏失败');
     return;
   }
@@ -468,15 +468,15 @@ async function handleAddFavorite(file: Api.Disk.FileItem) {
 
 // 取消收藏（乐观更新）
 async function handleRemoveFavorite(file: Api.Disk.FileItem) {
-  const fileId = file.fileId;
+  const fileId = Number(file.fileId);
 
   // 乐观更新：立即从 Store 缓存移除
-  diskStore.removeFavoriteIds([fileId as number]);
+  diskStore.removeFavoriteIds([fileId]);
 
-  const { error } = await fetchRemoveFavorite([fileId as number]);
+  const { error } = await fetchRemoveFavorite([fileId]);
   if (error) {
     // 回滚：重新添加到缓存
-    diskStore.addFavoriteIds([fileId as number]);
+    diskStore.addFavoriteIds([fileId]);
     window.$message?.error('取消收藏失败');
     return;
   }
@@ -492,6 +492,66 @@ function handleFileFavorite(file: Api.Disk.FileItem) {
   } else {
     handleAddFavorite(file);
   }
+}
+
+// 批量添加收藏（工具栏）
+async function handleToolbarAddFavorite() {
+  const selectedFileIds = diskStore.selectedFiles;
+  if (selectedFileIds.length === 0) return;
+
+  const selectedFiles = diskStore.currentFileList.filter(f => selectedFileIds.includes(f.fileId));
+  // 过滤出未收藏的文件
+  const filesToAdd = selectedFiles.filter(f => !f.isFavorite);
+  if (filesToAdd.length === 0) {
+    window.$message?.info('选中的文件都已收藏');
+    return;
+  }
+
+  const fileIds = filesToAdd.map(f => Number(f.fileId));
+
+  // 乐观更新
+  diskStore.addFavoriteIds(fileIds);
+
+  const { error } = await fetchAddFavorite(fileIds);
+  if (error) {
+    diskStore.removeFavoriteIds(fileIds);
+    window.$message?.error('批量收藏失败');
+    return;
+  }
+
+  window.$message?.success(`已收藏 ${filesToAdd.length} 个文件`);
+  diskStore.clearSelection();
+  getFileList();
+}
+
+// 批量取消收藏（工具栏）
+async function handleToolbarRemoveFavorite() {
+  const selectedFileIds = diskStore.selectedFiles;
+  if (selectedFileIds.length === 0) return;
+
+  const selectedFiles = diskStore.currentFileList.filter(f => selectedFileIds.includes(f.fileId));
+  // 过滤出已收藏的文件
+  const filesToRemove = selectedFiles.filter(f => f.isFavorite);
+  if (filesToRemove.length === 0) {
+    window.$message?.info('选中的文件都未收藏');
+    return;
+  }
+
+  const fileIds = filesToRemove.map(f => Number(f.fileId));
+
+  // 乐观更新
+  diskStore.removeFavoriteIds(fileIds);
+
+  const { error } = await fetchRemoveFavorite(fileIds);
+  if (error) {
+    diskStore.addFavoriteIds(fileIds);
+    window.$message?.error('批量取消收藏失败');
+    return;
+  }
+
+  window.$message?.success(`已取消收藏 ${filesToRemove.length} 个文件`);
+  diskStore.clearSelection();
+  getFileList();
 }
 
 function handleToolbarDelete() {
@@ -617,6 +677,8 @@ onMounted(async () => {
           @download="handleToolbarDownload"
           @delete="handleToolbarDelete"
           @rename="handleToolbarRename"
+          @add-favorite="handleToolbarAddFavorite"
+          @remove-favorite="handleToolbarRemoveFavorite"
           @show-transfer="transferPanelRef?.showDefault()"
         />
         <!-- Breadcrumb -->

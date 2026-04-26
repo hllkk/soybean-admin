@@ -239,7 +239,7 @@ function handleMoreSelect(key: string) {
     </div>
 
     <!-- 图标 -->
-    <div class="mb-8px mt-16px">
+    <div class="mb-8px mt-16px relative">
       <FileIcon
         :file-type="file.isFolder ? 'folder' : file.fileType"
         :extension="file.fileExtension"
@@ -247,6 +247,13 @@ function handleMoreSelect(key: string) {
         :media-cover="file.mediaCover"
         size="large"
       />
+      <!-- 收藏星标（左上角，z-index 提高防止被盖住） -->
+      <div
+        v-if="file.isFavorite"
+        class="absolute top-0 left-0 z-10 bg-yellow-400 dark:bg-yellow-500 rd-full p-2px shadow-sm"
+      >
+        <SvgIcon icon="mdi:star" :size="12" class="text-white" />
+      </div>
     </div>
 
     <!-- 名称：内联重命名模式 -->

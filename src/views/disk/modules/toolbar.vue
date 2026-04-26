@@ -19,6 +19,8 @@ interface Emits {
   (e: 'delete'): void;
   (e: 'rename'): void;
   (e: 'showTransfer'): void;
+  (e: 'addFavorite'): void;
+  (e: 'removeFavorite'): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -82,6 +84,18 @@ const selectedCount = computed(() => diskStore.selectedFiles.length);
 const hasSelection = computed(() => selectedCount.value > 0);
 // 是否多选
 const isMultipleSelection = computed(() => selectedCount.value > 1);
+
+// 选中文件中已收藏的数量
+const selectedFavoriteCount = computed(() => {
+  const selectedFiles = diskStore.currentFileList.filter(f => diskStore.selectedFiles.includes(f.fileId));
+  return selectedFiles.filter(f => f.isFavorite).length;
+});
+
+// 是否全部已收藏
+const allSelectedAreFavorite = computed(() => {
+  if (selectedCount.value === 0) return false;
+  return selectedFavoriteCount.value === selectedCount.value;
+});
 // 上传下拉选项
 const uploadOptions = computed<DropdownOption[]>(() => [
   {
@@ -258,6 +272,16 @@ function handleRename() {
   emit('rename');
 }
 
+// 添加收藏
+function handleAddFavorite() {
+  emit('addFavorite');
+}
+
+// 取消收藏
+function handleRemoveFavorite() {
+  emit('removeFavorite');
+}
+
 // 处理更多操作
 function handleMoreSelect(key: string) {
   const selectedFileItems = diskStore.currentFileList.filter(f => diskStore.selectedFiles.includes(f.fileId));
@@ -390,6 +414,20 @@ function handleRefresh() {
               <SvgIcon icon="mdi:share-variant-outline" :size="18" />
             </template>
             <span class="hidden sm:inline">{{ $t('page.disk.toolbar.batchShare') }}</span>
+          </NButton>
+
+          <!-- 收藏：全部已收藏时显示取消收藏，否则显示添加收藏 -->
+          <NButton v-if="allSelectedAreFavorite" @click="handleRemoveFavorite">
+            <template #icon>
+              <SvgIcon icon="mdi:star-off-outline" :size="18" />
+            </template>
+            <span class="hidden sm:inline">{{ $t('page.disk.contextMenu.removeFavorite') }}</span>
+          </NButton>
+          <NButton v-else @click="handleAddFavorite">
+            <template #icon>
+              <SvgIcon icon="mdi:star-outline" :size="18" />
+            </template>
+            <span class="hidden sm:inline">{{ $t('page.disk.contextMenu.addFavorite') }}</span>
           </NButton>
 
           <!-- 下载 -->

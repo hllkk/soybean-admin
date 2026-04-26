@@ -5,6 +5,7 @@ import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { fetchGetFavoriteList, fetchRemoveFavorite } from '@/service/api/disk/favorite';
+import { mapBackendFileList } from '@/service/api/disk/file';
 import SimpleToolbar from '../disk/modules/simple-toolbar.vue';
 import FileGrid from '../disk/modules/file-grid.vue';
 import FileList from '../disk/modules/file-list.vue';
@@ -45,7 +46,9 @@ async function getData() {
   endLoading();
 
   if (!error && data) {
-    favoriteList.value = data.rows || [];
+    // 后端返回 { list: [...], total: ... }，转换为前端格式
+    const mapped = mapBackendFileList({ list: data.list, total: data.total });
+    favoriteList.value = mapped.rows;
   } else {
     favoriteList.value = [];
   }

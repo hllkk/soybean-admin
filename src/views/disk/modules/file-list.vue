@@ -162,6 +162,9 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
           ]);
         }
         return h('div', { class: 'flex items-center gap-8px' }, [
+          row.isFavorite ? h('span', { class: 'mr-2px' }, [
+            h(SvgIcon, { icon: 'mdi:star', size: 14, class: 'text-yellow-400' })
+          ]) : null,
           h(FileIcon, {
             fileType: row.isFolder ? 'folder' : row.fileType,
             extension: row.fileExtension,

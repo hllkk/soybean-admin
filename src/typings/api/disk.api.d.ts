@@ -480,8 +480,13 @@ declare namespace Api {
       sortOrder: 'asc' | 'desc' | null;
     };
 
-    /** 收藏列表响应 */
-    type FavoriteList = Common.PaginatingQueryRecord<FileItem>;
+    /** 收藏列表响应（后端原始格式） */
+    type FavoriteList = {
+      list: FileItem[];
+      total: number;
+      page: number;
+      size: number;
+    };
 
     /** 收藏操作请求参数 */
     type FavoriteOperationParams = {

@@ -63,7 +63,8 @@ export function mapBackendFileList(backendData: { list: any[]; total: number }) 
     mediaCover: item.mediaCover || false,
     showCover: item.showCover || false,
     music: item.music,
-    video: item.video
+    video: item.video,
+    isFavorite: item.isFavorite || false
   }));
 
   return { rows: list, total: backendData.total || 0 };
