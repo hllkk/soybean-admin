@@ -47,7 +47,20 @@ declare namespace Api {
       music?: MusicInfo;
       /** 视频信息 */
       video?: VideoInfo;
-    }>;
+      /** MIME类型 (后端返回) */
+      contentType?: string;
+    }> & {
+      /** 兼容属性: 文件ID别名 */
+      id?: CommonType.IdType;
+      /** 兼容属性: 文件名别名 */
+      name?: string;
+      /** 兼容属性: 文件大小别名 */
+      size?: number;
+      /** 兼容属性: 是否文件夹别名 */
+      isDir?: boolean;
+      /** 兼容属性: 扩展名别名 */
+      extendName?: string;
+    };
 
     /** 音乐信息 */
     type MusicInfo = {

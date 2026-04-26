@@ -35,7 +35,7 @@ const initEditor = () => {
     },
     scrollBeyondLastLine: false,
     fontSize: 14,
-    fontFamily: '"Fira Code", "Consolas", "Courier New", monospace'
+    fontFamily: 'Menlo, Monaco, "Courier New", monospace'
   });
 
   // 监听内容变化

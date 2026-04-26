@@ -1,27 +1,16 @@
 <script lang="tsx" setup>
-import { computed, defineAsyncComponent, h, ref, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, h, ref, watch } from 'vue';
 import { useThrottleFn } from '@vueuse/core';
 import { storeToRefs } from 'pinia';
 import { useDialog } from 'naive-ui';
 import type { TreeOption } from 'naive-ui';
 import * as monaco from 'monaco-editor';
-import {
-  fetchCreateFile
-} from '@/service/api/disk/file';
-import { request } from '@/service/request';
-import {
-  fetchHistoryList,
-  fetchHistoryContent,
-  fetchRestoreHistory,
-  fetchDeleteHistory,
-  fetchSaveWithHistory
-} from '@/service/api/disk/editor';
+import { fetchGetFileList, fetchUpdateFileContent } from '@/service/api/disk/list';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
 import { useSvgIcon } from '@/hooks/common/icon';
 import { getServiceBaseURL } from '@/utils/service';
-import { formatFileSize } from '@/utils/format';
-import type { Editor } from '@/types/editor';
+import { formatFileSize, formatTime } from '@/utils/file';
 
 const VditorEditor = defineAsyncComponent(() => import('@/components/preview/vditor-editor.vue'));
 const MonacoEditor = defineAsyncComponent(() => import('@/components/preview/monaco-editor.vue'));
@@ -33,7 +22,7 @@ defineOptions({
 interface TabItem {
   path: string;
   title: string;
-  fileId: CommonType.IdType;
+  fileId: string | number;
   language: string;
   content: string;
   originalContent: string;
@@ -41,29 +30,43 @@ interface TabItem {
   hasHistoryVersion?: boolean;
 }
 
+/** 后端返回的文件项格式 */
+interface BackendFileItem {
+  id: number;
+  name: string;
+  size: number;
+  isDir: boolean;
+  extendName?: string;
+  contentType?: string;
+  filePath: string;
+  createTime: string;
+  updateTime: string;
+  mediaCover?: boolean;
+  showCover?: boolean;
+  music?: Api.Disk.MusicInfo;
+  video?: Api.Disk.VideoInfo;
+  /** 兼容属性: 文件ID别名 */
+  fileId?: number;
+  /** 兼容属性: 文件名别名 */
+  fileName?: string;
+  /** 兼容属性: 文件大小别名 */
+  fileSize?: number;
+  /** 兼容属性: 是否文件夹别名 */
+  isFolder?: boolean;
+  /** 兼容属性: 扩展名别名 */
+  fileExtension?: string;
+}
+
 interface TabNode extends TreeOption {
-  file?: Api.Disk.FileItem;
+  file?: BackendFileItem | Api.Disk.FileItem;
   fullPath?: string;
 }
 
-interface HistoryVersion {
-  id: CommonType.IdType;
-  createTime: string;
-  size: number;
+interface Props {
+  shareId?: string;
 }
 
-// 辅助函数：递归更新树节点的 children
-function updateTreeNodeChildren(nodes: TabNode[], key: string | number, children: TabNode[]): TabNode[] {
-  return nodes.map(node => {
-    if (node.key === key) {
-      return { ...node, children };
-    }
-    if (node.children && node.children.length > 0) {
-      return { ...node, children: updateTreeNodeChildren(node.children as TabNode[], key, children) };
-    }
-    return node;
-  });
-}
+const props = defineProps<Props>();
 
 const dialog = useDialog();
 const diskStore = useDiskStore();
@@ -72,25 +75,19 @@ const { SvgIconVNode } = useSvgIcon();
 const { textPreviewVisible, textPreviewRow } = storeToRefs(diskStore);
 
 const isFullscreen = ref(false);
+const showHistoryDrawer = ref(false);
 const markdownMode = ref(false);
 const saving = ref(false);
 const tabs = ref<TabItem[]>([]);
 const activeTab = ref('');
 const treeSelectedKeys = ref<Array<string | number>>([]);
-const treeExpandedKeys = ref<Array<string | number>>([]);
-const collapsed = ref(true);
+const currentContent = ref('');
+const cursorLine = ref(1);
+const cursorColumn = ref(1);
+const lastSaved = ref<Date | null>(null);
+const collapsed = ref(false);
 const treeData = ref<TabNode[]>([]);
 const abortControllerMap = new Map<string, AbortController>();
-
-// 历史版本
-const showHistoryDrawer = ref(false);
-const historyList = shallowRef<HistoryVersion[]>([]);
-const historyLoading = ref(false);
-const historyContent = ref<string | null>(null);
-const previewingHistoryId = ref<CommonType.IdType | null>(null);
-
-// 当前目录路径
-const currentTreePath = ref('/');
 
 const visible = computed({
   get: () => textPreviewVisible.value,
@@ -98,9 +95,7 @@ const visible = computed({
     textPreviewVisible.value = val;
   }
 });
-
 const currentFile = computed(() => textPreviewRow.value);
-
 const dialogWidth = computed(() => {
   return isFullscreen.value
     ? '!w-full !h-[100vh] !max-w-full !max-h-full !rounded-0'
@@ -119,11 +114,12 @@ const isModified = computed(() => {
   return currentTab.value?.isModified ?? false;
 });
 
-// 监听 tab 内容变化，更新 isModified 状态（关键：解决保存按钮不显示问题）
+// 监听 tab 内容变化，更新 isModified 状态
 watch(
   () => tabs.value,
   newTabs => {
     newTabs.forEach(tab => {
+      // 只有当 content 和 originalContent 都存在时才比较
       if (tab.originalContent !== undefined && tab.content !== undefined) {
         tab.isModified = tab.content !== tab.originalContent;
       }
@@ -132,6 +128,7 @@ watch(
   { deep: true }
 );
 
+const isShare = computed(() => Boolean(props.shareId));
 const hasHistoryVersion = computed(() => {
   return currentTab.value?.hasHistoryVersion ?? false;
 });
@@ -143,30 +140,17 @@ const currentLanguage = computed(() => {
   return lang?.id || 'plaintext';
 });
 
-// 面包屑路径 - 使用当前目录路径
-const breadcrumbSegments = computed(() => {
-  const path = currentTreePath.value;
-  return path.split('/').filter(Boolean);
-});
-
-// 保存文件（使用历史版本 API）
 async function saveTab(tab: TabItem) {
   if (!tab.isModified) return;
 
   try {
-    const { error } = await fetchSaveWithHistory({
+    await fetchUpdateFileContent({
       fileId: tab.fileId,
       content: tab.content
     });
-
-    if (!error) {
-      tab.originalContent = tab.content;
-      tab.isModified = false;
-      tab.hasHistoryVersion = true;
-      window.$message?.success(`文件 ${tab.title} 保存成功`);
-    } else {
-      throw new Error(error.message || '保存失败');
-    }
+    tab.originalContent = tab.content;
+    tab.isModified = false;
+    window.$message?.success(`文件 ${tab.title} 保存成功`);
   } catch (error) {
     window.$message?.error(`文件 ${tab.title} 保存失败: ${error}`);
     throw error;
@@ -175,8 +159,9 @@ async function saveTab(tab: TabItem) {
 
 async function handleSave() {
   const tab = currentTab.value;
-  if (!tab || !tab.isModified) return;
-
+  if (!tab || !tab.isModified) {
+    return;
+  }
   saving.value = true;
   try {
     await saveTab(tab);
@@ -202,7 +187,9 @@ async function handleClose() {
             }
             textPreviewVisible.value = false;
             resolve(true);
-          } catch {
+          } catch (error) {
+             
+            console.log(error);
             resolve(false);
           }
         },
@@ -223,12 +210,7 @@ async function handleClose() {
 function handleAfterLeave() {
   tabs.value = [];
   activeTab.value = '';
-  treeData.value = [];
-  treeExpandedKeys.value = [];
-  treeSelectedKeys.value = [];
-  currentTreePath.value = '/';
-  historyList.value = [];
-  showHistoryDrawer.value = false;
+  currentContent.value = '';
 }
 
 function toggleMarkdownMode() {
@@ -239,219 +221,80 @@ function toggleFullscreen() {
   isFullscreen.value = !isFullscreen.value;
 }
 
-// 返回根目录
-function handleGoHome() {
-  currentTreePath.value = '/';
-  initTreeData(currentFile.value!);
-}
-
-// 上一级
-function handleGoUp() {
-  if (currentTreePath.value === '/') return;
-
-  const segments = currentTreePath.value.split('/').filter(Boolean);
-  segments.pop();
-  currentTreePath.value = segments.length > 0 ? '/' + segments.join('/') : '/';
-
-  initTreeData(currentFile.value!);
-}
-
-// 刷新文件树
-async function handleRefreshTree() {
-  await initTreeData(currentFile.value!);
-}
-
-// 新建文件
-async function handleCreateFile() {
-  dialog.create({
-    title: '新建文件',
-    content: '请输入文件名：',
-    positiveText: '创建',
-    negativeText: '取消',
-    onPositiveClick: async () => {
-      // 使用 prompt 获取文件名（简化处理）
-    }
-  });
-
-  // 使用简单的输入方式
-  const fileName = await new Promise<string | null>(resolve => {
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = '请输入文件名（如 newfile.txt）';
-    input.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10000;padding:8px 12px;border-radius:4px;border:1px solid #ccc;width:300px;';
-
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:9999;';
-    overlay.addEventListener('click', () => {
-      document.body.removeChild(overlay);
-      document.body.removeChild(input);
-      resolve(null);
-    });
-
-    document.body.appendChild(overlay);
-    document.body.appendChild(input);
-    input.focus();
-
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const value = input.value.trim();
-        document.body.removeChild(overlay);
-        document.body.removeChild(input);
-        resolve(value || null);
-      } else if (e.key === 'Escape') {
-        document.body.removeChild(overlay);
-        document.body.removeChild(input);
-        resolve(null);
-      }
-    });
-  });
-
-  if (!fileName) return;
-
-  try {
-    const { error } = await fetchCreateFile({
-      fileName,
-      folderPath: currentTreePath.value === '/' ? '/' : currentTreePath.value
-    });
-
-    if (!error) {
-      window.$message?.success(`文件 ${fileName} 创建成功`);
-      await handleRefreshTree();
-    } else {
-      window.$message?.error(`创建失败: ${error.message || '未知错误'}`);
-    }
-  } catch (error) {
-    window.$message?.error(`创建失败: ${error}`);
-  }
-}
-
-// 历史版本功能
-async function loadHistoryVersions(fileId: CommonType.IdType) {
-  historyLoading.value = true;
-  try {
-    const { data, error } = await fetchHistoryList(fileId);
-    if (!error && data) {
-      historyList.value = data;
-    } else {
-      historyList.value = [];
-    }
-  } catch {
-    historyList.value = [];
-  } finally {
-    historyLoading.value = false;
-  }
-}
-
-async function previewHistoryVersion(version: HistoryVersion) {
-  historyLoading.value = true;
-  try {
-    const { data, error } = await fetchHistoryContent(version.id);
-    if (!error && data) {
-      historyContent.value = data;
-      previewingHistoryId.value = version.id;
-    }
-  } catch {
-    window.$message?.error('获取历史版本内容失败');
-  } finally {
-    historyLoading.value = false;
-  }
-}
-
-async function restoreHistoryVersion(version: HistoryVersion) {
-  const tab = currentTab.value;
-  if (!tab) return;
-
-  dialog.warning({
-    title: '恢复历史版本',
-    content: `确定要恢复到 ${version.createTime} 的版本吗？当前未保存的修改将被覆盖。`,
-    positiveText: '恢复',
-    negativeText: '取消',
-    onPositiveClick: async () => {
-      try {
-        const { error } = await fetchRestoreHistory(version.id);
-        if (!error) {
-          // 重新加载文件内容
-          const contentResult = await fetchHistoryContent(version.id);
-          if (!contentResult.error && contentResult.data) {
-            tab.content = contentResult.data;
-            tab.isModified = true;
-          }
-          window.$message?.success('恢复成功');
-          showHistoryDrawer.value = false;
-          historyContent.value = null;
-          previewingHistoryId.value = null;
-        } else {
-          window.$message?.error('恢复失败');
-        }
-      } catch {
-        window.$message?.error('恢复失败');
-      }
-    }
-  });
-}
-
-async function deleteHistoryVersion(version: HistoryVersion) {
-  dialog.warning({
-    title: '删除历史版本',
-    content: `确定要删除 ${version.createTime} 的版本吗？此操作不可恢复。`,
-    positiveText: '删除',
-    negativeText: '取消',
-    onPositiveClick: async () => {
-      try {
-        const { error } = await fetchDeleteHistory([version.id]);
-        if (!error) {
-          historyList.value = historyList.value.filter(v => v.id !== version.id);
-          if (previewingHistoryId.value === version.id) {
-            historyContent.value = null;
-            previewingHistoryId.value = null;
-          }
-          window.$message?.success('删除成功');
-        } else {
-          window.$message?.error('删除失败');
-        }
-      } catch {
-        window.$message?.error('删除失败');
-      }
-    }
-  });
-}
-
-function toggleHistoryDrawer() {
-  const tab = currentTab.value;
-  if (!tab) return;
-
-  if (!showHistoryDrawer.value) {
-    loadHistoryVersions(tab.fileId);
-  } else {
-    historyContent.value = null;
-    previewingHistoryId.value = null;
-  }
-  showHistoryDrawer.value = !showHistoryDrawer.value;
-}
-
-function isTextFile(file: Api.Disk.FileItem) {
+// 判断是否为文本文件
+const isTextFile = (file: BackendFileItem | Api.Disk.FileItem) => {
   const textExtensions = [
-    'txt', 'md', 'json', 'xml', 'yml', 'yaml', 'js', 'ts', 'vue', 'jsx', 'tsx',
-    'py', 'java', 'go', 'rs', 'cpp', 'c', 'h', 'css', 'scss', 'less', 'html', 'htm',
-    'sh', 'bash', 'zsh', 'ps1', 'sql', 'dockerfile', 'nginx', 'log', 'conf', 'ini', 'env'
+    'txt',
+    'md',
+    'json',
+    'xml',
+    'yml',
+    'yaml',
+    'js',
+    'ts',
+    'vue',
+    'jsx',
+    'tsx',
+    'py',
+    'java',
+    'go',
+    'rs',
+    'cpp',
+    'c',
+    'h',
+    'css',
+    'scss',
+    'less',
+    'html',
+    'htm',
+    'sh',
+    'bash',
+    'zsh',
+    'ps1',
+    'sql',
+    'dockerfile',
+    'nginx'
   ];
-  const suffix = file.fileExtension?.toLowerCase() || '';
-  return textExtensions.includes(suffix) || file.fileType?.includes('text');
-}
+  // 兼容两种属性名
+  const suffix = (file.extendName ?? file.fileExtension)?.toLowerCase() || '';
+  return textExtensions.includes(suffix) || file.contentType?.includes('text');
+};
 
-function getLanguageBySuffix(suffix: string): string {
+// 获取语言类型
+const getLanguageBySuffix = (suffix: string): string => {
   const langMap: Record<string, string> = {
-    js: 'javascript', ts: 'typescript', vue: 'html', jsx: 'javascript', tsx: 'typescript',
-    py: 'python', java: 'java', go: 'go', rs: 'rust', cpp: 'cpp', c: 'c', h: 'c',
-    css: 'css', scss: 'scss', less: 'less', html: 'html', htm: 'html',
-    json: 'json', xml: 'xml', yml: 'yaml', yaml: 'yaml', sql: 'sql',
-    sh: 'shell', bash: 'shell', md: 'markdown', txt: 'plaintext', log: 'plaintext',
-    conf: 'ini', ini: 'ini', env: 'plaintext'
+    js: 'javascript',
+    ts: 'typescript',
+    vue: 'html',
+    jsx: 'javascript',
+    tsx: 'typescript',
+    py: 'python',
+    java: 'java',
+    go: 'go',
+    rs: 'rust',
+    cpp: 'cpp',
+    c: 'c',
+    h: 'c',
+    css: 'css',
+    scss: 'scss',
+    less: 'less',
+    html: 'html',
+    htm: 'html',
+    json: 'json',
+    xml: 'xml',
+    yml: 'yaml',
+    yaml: 'yaml',
+    sql: 'sql',
+    sh: 'shell',
+    bash: 'shell',
+    md: 'markdown',
+    txt: 'plaintext'
   };
   return langMap[suffix] || 'plaintext';
-}
+};
 
-async function loadFileContent(file: Api.Disk.FileItem, tab: TabItem) {
+async function loadFileContent(file: BackendFileItem | Api.Disk.FileItem, tab: TabItem) {
+  // 取消该文件之前的请求
   if (abortControllerMap.has(tab.path)) {
     abortControllerMap.get(tab.path)?.abort();
     abortControllerMap.delete(tab.path);
@@ -463,14 +306,31 @@ async function loadFileContent(file: Api.Disk.FileItem, tab: TabItem) {
   try {
     const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
     const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
-    const url = `${baseURL}/preview/text/stream?fileId=${file.fileId}&t=${Date.now()}`;
+
+    let url = '';
+    const params: Record<string, string> = {};
+
+    // 兼容两种属性名
+    const fileId = (file.id ?? file.fileId) as string | number;
+
+    if (props.shareId) {
+      url = `${baseURL}/preview/shared/text/stream`;
+      params.shareId = props.shareId;
+      params.fileId = String(fileId);
+    } else {
+      url = `${baseURL}/preview/text/stream`;
+      params.fileId = String(fileId);
+    }
+
+    const queryString = new URLSearchParams(params).toString();
+    const fullUrl = `${url}?${queryString}&t=${new Date().getTime()}`;
 
     const headers = new Headers();
     if (authStore.token) {
       headers.append('Authorization', `Bearer ${authStore.token}`);
     }
 
-    const response = await fetch(url, {
+    const response = await fetch(fullUrl, {
       method: 'GET',
       headers,
       signal: abortController.signal
@@ -485,31 +345,25 @@ async function loadFileContent(file: Api.Disk.FileItem, tab: TabItem) {
 
     const decoder = new TextDecoder('utf-8');
 
+    // 节流更新内容，避免频繁渲染导致卡顿
     const updateContent = useThrottleFn((text: string) => {
       tab.content = text;
+      // 可以在这里更新 originalContent 如果需要
     }, 150);
 
     let result = '';
 
     while (true) {
+       
       const { done, value } = await reader.read();
       if (done) {
+        // 确保最后一次更新
         tab.content = result;
         tab.originalContent = result;
         break;
       }
       result += decoder.decode(value, { stream: true });
       updateContent(result);
-    }
-
-    // 加载完成后检查是否有历史版本 - 使用 tabs 数组中的响应式引用
-    const reactiveTab = tabs.value.find(t => t.path === tab.path);
-    if (reactiveTab && reactiveTab.fileId) {
-      // 使用 tab 的 fileId 调用历史版本 API
-      const { data: historyData, error: historyError } = await fetchHistoryList(reactiveTab.fileId);
-      if (!historyError && historyData && historyData.length > 0) {
-        reactiveTab.hasHistoryVersion = true;
-      }
     }
   } catch (error) {
     window.$message?.error?.(`加载文件失败: ${error}`);
@@ -518,157 +372,144 @@ async function loadFileContent(file: Api.Disk.FileItem, tab: TabItem) {
   }
 }
 
-async function initFile(file: Api.Disk.FileItem, fullPath?: string) {
-  let path = fullPath || file.filePath || `/${file.fileName}`;
+async function initFile(file: BackendFileItem | Api.Disk.FileItem, fullPath?: string) {
+  // 兼容两种属性名
+  const fileName = (file.name ?? file.fileName) as string;
+  const fileSize = (file.size ?? file.fileSize) as number;
+  const fileId = (file.id ?? file.fileId) as string | number;
+  const fileExt = (file.extendName ?? file.fileExtension) ?? '';
+
+  let path = fullPath || file.filePath || `/${fileName}`;
   if (!path.startsWith('/')) {
     path = `/${path}`;
   }
-
+  // 检查是否已打开
   const existingTab = tabs.value.find(tab => tab.path === path);
   if (existingTab) {
     activeTab.value = existingTab.path;
     return;
   }
 
-  if (file.fileSize && file.fileSize > 2 * 1024 * 1024) {
-    window.$message?.warning(`文件 ${file.fileName} 过大，暂不支持预览`);
+  // 检查文件大小限制 (例如 2MB)
+  if (fileSize && fileSize > 2 * 1024 * 1024) {
+    window.$message?.warning(`文件 ${fileName} 过大，暂不支持预览`);
     return;
   }
 
-  const suffix = file.fileExtension?.toLowerCase() || '';
+  // 创建新标签
+  const suffix = fileExt.toLowerCase();
   const newTab: TabItem = {
     path,
-    title: file.fileName,
-    fileId: file.fileId,
+    title: fileName,
+    fileId,
     language: getLanguageBySuffix(suffix),
     content: '',
     originalContent: '',
-    isModified: false,
-    hasHistoryVersion: false
+    isModified: false
   };
   tabs.value.push(newTab);
   activeTab.value = path;
 
+  // 获取响应式对象，确保更新内容时触发视图更新
   const reactiveTab = tabs.value.find(t => t.path === path);
   if (reactiveTab) {
+    // 加载文件内容
     await loadFileContent(file, reactiveTab);
   }
 }
 
+// 获取文件列表
 async function fetchFiles(directory: string): Promise<TabNode[]> {
-  // 使用文件树懒加载API
-  const { data, error } = await request<Editor.FileTreeNode[]>({
-    url: '/file-meta/file-tree',
-    method: 'get',
-    params: {
-      path: directory === '/' ? '' : directory
-    }
-  });
-
+  const params = {
+    userId: Number(authStore.userInfo.userId),
+    currentDirectory: encodeURIComponent(directory),
+    queryType: 'all' as const,
+    page: 1,
+    size: 1000
+  };
+  const { data, error } = await fetchGetFileList(params);
   if (error || !data) return [];
 
-  // 过滤出文件夹和文本文件
-  return data
-    .filter((f: Editor.FileTreeNode) => f.isDir || isTextFile({
-      fileId: f.id,
-      fileName: f.name,
-      fileExtension: f.name.split('.').pop() || '',
-      fileType: f.contentType,
-      isFolder: f.isDir
-    } as Api.Disk.FileItem))
-    .map((f: Editor.FileTreeNode) => {
+  return data.list
+    .filter(f => f.isDir || isTextFile(f))
+    .map(f => {
       let fullPath = directory === '/' ? `/${f.name}` : `${directory}/${f.name}`;
       fullPath = fullPath.replace(/\/\//g, '/');
       return {
         key: f.id,
         label: f.name,
-        // 文件：isLeaf=true
-        // 文件夹：hasChildren=true时isLeaf=false触发懒加载，hasChildren=false时isLeaf=true表示无子节点
-        isLeaf: !f.isDir || (f.isDir && !f.hasChildren),
-        // 有子节点的文件夹：children=[]触发懒加载
-        // 无子节点的文件夹或文件：children=undefined
-        children: f.isDir && f.hasChildren ? [] : undefined,
-        file: {
-          fileId: f.id,
-          fileName: f.name,
-          fileExtension: f.name.split('.').pop() || '',
-          fileType: f.contentType,
-          fileSize: f.size,
-          filePath: f.path,
-          isFolder: f.isDir,
-          createTime: f.updateTime,
-          updateTime: f.updateTime,
-          modifyTime: f.updateTime,
-          createBy: '',
-          updateBy: '',
-          parentId: null
-        } as Api.Disk.FileItem,
+        isLeaf: !f.isDir,
+        file: f,
         fullPath
       };
     });
 }
 
+// 懒加载目录
 const handleLoad = async (node: TabNode) => {
   if (!node.fullPath || node.isLeaf) return;
   const children = await fetchFiles(node.fullPath);
-  // 使用辅助函数递归更新树节点的 children，触发响应式更新
-  treeData.value = updateTreeNodeChildren(treeData.value, node.key as string | number, children);
+  node.children = children;
 };
 
-async function initTreeData(file: Api.Disk.FileItem) {
-  let path = file.filePath || `/${file.fileName}`;
+// 初始化树数据
+async function initTreeData(file: BackendFileItem | Api.Disk.FileItem) {
+  const fileName = (file.name ?? file.fileName) as string;
+  const fileId = (file.id ?? file.fileId) as string | number;
+
+  let path = file.filePath || `/${fileName}`;
   if (!path.startsWith('/')) path = `/${path}`;
 
   const lastSlashIndex = path.lastIndexOf('/');
   const parentDir = lastSlashIndex <= 0 ? '/' : path.substring(0, lastSlashIndex);
 
-  currentTreePath.value = parentDir;
   treeData.value = await fetchFiles(parentDir);
-  treeSelectedKeys.value = [file.fileId];
+
+  // 选中当前文件
+  treeSelectedKeys.value = [fileId];
 }
 
 const getFileIconClass = (filename: string) => {
   const extension = filename.split('.').pop()?.toLowerCase() || '';
   const iconMap: Record<string, string> = {
-    js: 'disk-file-js',
-    ts: 'disk-file-js',
-    vue: 'disk-file-html',
-    html: 'disk-file-html',
-    css: 'disk-file-css',
-    scss: 'disk-file-css',
-    less: 'disk-file-css',
-    json: 'disk-file-json',
-    md: 'disk-file-md',
-    txt: 'disk-file-txt',
-    xml: 'disk-file-other',
-    yaml: 'disk-file-yaml',
-    yml: 'disk-file-yaml',
-    sql: 'disk-file-other',
-    sh: 'disk-file-other',
-    bash: 'disk-file-other',
-    zsh: 'disk-file-other',
-    py: 'disk-file-python',
-    java: 'disk-file-other',
-    go: 'disk-file-other',
-    rs: 'disk-file-other',
-    c: 'disk-file-other',
-    cpp: 'disk-file-other',
-    dockerfile: 'disk-file-other',
-    log: 'disk-file-txt',
-    conf: 'disk-file-other',
-    ini: 'disk-file-other',
-    env: 'disk-file-other'
+    js: 'disk-file_js',
+    ts: 'disk-file_js',
+    vue: 'disk-file_html',
+    html: 'disk-file_html',
+    css: 'disk-file_css',
+    scss: 'disk-file_css',
+    less: 'disk-file_css',
+    json: 'disk-file_json',
+    md: 'disk-file_md',
+    txt: 'disk-file_txt',
+    xml: 'disk-file_other',
+    yaml: 'disk-file_yaml',
+    yml: 'disk-file_yaml',
+    sql: 'disk-file_other',
+    sh: 'disk-file_other',
+    bash: 'disk-file_other',
+    zsh: 'disk-file_other',
+    py: 'disk-file_python',
+    java: 'disk-file_other',
+    go: 'disk-file_other',
+    rs: 'disk-file_other',
+    c: 'disk-file_other',
+    cpp: 'disk-file_other',
+    dockerfile: 'disk-file_other'
   };
-  return iconMap[extension] || 'disk-file-other';
+  return iconMap[extension] || 'disk-file_other';
 };
 
 const renderTreeIcon = ({ option }: { option: TabNode }) => {
   if (option.file) {
-    if (option.file.isFolder) {
-      const renderIcon = SvgIconVNode({ localIcon: 'disk-list-folder', fontSize: 18 });
+    const isDir = (option.file.isDir ?? option.file.isFolder) ?? false;
+    const fileName = (option.file.name ?? option.file.fileName) as string;
+
+    if (isDir) {
+      const renderIcon = SvgIconVNode({ localIcon: 'disk-file_dir', fontSize: 18 });
       return renderIcon ? renderIcon() : undefined;
     }
-    const localIcon = getFileIconClass(option.file.fileName);
+    const localIcon = getFileIconClass(fileName);
     const renderIcon = SvgIconVNode({ localIcon, fontSize: 18 });
     return renderIcon ? renderIcon() : undefined;
   }
@@ -696,8 +537,12 @@ const handleCloseTab = (path: string) => {
       positiveText: '保存',
       negativeText: '放弃修改',
       onPositiveClick: async () => {
-        await saveTab(tab);
-        closeTabLogic(path);
+        try {
+          await saveTab(tab);
+          closeTabLogic(path);
+        } finally {
+          //
+        }
       },
       onNegativeClick: () => {
         closeTabLogic(path);
@@ -713,48 +558,38 @@ const renderTreeLabel = ({ option }: { option: TabNode }) => {
   return h('span', { class: 'text-sm' }, option.label);
 };
 
-const handleTreeSelect = async (keys: Array<string | number>, options: Array<TabNode | null>) => {
+// 树节点选择
+const handleTreeSelect = (keys: Array<string | number>, options: Array<TabNode | null>) => {
   treeSelectedKeys.value = keys;
   const node = options[0];
   if (node?.file) {
-    if (node.file.isFolder) {
-      // 点击文件夹：切换展开状态，让 NTree 的 on-load 处理懒加载
-      const nodeKey = node.key as string | number;
-      const isCurrentlyExpanded = treeExpandedKeys.value.includes(nodeKey);
-
-      if (isCurrentlyExpanded) {
-        // 折叠节点
-        treeExpandedKeys.value = treeExpandedKeys.value.filter(k => k !== nodeKey);
-      } else {
-        // 展开节点，NTree 会自动调用 handleLoad 进行懒加载
-        treeExpandedKeys.value = [...treeExpandedKeys.value, nodeKey];
-      }
-    } else {
-      // 点击文件：打开文件
+    const isDir = (node.file.isDir ?? node.file.isFolder) ?? false;
+    if (!isDir) {
       initFile(node.file, node.fullPath);
     }
   }
 };
 
+// 监听 activeTab 变化，同步树节点选中状态
 watch(activeTab, newPath => {
   const tab = tabs.value.find(t => t.path === newPath);
   if (tab) {
     treeSelectedKeys.value = [tab.fileId];
-    showHistoryDrawer.value = false;
-    historyContent.value = null;
-    previewingHistoryId.value = null;
   } else {
     treeSelectedKeys.value = [];
   }
 });
 
+// 切换标签
 function handleTabChange(path: string) {
   const tab = tabs.value.find(t => t.path === path);
   if (tab) {
+    currentContent.value = tab.content;
     markdownMode.value = path.toLowerCase().endsWith('.md');
   }
 }
 
+// 监听当前文件变化
 watch(currentFile, file => {
   if (file && visible.value) {
     initFile(file);
@@ -762,16 +597,11 @@ watch(currentFile, file => {
   }
 });
 
+// 监听显示状态
 watch(visible, show => {
   if (show && currentFile.value) {
     initFile(currentFile.value);
     initTreeData(currentFile.value);
-  } else if (!show) {
-    // 清理
-    tabs.value = [];
-    activeTab.value = '';
-    historyList.value = [];
-    showHistoryDrawer.value = false;
   }
 });
 </script>
@@ -779,6 +609,8 @@ watch(visible, show => {
 <template>
   <NModal
     v-model:show="visible"
+    :title="currentFile?.name"
+    :closable="true"
     preset="card"
     :mask-closable="false"
     class="text-preview-modal"
@@ -786,47 +618,41 @@ watch(visible, show => {
     :on-close="handleClose"
     @after-leave="handleAfterLeave"
   >
-    <!-- Header: 房子图标 + 面包屑 -->
-    <template #header>
-      <div class="flex items-center gap-2">
-        <NButton quaternary size="small" @click="handleGoHome">
-          <template #icon>
-            <icon-mdi-home-outline class="text-lg" />
-          </template>
-        </NButton>
-        <div class="flex items-center text-sm">
-          <template v-for="(segment, index) in breadcrumbSegments" :key="index">
-            <span class="text-gray-400 mx-1">/</span>
-            <span class="text-gray-600 dark:text-gray-300">{{ segment }}</span>
-          </template>
+    <!-- 头部工具栏 -->
+    <template #header-extra>
+      <div class="w-full flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <!-- <span class="font-medium">{{ currentFile?.name }}</span> -->
+          <NTag v-if="isModified" type="warning" size="small" class="mr-2">已修改</NTag>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- 历史版本按钮 -->
+          <NButton v-if="!isShare && hasHistoryVersion" size="small" @click="showHistoryDrawer = true">
+            历史版本
+          </NButton>
+          <!-- 保存按钮 -->
+          <NButton v-if="isModified" type="primary" size="small" :loading="saving" @click="handleSave">保存</NButton>
+          <!-- Markdown 预览切换 -->
+          <NButton v-if="isMarkdown" quaternary size="small" @click="toggleMarkdownMode">
+            <template #icon>
+              <icon-ic-baseline-remove-red-eye v-if="!markdownMode" />
+              <icon-mdi-invoice-text-edit-outline v-else />
+            </template>
+          </NButton>
+          <!-- 全屏 -->
+          <NButton quaternary size="small" @click="toggleFullscreen">
+            <template #icon>
+              <icon-gridicons-fullscreen-exit v-if="isFullscreen" />
+              <icon-gridicons-fullscreen v-else />
+            </template>
+          </NButton>
         </div>
       </div>
     </template>
-
-    <template #header-extra>
-      <div class="flex items-center gap-2">
-        <NTag v-if="isModified" type="warning" size="small">已修改</NTag>
-        <NButton v-if="isModified" type="primary" size="small" :loading="saving" @click="handleSave">保存</NButton>
-        <NButton v-if="hasHistoryVersion" size="small" @click="toggleHistoryDrawer">
-          历史版本
-        </NButton>
-        <NButton v-if="isMarkdown" quaternary size="small" @click="toggleMarkdownMode">
-          <template #icon>
-            <icon-ic-baseline-remove-red-eye v-if="!markdownMode" />
-            <icon-mdi-invoice-text-edit-outline v-else />
-          </template>
-        </NButton>
-        <NButton quaternary size="small" @click="toggleFullscreen">
-          <template #icon>
-            <icon-gridicons-fullscreen-exit v-if="isFullscreen" />
-            <icon-gridicons-fullscreen v-else />
-          </template>
-        </NButton>
-      </div>
-    </template>
-
+    <!-- 内容区域 -->
     <NLayout has-sider class="h-full">
       <NLayoutSider
+        v-if="!isShare"
         v-model:collapsed="collapsed"
         collapse-mode="transform"
         :collapsed-width="0"
@@ -837,30 +663,11 @@ watch(visible, show => {
         :native-scrollbar="false"
         class="h-full min-h-500px"
       >
-        <!-- 文件树顶部工具栏 -->
-        <div class="flex gap-1 p-2 border-b border-gray-200 dark:border-gray-700">
-          <NButton quaternary size="small" :disabled="currentTreePath === '/'" @click="handleGoUp">
-            <template #icon>
-              <icon-mdi-arrow-up class="text-base" />
-            </template>
-          </NButton>
-          <NButton quaternary size="small" @click="handleRefreshTree">
-            <template #icon>
-              <icon-mdi-refresh class="text-base" />
-            </template>
-          </NButton>
-          <NButton quaternary size="small" @click="handleCreateFile">
-            <template #icon>
-              <icon-mdi-plus class="text-base" />
-            </template>
-          </NButton>
-        </div>
-
         <NTree
           v-model:selected-keys="treeSelectedKeys"
-          v-model:expanded-keys="treeExpandedKeys"
           :data="treeData"
           block-line
+          expand-on-click
           selectable
           :on-load="handleLoad"
           :render-label="renderTreeLabel"
@@ -868,41 +675,7 @@ watch(visible, show => {
           @update:selected-keys="handleTreeSelect"
         />
       </NLayoutSider>
-
       <NLayoutContent class="h-full flex flex-col bg-white dark:bg-[#18181c]">
-        <!-- 历史版本抽屉 -->
-        <NDrawer v-model:show="showHistoryDrawer" :width="320" placement="right">
-          <NDrawerContent title="历史版本" closable>
-            <NSpin v-if="historyLoading" size="small" />
-            <div v-else-if="historyList.length === 0" class="text-center text-gray-400 py-4">
-              暂无历史版本
-            </div>
-            <div v-else class="flex flex-col gap-2">
-              <div
-                v-for="version in historyList"
-                :key="version.id"
-                class="p-2 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                <div class="flex justify-between items-center text-sm">
-                  <span>{{ version.createTime }}</span>
-                  <span class="text-gray-500">{{ formatFileSize(version.size) }}</span>
-                </div>
-                <div class="flex gap-1 mt-1">
-                  <NButton size="tiny" @click="previewHistoryVersion(version)">预览</NButton>
-                  <NButton size="tiny" type="primary" @click="restoreHistoryVersion(version)">恢复</NButton>
-                  <NButton size="tiny" type="error" @click="deleteHistoryVersion(version)">删除</NButton>
-                </div>
-              </div>
-            </div>
-
-            <!-- 预览内容 -->
-            <div v-if="historyContent" class="mt-4 p-2 border rounded">
-              <div class="text-sm font-medium mb-2">历史版本内容</div>
-              <pre class="text-xs overflow-auto max-h-[200px] whitespace-pre-wrap">{{ historyContent }}</pre>
-            </div>
-          </NDrawerContent>
-        </NDrawer>
-
         <div v-if="currentTab" class="h-full flex flex-col">
           <div class="border-b border-gray-200 dark:border-gray-700">
             <NTabs
@@ -929,6 +702,7 @@ watch(visible, show => {
               </NTabPane>
             </NTabs>
           </div>
+          <!-- 这里放置内容预览组件，暂时留空或根据逻辑补充 -->
           <div
             class="relative min-h-0 flex-1 overflow-auto p-4"
             :class="{ '!p-0 !overflow-hidden': isMarkdown && markdownMode }"
@@ -943,18 +717,22 @@ watch(visible, show => {
         </div>
         <div v-else class="h-full flex items-center justify-center text-gray-400">
           <div class="flex flex-col items-center gap-2">
-            <icon-mdi-file-document-outline class="text-6xl opacity-50" />
+            <div class="i-mdi-file-document-outline text-6xl opacity-50"></div>
             <span>请选择文件查看</span>
           </div>
         </div>
       </NLayoutContent>
     </NLayout>
-
+    <!-- 底部状态栏 -->
     <template #footer>
       <div class="flex items-center justify-between text-xs text-gray-500">
         <div class="flex items-center gap-4">
           <span>{{ currentLanguage }}</span>
-          <span>{{ currentFile?.fileSize ? formatFileSize(currentFile.fileSize) : '' }}</span>
+          <span>行 {{ cursorLine }}, 列 {{ cursorColumn }}</span>
+          <span>{{ currentFile?.size ? formatFileSize(currentFile.size) : '' }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span v-if="lastSaved">上次保存: {{ formatTime(lastSaved) }}</span>
         </div>
       </div>
     </template>
