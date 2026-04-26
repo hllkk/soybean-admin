@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList, fetchGetQuota } from '@/service/api/disk';
+import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList, fetchGetQuota, fetchAddFavorite, fetchRemoveFavorite } from '@/service/api/disk';
 import { fetchIsAllowDownload, fetchIsAllowPackageDownload } from '@/service/api/disk/file';
 import { fetchGenerateStreamToken } from '@/service/api/disk';
 import { fetchGetShareInfo } from '@/service/api/disk/share';
@@ -447,9 +447,51 @@ async function handleDeleteFile(file: Api.Disk.FileItem) {
   });
 }
 
-function handleFileFavorite(file: Api.Disk.FileItem) {
-  // TODO: 调用后端 API 添加收藏
+// 添加收藏（乐观更新）
+async function handleAddFavorite(file: Api.Disk.FileItem) {
+  const fileId = file.fileId;
+
+  // 乐观更新：立即更新 Store 缓存
+  diskStore.addFavoriteIds([fileId as number]);
+
+  const { error } = await fetchAddFavorite([fileId as number]);
+  if (error) {
+    // 回滚：从缓存移除
+    diskStore.removeFavoriteIds([fileId as number]);
+    window.$message?.error('收藏失败');
+    return;
+  }
+
   window.$message?.success(`已收藏 "${file.fileName}"`);
+  getFileList(); // 刷新列表以更新 isFavorite 状态
+}
+
+// 取消收藏（乐观更新）
+async function handleRemoveFavorite(file: Api.Disk.FileItem) {
+  const fileId = file.fileId;
+
+  // 乐观更新：立即从 Store 缓存移除
+  diskStore.removeFavoriteIds([fileId as number]);
+
+  const { error } = await fetchRemoveFavorite([fileId as number]);
+  if (error) {
+    // 回滚：重新添加到缓存
+    diskStore.addFavoriteIds([fileId as number]);
+    window.$message?.error('取消收藏失败');
+    return;
+  }
+
+  window.$message?.success(`已取消收藏 "${file.fileName}"`);
+  getFileList(); // 刷新列表以更新 isFavorite 状态
+}
+
+function handleFileFavorite(file: Api.Disk.FileItem) {
+  // 根据当前收藏状态决定添加或移除
+  if (file.isFavorite) {
+    handleRemoveFavorite(file);
+  } else {
+    handleAddFavorite(file);
+  }
 }
 
 function handleToolbarDelete() {
@@ -598,6 +640,8 @@ onMounted(async () => {
           @file-copy="handleFileAction('copy', $event)"
           @file-move="handleFileAction('move', $event)"
           @file-favorite="handleFileFavorite"
+          @file-add-favorite="handleAddFavorite"
+          @file-remove-favorite="handleRemoveFavorite"
           @refresh="handleRefresh"
         />
         <FileList
@@ -617,6 +661,8 @@ onMounted(async () => {
           @file-copy="handleFileAction('copy', $event)"
           @file-move="handleFileAction('move', $event)"
           @file-favorite="handleFileFavorite"
+          @file-add-favorite="handleAddFavorite"
+          @file-remove-favorite="handleRemoveFavorite"
           @refresh="handleRefresh"
         />
       </NCard>

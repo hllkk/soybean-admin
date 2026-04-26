@@ -49,6 +49,8 @@ declare namespace Api {
       video?: VideoInfo;
       /** MIME类型 (后端返回) */
       contentType?: string;
+      /** 是否已收藏 */
+      isFavorite?: boolean;
     }> & {
       /** 兼容属性: 文件ID别名 */
       id?: CommonType.IdType;

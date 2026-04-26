@@ -44,6 +44,8 @@ interface Emits {
   (e: 'fileCopy', file: Api.Disk.FileItem): void;
   (e: 'fileMove', file: Api.Disk.FileItem): void;
   (e: 'fileFavorite', file: Api.Disk.FileItem): void;
+  (e: 'fileAddFavorite', file: Api.Disk.FileItem): void;
+  (e: 'fileRemoveFavorite', file: Api.Disk.FileItem): void;
   (e: 'fileCreated', name: string): void;
   (e: 'folderCreated', name: string): void;
   (e: 'refresh'): void;
@@ -274,8 +276,8 @@ function handleContextSelect(key: string) {
     case 'move': if (file) emit('fileMove', file); break;
     case 'rename': if (file) emit('fileRename', file); break;
     case 'delete': if (file) emit('fileDelete', file); break;
-    case 'addFavorite': if (file) emit('fileFavorite', file); break;
-    case 'removeFavorite': if (file) emit('fileFavorite', file); break;
+    case 'addFavorite': if (file) emit('fileAddFavorite', file); break;
+    case 'removeFavorite': if (file) emit('fileRemoveFavorite', file); break;
     case 'view-grid': diskStore.setViewMode('grid'); break;
     case 'view-list': diskStore.setViewMode('list'); break;
     case 'sort-name': applySort('name'); break;
@@ -441,6 +443,7 @@ function handleCreateKeydown(e: KeyboardEvent) {
       :y="ctxState.y"
       :type="ctxState.type"
       :page-type="pageType"
+      :file-is-favorite="ctxState.targetFile?.isFavorite"
       @select="handleContextSelect"
     />
   </div>
