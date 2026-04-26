@@ -80,6 +80,7 @@ const saving = ref(false);
 const tabs = ref<TabItem[]>([]);
 const activeTab = ref('');
 const treeSelectedKeys = ref<Array<string | number>>([]);
+const currentDirectory = ref('/');
 const currentContent = ref('');
 const cursorLine = ref(1);
 const cursorColumn = ref(1);
@@ -489,10 +490,30 @@ async function initTreeData(file: BackendFileItem | Api.Disk.FileItem) {
   const lastSlashIndex = path.lastIndexOf('/');
   const parentDir = lastSlashIndex <= 0 ? '/' : path.substring(0, lastSlashIndex);
 
+  currentDirectory.value = parentDir;
   treeData.value = await fetchFiles(parentDir);
 
   // 选中当前文件
   treeSelectedKeys.value = [fileId];
+}
+
+// 上一级目录
+async function handleGoUp() {
+  if (currentDirectory.value === '/') return;
+  const parentDir = currentDirectory.value.substring(0, currentDirectory.value.lastIndexOf('/')) || '/';
+  currentDirectory.value = parentDir;
+  treeData.value = await fetchFiles(parentDir);
+  treeSelectedKeys.value = [];
+}
+
+// 刷新当前目录
+async function handleRefresh() {
+  treeData.value = await fetchFiles(currentDirectory.value);
+}
+
+// 新建文件/文件夹
+function handleCreate() {
+  window.$message?.info('新建功能开发中...');
 }
 
 const renderTreeIcon = ({ option }: { option: TabNode }) => {
@@ -661,6 +682,27 @@ watch(visible, show => {
         resizable
         :native-scrollbar="false"
       >
+        <!-- 文件树顶部工具栏 -->
+        <NButtonGroup class="w-full px-2 py-1 border-b border-gray-200 dark:border-gray-700">
+          <NButton quaternary size="small" class="flex-1" @click="handleGoUp">
+            <template #icon>
+              <icon-mdi-arrow-up />
+            </template>
+            <span class="hidden sm:inline">上一级</span>
+          </NButton>
+          <NButton quaternary size="small" class="flex-1" @click="handleRefresh">
+            <template #icon>
+              <icon-mdi-refresh />
+            </template>
+            <span class="hidden sm:inline">刷新</span>
+          </NButton>
+          <NButton quaternary size="small" class="flex-1" @click="handleCreate">
+            <template #icon>
+              <icon-mdi-plus />
+            </template>
+            <span class="hidden sm:inline">新建</span>
+          </NButton>
+        </NButtonGroup>
         <NTree
           v-model:selected-keys="treeSelectedKeys"
           :data="treeData"
