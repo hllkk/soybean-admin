@@ -469,5 +469,21 @@ declare namespace Api {
 
     /** 回收站列表响应 */
     type RecycleList = Common.PaginatingQueryRecord<RecycleItem>;
+
+    /** 收藏列表请求参数 */
+    type FavoriteListParams = {
+      pageNum: number;
+      pageSize: number;
+      sortField: 'name' | 'size' | 'modifyTime' | 'type' | null;
+      sortOrder: 'asc' | 'desc' | null;
+    };
+
+    /** 收藏列表响应 */
+    type FavoriteList = Common.PaginatingQueryRecord<FileItem>;
+
+    /** 收藏操作请求参数 */
+    type FavoriteOperationParams = {
+      fileIds: number[];
+    };
   }
 }
