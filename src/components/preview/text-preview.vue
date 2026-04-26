@@ -95,11 +95,38 @@ const visible = computed({
   }
 });
 const currentFile = computed(() => textPreviewRow.value);
-const dialogWidth = computed(() => {
+const dialogStyle = computed(() => {
   return isFullscreen.value
-    ? '!w-full !h-[100vh] !max-w-full !max-h-full !rounded-0'
-    : 'w-[900px] max-w-[95vw] h-[80vh]';
+    ? {
+        width: '100vw',
+        maxWidth: '100vw',
+        height: '100vh',
+        maxHeight: '100vh',
+        borderRadius: '0'
+      }
+    : {
+        width: '900px',
+        maxWidth: '95vw',
+        height: '80vh',
+        maxHeight: '80vh'
+      };
 });
+const modalContentStyle = {
+  padding: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1,
+  minHeight: 0,
+  overflow: 'hidden'
+} as const;
+const modalSectionStyle = {
+  flex: 'none'
+} as const;
+const siderContentStyle = {
+  height: '100%',
+  minHeight: 0,
+  overflow: 'auto'
+} as const;
 
 const currentTab = computed(() => {
   return tabs.value.find(tab => tab.path === activeTab.value);
@@ -582,7 +609,10 @@ watch(visible, show => {
     preset="card"
     :mask-closable="false"
     class="text-preview-modal"
-    :class="dialogWidth"
+    :style="dialogStyle"
+    :content-style="modalContentStyle"
+    :header-style="modalSectionStyle"
+    :footer-style="modalSectionStyle"
     :on-close="handleClose"
     @after-leave="handleAfterLeave"
   >
@@ -618,35 +648,35 @@ watch(visible, show => {
       </div>
     </template>
     <!-- 内容区域 -->
-    <NLayout has-sider class="h-full">
+    <NLayout has-sider class="h-full min-h-0 overflow-hidden">
       <NLayoutSider
         v-if="!isShare"
         v-model:collapsed="collapsed"
-        collapse-mode="transform"
+        collapse-mode="width"
         :collapsed-width="0"
         :width="240"
+        :show-collapsed-content="false"
         show-trigger="bar"
         bordered
         resizable
-        :native-scrollbar="false"
-        class="h-full overflow-hidden"
+        :native-scrollbar="true"
+        :content-style="siderContentStyle"
+        class="h-full min-h-0 overflow-hidden"
       >
-        <div class="h-full overflow-auto">
-          <NTree
-            v-model:selected-keys="treeSelectedKeys"
-            :data="treeData"
-            block-line
-            expand-on-click
-            selectable
-            :on-load="handleLoad"
-            :render-label="renderTreeLabel"
-            :render-prefix="renderTreeIcon"
-            @update:selected-keys="handleTreeSelect"
-          />
-        </div>
+        <NTree
+          v-model:selected-keys="treeSelectedKeys"
+          :data="treeData"
+          block-line
+          expand-on-click
+          selectable
+          :on-load="handleLoad"
+          :render-label="renderTreeLabel"
+          :render-prefix="renderTreeIcon"
+          @update:selected-keys="handleTreeSelect"
+        />
       </NLayoutSider>
-      <NLayoutContent class="h-full flex flex-col bg-white dark:bg-[#18181c]">
-        <div v-if="currentTab" class="h-full flex flex-col">
+      <NLayoutContent class="h-full min-h-0 min-w-0 flex flex-col overflow-hidden bg-white dark:bg-[#18181c]">
+        <div v-if="currentTab" class="h-full min-h-0 flex flex-col overflow-hidden">
           <div class="border-b border-gray-200 dark:border-gray-700">
             <NTabs
               v-model:value="activeTab"
@@ -713,17 +743,31 @@ watch(visible, show => {
 .text-preview-modal {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.text-preview-modal .n-card__content {
+:deep(.text-preview-modal .n-card) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+:deep(.text-preview-modal .n-card__content) {
   padding: 0;
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
-.text-preview-modal .n-tabs-nav {
+:deep(.text-preview-modal .n-card__header),
+:deep(.text-preview-modal .n-card__footer) {
+  flex: none;
+}
+
+:deep(.text-preview-modal .n-tabs-nav) {
   padding: 0 12px;
 }
 </style>
