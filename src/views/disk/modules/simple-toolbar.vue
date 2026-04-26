@@ -11,9 +11,11 @@ defineOptions({
 
 interface Props {
   /** 页面类型 */
-  pageType: 'my-share' | 'recent' | 'trash' | 'favorite';
+  pageType: 'disk' | 'my-share' | 'recent' | 'trash' | 'favorite';
   /** 选中数量 */
   selectedCount: number;
+  /** 选中文件的收藏状态（网盘页面使用） */
+  selectedFavoriteStatus?: 'all' | 'some' | 'none';
 }
 
 const props = defineProps<Props>();
@@ -26,6 +28,7 @@ interface Emits {
   (e: 'restore'): void;
   (e: 'deletePermanently'): void;
   (e: 'removeShare'): void;
+  (e: 'addFavorite'): void;
   (e: 'removeFavorite'): void;
   (e: 'download'): void;
   (e: 'clearRecent'): void;   // 删除选中的最近访问记录
@@ -78,6 +81,18 @@ const sortOptions = computed<DropdownOption[]>(() => [
 // 根据页面类型获取选中后的操作按钮
 const selectionActions = computed(() => {
   switch (props.pageType) {
+    case 'disk':
+      // 根据选中文件的收藏状态显示不同按钮
+      if (props.selectedFavoriteStatus === 'all') {
+        return [
+          { key: 'removeFavorite', label: $t('page.disk.favorite.remove'), icon: 'mdi:star-off-outline' },
+          { key: 'download', label: $t('page.disk.toolbar.download'), icon: 'mdi:download-outline' }
+        ];
+      }
+      return [
+        { key: 'addFavorite', label: $t('page.disk.favorite.add'), icon: 'mdi:star-outline' },
+        { key: 'download', label: $t('page.disk.toolbar.download'), icon: 'mdi:download-outline' }
+      ];
     case 'my-share':
       return [
         { key: 'removeShare', label: $t('page.disk.myShare.cancelShare'), icon: 'mdi:share-off-outline' },
@@ -135,6 +150,9 @@ function handleSelectionAction(key: string) {
       break;
     case 'removeShare':
       emit('removeShare');
+      break;
+    case 'addFavorite':
+      emit('addFavorite');
       break;
     case 'removeFavorite':
       emit('removeFavorite');

@@ -1542,6 +1542,7 @@ const local: App.I18n.Schema = {
       },
       favorite: {
         title: '我的收藏',
+        add: '添加收藏',
         remove: '取消收藏'
       }
     },

@@ -1550,6 +1550,7 @@ const local: App.I18n.Schema = {
       },
       favorite: {
         title: 'Favorites',
+        add: 'Add to Favorites',
         remove: 'Remove from Favorites'
       }
     },

@@ -1334,6 +1334,7 @@ declare namespace App {
           };
           favorite: {
             title: string;
+            add: string;
             remove: string;
           };
         };
