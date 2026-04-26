@@ -35,7 +35,6 @@ const initEditor = () => {
     },
     scrollBeyondLastLine: false,
     fontSize: 14,
-    fontFamily: 'Menlo, Monaco, "Courier New", monospace'
   });
 
   // 监听内容变化

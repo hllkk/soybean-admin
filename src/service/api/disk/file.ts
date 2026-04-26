@@ -219,10 +219,12 @@ export function getPreviewUrl(fileId: CommonType.IdType): string {
 
 /** 保存文件内容 */
 export function fetchSaveFileContent(data: { fileId: string | number; content: string }) {
+  // 后端期望 fileId 为 string 类型
+  const fileIdStr = String(data.fileId);
   return request<boolean>({
     url: '/file-meta/updateContent',
     method: 'post',
-    data
+    data: { fileId: fileIdStr, content: data.content }
   });
 }
 

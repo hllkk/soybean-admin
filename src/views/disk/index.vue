@@ -737,146 +737,148 @@ onMounted(async () => {
 </script>
 
 <template>
-  <TableSiderLayout sider-title="文件管理">
-    <template #header-extra>
-      <NTooltip trigger="hover">
-        <template #trigger>
-          <NSwitch v-model:value="showCapacity" :round="false" />
-        </template>
-        显示容量
-      </NTooltip>
-    </template>
-    <template #sider>
-      <NDivider dashed />
-      <FileTypeMenu
-        :show-capacity="showCapacity"
-        :quota-info="quotaInfo"
-        :quota-loading="quotaLoading"
-      />
-    </template>
+  <div class="h-full">
+    <TableSiderLayout sider-title="文件管理">
+      <template #header-extra>
+        <NTooltip trigger="hover">
+          <template #trigger>
+            <NSwitch v-model:value="showCapacity" :round="false" />
+          </template>
+          显示容量
+        </NTooltip>
+      </template>
+      <template #sider>
+        <NDivider dashed />
+        <FileTypeMenu
+          :show-capacity="showCapacity"
+          :quota-info="quotaInfo"
+          :quota-loading="quotaLoading"
+        />
+      </template>
 
-    <div class="h-full flex-col-stretch gap-12px overflow-hidden lt-sm:overflow-auto">
-      <!-- File Display Area -->
-      <NCard :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
-        <div class="h-full flex flex-col">
-          <!-- Toolbar -->
-          <Toolbar
-            @search="handleSearch"
-            @refresh="handleRefresh"
-            @share="handleToolbarShare"
-            @batch-share="handleToolbarBatchShare"
-            @download="handleToolbarDownload"
-            @delete="handleToolbarDelete"
-            @rename="handleToolbarRename"
-            @show-transfer="transferPanelRef?.showDefault()"
-          />
-          <!-- Breadcrumb -->
-          <Breadcrumb :total-count="totalCount" />
-          <!-- File Content -->
-          <div class="flex-1 overflow-hidden lt-sm:flex-initial lt-sm:overflow-auto">
-            <FileGrid
-              v-if="diskStore.viewMode === 'grid'"
-              :files="fileList"
-              :loading="loading"
-              page-type="disk"
-              @file-dbl-click="handleFileDblClick"
-              @file-created="handleFileCreated"
-              @folder-created="handleFolderCreated"
-              @file-share="handleFileAction('share', $event)"
-              @file-download="handleFileAction('download', $event)"
-              @file-delete="handleFileAction('delete', $event)"
-              @file-rename="handleFileAction('rename', $event)"
-              @file-rename-confirm="handleRenameConfirm"
-              @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
-              @file-copy="handleFileAction('copy', $event)"
-              @file-move="handleFileAction('move', $event)"
-              @file-favorite="handleFileFavorite"
+      <div class="h-full flex-col-stretch gap-12px overflow-hidden lt-sm:overflow-auto">
+        <!-- File Display Area -->
+        <NCard :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
+          <div class="h-full flex flex-col">
+            <!-- Toolbar -->
+            <Toolbar
+              @search="handleSearch"
               @refresh="handleRefresh"
+              @share="handleToolbarShare"
+              @batch-share="handleToolbarBatchShare"
+              @download="handleToolbarDownload"
+              @delete="handleToolbarDelete"
+              @rename="handleToolbarRename"
+              @show-transfer="transferPanelRef?.showDefault()"
             />
-            <FileList
-              v-if="diskStore.viewMode === 'list'"
-              :files="fileList"
-              :loading="loading"
-              page-type="disk"
-              @file-dbl-click="handleFileDblClick"
-              @file-created="handleFileCreated"
-              @folder-created="handleFolderCreated"
-              @file-share="handleFileAction('share', $event)"
-              @file-download="handleFileAction('download', $event)"
-              @file-delete="handleFileAction('delete', $event)"
-              @file-rename="handleFileAction('rename', $event)"
-              @file-rename-confirm="handleRenameConfirm"
-              @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
-              @file-copy="handleFileAction('copy', $event)"
-              @file-move="handleFileAction('move', $event)"
-              @file-favorite="handleFileFavorite"
-              @refresh="handleRefresh"
+            <!-- Breadcrumb -->
+            <Breadcrumb :total-count="totalCount" />
+            <!-- File Content -->
+            <div class="flex-1 overflow-hidden lt-sm:flex-initial lt-sm:overflow-auto">
+              <FileGrid
+                v-if="diskStore.viewMode === 'grid'"
+                :files="fileList"
+                :loading="loading"
+                page-type="disk"
+                @file-dbl-click="handleFileDblClick"
+                @file-created="handleFileCreated"
+                @folder-created="handleFolderCreated"
+                @file-share="handleFileAction('share', $event)"
+                @file-download="handleFileAction('download', $event)"
+                @file-delete="handleFileAction('delete', $event)"
+                @file-rename="handleFileAction('rename', $event)"
+                @file-rename-confirm="handleRenameConfirm"
+                @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
+                @file-copy="handleFileAction('copy', $event)"
+                @file-move="handleFileAction('move', $event)"
+                @file-favorite="handleFileFavorite"
+                @refresh="handleRefresh"
+              />
+              <FileList
+                v-if="diskStore.viewMode === 'list'"
+                :files="fileList"
+                :loading="loading"
+                page-type="disk"
+                @file-dbl-click="handleFileDblClick"
+                @file-created="handleFileCreated"
+                @folder-created="handleFolderCreated"
+                @file-share="handleFileAction('share', $event)"
+                @file-download="handleFileAction('download', $event)"
+                @file-delete="handleFileAction('delete', $event)"
+                @file-rename="handleFileAction('rename', $event)"
+                @file-rename-confirm="handleRenameConfirm"
+                @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
+                @file-copy="handleFileAction('copy', $event)"
+                @file-move="handleFileAction('move', $event)"
+                @file-favorite="handleFileFavorite"
+                @refresh="handleRefresh"
+              />
+            </div>
+          </div>
+        </NCard>
+      </div>
+
+      <!-- Transfer Panel -->
+      <TransferPanel ref="transferPanelRef" />
+
+      <!-- Move/Copy Dialog -->
+      <MoveCopyDialog @success="getFileList" />
+
+      <!-- Share Dialog -->
+      <ShareDialog @success="handleShareSuccess" />
+
+      <!-- Share Result Dialog -->
+      <ShareResultDialog
+        v-model:visible="shareResultVisible"
+        :result="shareResult"
+        @cancelled="handleShareCancelled"
+      />
+
+      <!-- File Preview Overlay -->
+      <FilePreviewOverlay
+        v-model:visible="previewVisible"
+        :file="previewFile"
+      />
+
+      <!-- Audio Preview Overlay -->
+      <Teleport to="body">
+        <Transition name="fade">
+          <div
+            v-if="diskStore.audioPreviewVisible"
+            class="fixed inset-0 z-9999 flex items-center justify-center"
+            :class="isAudioCompact ? 'pointer-events-none' : 'bg-black/40 backdrop-blur-sm'"
+            @click.self="handleAudioOverlayClick"
+          >
+            <AudioPreview
+              v-if="diskStore.audioPreviewRow && audioPlaylist.length > 0"
+              :playlist="audioPlaylist"
+              :initial-index="currentAudioIndex"
+              @close="handleAudioClose"
+              @compact-change="isAudioCompact = $event"
             />
           </div>
-        </div>
-      </NCard>
-    </div>
+        </Transition>
+      </Teleport>
 
-    <!-- Transfer Panel -->
-    <TransferPanel ref="transferPanelRef" />
+      <!-- Video Preview Overlay -->
+      <Teleport to="body">
+        <VideoPreview
+          v-if="diskStore.videoPreviewVisible && diskStore.videoPreviewRow && videoStreamToken"
+          :src="videoStreamBaseUrl"
+          :file-name="diskStore.videoPreviewRow.fileName"
+          :stream-token="videoStreamToken"
+          @close="handleVideoClose"
+          @token-update="handleVideoTokenUpdate"
+        />
+      </Teleport>
 
-    <!-- Move/Copy Dialog -->
-    <MoveCopyDialog @success="getFileList" />
+      <!-- Image Preview -->
+      <ImagePreview ref="imagePreviewRef" />
+    </TableSiderLayout>
 
-    <!-- Share Dialog -->
-    <ShareDialog @success="handleShareSuccess" />
-
-    <!-- Share Result Dialog -->
-    <ShareResultDialog
-      v-model:visible="shareResultVisible"
-      :result="shareResult"
-      @cancelled="handleShareCancelled"
-    />
-
-    <!-- File Preview Overlay -->
-    <FilePreviewOverlay
-      v-model:visible="previewVisible"
-      :file="previewFile"
-    />
-
-    <!-- Audio Preview Overlay -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="diskStore.audioPreviewVisible"
-          class="fixed inset-0 z-9999 flex items-center justify-center"
-          :class="isAudioCompact ? 'pointer-events-none' : 'bg-black/40 backdrop-blur-sm'"
-          @click.self="handleAudioOverlayClick"
-        >
-          <AudioPreview
-            v-if="diskStore.audioPreviewRow && audioPlaylist.length > 0"
-            :playlist="audioPlaylist"
-            :initial-index="currentAudioIndex"
-            @close="handleAudioClose"
-            @compact-change="isAudioCompact = $event"
-          />
-        </div>
-      </Transition>
-    </Teleport>
-
-    <!-- Video Preview Overlay -->
-    <Teleport to="body">
-      <VideoPreview
-        v-if="diskStore.videoPreviewVisible && diskStore.videoPreviewRow && videoStreamToken"
-        :src="videoStreamBaseUrl"
-        :file-name="diskStore.videoPreviewRow.fileName"
-        :stream-token="videoStreamToken"
-        @close="handleVideoClose"
-        @token-update="handleVideoTokenUpdate"
-      />
-    </Teleport>
-
-    <!-- Text Preview (opsMaster version) -->
+    <!-- Text Preview - 放在 TableSiderLayout 外面，避免布局切换导致组件销毁 -->
     <TextPreview />
-
-    <!-- Image Preview -->
-    <ImagePreview ref="imagePreviewRef" />
-  </TableSiderLayout>
+  </div>
 </template>
 
 <style scoped lang="scss">

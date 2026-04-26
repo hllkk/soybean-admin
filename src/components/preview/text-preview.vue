@@ -5,12 +5,17 @@ import { storeToRefs } from 'pinia';
 import { useDialog } from 'naive-ui';
 import type { TreeOption } from 'naive-ui';
 import * as monaco from 'monaco-editor';
-import { fetchGetFileList, fetchUpdateFileContent } from '@/service/api/disk/list';
+import { fetchGetFileList } from '@/service/api/disk/list';
+import { fetchSaveWithHistory, fetchRestoreHistory, fetchHistoryList } from '@/service/api/disk/editor';
+import { fetchRefreshToken } from '@/service/api';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
 import { getServiceBaseURL } from '@/utils/service';
+import { localStg } from '@/utils/storage';
 import { formatFileSize, formatTime } from '@/utils/file';
+import { $t } from '@/locales';
 import FileIcon from '@/views/disk/modules/file-icon.vue';
+import HistoryVersionPopover from './history-version-popover.vue';
 
 const VditorEditor = defineAsyncComponent(() => import('@/components/preview/vditor-editor.vue'));
 const MonacoEditor = defineAsyncComponent(() => import('@/components/preview/monaco-editor.vue'));
@@ -74,12 +79,12 @@ const authStore = useAuthStore();
 const { textPreviewVisible, textPreviewRow } = storeToRefs(diskStore);
 
 const isFullscreen = ref(false);
-const showHistoryDrawer = ref(false);
 const markdownMode = ref(false);
 const saving = ref(false);
 const tabs = ref<TabItem[]>([]);
 const activeTab = ref('');
 const treeSelectedKeys = ref<Array<string | number>>([]);
+const treeExpandedKeys = ref<Array<string | number>>([]);
 const currentDirectory = ref('/');
 const currentContent = ref('');
 const cursorLine = ref(1);
@@ -88,6 +93,78 @@ const lastSaved = ref<Date | null>(null);
 const collapsed = ref(false);
 const treeData = ref<TabNode[]>([]);
 const abortControllerMap = new Map<string, AbortController>();
+let refreshTokenPromise: Promise<boolean> | null = null;
+
+// 授权错误码配置
+const AUTH_ERROR_CODES = {
+  success: '0000',
+  expiredToken: ['9999', '9998', '3333'],
+  logout: ['8888', '8889', '7'],
+  modalLogout: ['7777', '7778']
+};
+
+// 处理授权错误
+async function handleAuthError(code: string, msg: string): Promise<boolean> {
+  // Token 过期，尝试刷新
+  if (AUTH_ERROR_CODES.expiredToken.includes(code)) {
+    if (!refreshTokenPromise) {
+      refreshTokenPromise = handleRefreshToken();
+    }
+    const success = await refreshTokenPromise;
+    setTimeout(() => {
+      refreshTokenPromise = null;
+    }, 1000);
+    return success;
+  }
+
+  // 弹窗提示登出
+  if (AUTH_ERROR_CODES.modalLogout.includes(code)) {
+    window.$dialog?.error({
+      title: $t('common.error'),
+      content: msg,
+      positiveText: $t('common.confirm'),
+      maskClosable: false,
+      closeOnEsc: false,
+      onPositiveClick() {
+        authStore.resetStore();
+      },
+      onClose() {
+        authStore.resetStore();
+      }
+    });
+    return false;
+  }
+
+  // 直接登出
+  if (AUTH_ERROR_CODES.logout.includes(code)) {
+    authStore.resetStore();
+    return false;
+  }
+
+  // 其他错误，显示提示
+  window.$message?.error(msg);
+  return false;
+}
+
+// 刷新 Token
+async function handleRefreshToken(): Promise<boolean> {
+  const rToken = localStg.get('refreshToken') || '';
+
+  if (!rToken) {
+    authStore.resetStore();
+    return false;
+  }
+
+  const { error, data } = await fetchRefreshToken(rToken);
+  if (!error && data) {
+    localStg.set('token', data.token);
+    localStg.set('refreshToken', data.refreshToken);
+    return true;
+  }
+
+  authStore.resetStore();
+  return false;
+}
 
 const visible = computed({
   get: () => textPreviewVisible.value,
@@ -160,6 +237,27 @@ const hasHistoryVersion = computed(() => {
   return currentTab.value?.hasHistoryVersion ?? false;
 });
 
+// 面包屑路径段
+const breadcrumbSegments = computed(() => {
+  if (currentDirectory.value === '/') return [];
+  const segments = currentDirectory.value.split('/').filter(Boolean);
+  return segments.map((name, index) => ({
+    name,
+    path: '/' + segments.slice(0, index + 1).join('/')
+  }));
+});
+
+// 点击面包屑导航到指定目录
+async function handleBreadcrumbClick(path: string) {
+  currentDirectory.value = path;
+  // 需要找到对应路径的节点 key 来展开
+  // 由于树数据是懒加载的，可能需要先加载根目录
+  if (treeData.value.length === 0) {
+    treeData.value = await fetchFiles('/');
+  }
+  treeSelectedKeys.value = [];
+}
+
 const currentLanguage = computed(() => {
   const suffix = activeTab.value.split('.').pop() || 'txt';
   const languages = monaco.languages.getLanguages();
@@ -171,12 +269,18 @@ async function saveTab(tab: TabItem) {
   if (!tab.isModified) return;
 
   try {
-    await fetchUpdateFileContent({
+    const { error } = await fetchSaveWithHistory({
       fileId: tab.fileId,
       content: tab.content
     });
+    if (error) {
+      window.$message?.error(`文件 ${tab.title} 保存失败`);
+      throw error;
+    }
     tab.originalContent = tab.content;
     tab.isModified = false;
+    tab.hasHistoryVersion = true;
+    lastSaved.value = new Date();
     window.$message?.success(`文件 ${tab.title} 保存成功`);
   } catch (error) {
     window.$message?.error(`文件 ${tab.title} 保存失败: ${error}`);
@@ -246,6 +350,69 @@ function toggleMarkdownMode() {
 
 function toggleFullscreen() {
   isFullscreen.value = !isFullscreen.value;
+}
+
+// 历史版本处理
+interface HistoryVersion {
+  id: CommonType.IdType;
+  fileId: CommonType.IdType;
+  fileName: string;
+  size: number;
+  operator: string;
+  createTime: string;
+}
+
+const historyPreviewContent = ref<string | null>(null);
+const historyPreviewVersion = ref<HistoryVersion | null>(null);
+
+const showHistoryPreview = computed({
+  get: () => historyPreviewContent.value !== null,
+  set: (val: boolean) => {
+    if (!val) {
+      historyPreviewContent.value = null;
+      historyPreviewVersion.value = null;
+    }
+  }
+});
+
+function handleHistoryPreview(content: string, version: HistoryVersion) {
+  historyPreviewContent.value = content;
+  historyPreviewVersion.value = version;
+}
+
+async function handleHistoryRestore(version: HistoryVersion) {
+  const tab = currentTab.value;
+  if (!tab) return;
+
+  try {
+    const { data, error } = await fetchRestoreHistory(version.id);
+    if (error || !data?.success) {
+      window.$message?.error('恢复历史版本失败');
+      return;
+    }
+    // 更新编辑器内容为恢复后的内容
+    tab.content = historyPreviewContent.value || '';
+    tab.originalContent = tab.content;
+    tab.isModified = false;
+    historyPreviewContent.value = null;
+    historyPreviewVersion.value = null;
+    window.$message?.success('已恢复到历史版本');
+  } catch {
+    window.$message?.error('恢复历史版本失败');
+  }
+}
+
+function handleHistoryDelete(_versionId: CommonType.IdType) {
+  // 删除历史版本后，如果当前没有其他历史版本，隐藏按钮
+  // 这里不需要额外处理，HistoryVersionPopover 会自动更新列表
+}
+
+function handleHistoryEmptied() {
+  // 所有历史版本被清空，隐藏历史版本按钮
+  const tab = currentTab.value;
+  if (tab) {
+    tab.hasHistoryVersion = false;
+  }
 }
 
 // 判断是否为文本文件
@@ -320,7 +487,7 @@ const getLanguageBySuffix = (suffix: string): string => {
   return langMap[suffix] || 'plaintext';
 };
 
-async function loadFileContent(file: BackendFileItem | Api.Disk.FileItem, tab: TabItem) {
+async function loadFileContent(file: BackendFileItem | Api.Disk.FileItem, tab: TabItem, retryCount = 0) {
   // 取消该文件之前的请求
   if (abortControllerMap.has(tab.path)) {
     abortControllerMap.get(tab.path)?.abort();
@@ -353,8 +520,9 @@ async function loadFileContent(file: BackendFileItem | Api.Disk.FileItem, tab: T
     const fullUrl = `${url}?${queryString}&t=${new Date().getTime()}`;
 
     const headers = new Headers();
-    if (authStore.token) {
-      headers.append('Authorization', `Bearer ${authStore.token}`);
+    const token = localStg.get('token');
+    if (token) {
+      headers.append('Authorization', `Bearer ${token}`);
     }
 
     const response = await fetch(fullUrl, {
@@ -367,6 +535,35 @@ async function loadFileContent(file: BackendFileItem | Api.Disk.FileItem, tab: T
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
+    // 检查 Content-Type，判断是否是 JSON 错误响应
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      // 读取完整响应内容
+      const text = await response.text();
+      try {
+        const json = JSON.parse(text) as { code: string; data: null; msg: string };
+        // 检查是否是错误响应
+        if (json.code !== AUTH_ERROR_CODES.success) {
+          // 处理授权错误
+          const success = await handleAuthError(json.code, json.msg);
+          // 如果 token 刷新成功且未超过重试次数，重新加载
+          if (success && retryCount < 1) {
+            return loadFileContent(file, tab, retryCount + 1);
+          }
+          throw new Error(json.msg);
+        }
+      } catch (parseError) {
+        // JSON 解析失败或已处理错误，直接显示文本
+        if (parseError instanceof Error && parseError.message !== 'JSON parse error') {
+          throw parseError;
+        }
+        // 如果不是错误响应，当作普通 JSON 文件内容显示
+        tab.content = text;
+        tab.originalContent = text;
+      }
+      return;
+    }
+
     const reader = response.body?.getReader();
     if (!reader) return;
 
@@ -375,13 +572,11 @@ async function loadFileContent(file: BackendFileItem | Api.Disk.FileItem, tab: T
     // 节流更新内容，避免频繁渲染导致卡顿
     const updateContent = useThrottleFn((text: string) => {
       tab.content = text;
-      // 可以在这里更新 originalContent 如果需要
     }, 150);
 
     let result = '';
 
     while (true) {
-
       const { done, value } = await reader.read();
       if (done) {
         // 确保最后一次更新
@@ -393,7 +588,12 @@ async function loadFileContent(file: BackendFileItem | Api.Disk.FileItem, tab: T
       updateContent(result);
     }
   } catch (error) {
-    window.$message?.error?.(`加载文件失败: ${error}`);
+    if (error instanceof Error && error.name === 'AbortError') {
+      // 请求被取消，不显示错误
+      return;
+    }
+    const errorMsg = error instanceof Error ? error.message : '加载文件失败';
+    window.$message?.error?.(errorMsg);
   } finally {
     abortControllerMap.delete(tab.path);
   }
@@ -442,6 +642,15 @@ async function initFile(file: BackendFileItem | Api.Disk.FileItem, fullPath?: st
   if (reactiveTab) {
     // 加载文件内容
     await loadFileContent(file, reactiveTab);
+    // 检查是否存在历史版本
+    try {
+      const { data: historyData } = await fetchHistoryList(fileId);
+      if (historyData && historyData.length > 0) {
+        reactiveTab.hasHistoryVersion = true;
+      }
+    } catch {
+      // 检查历史版本失败不影响文件打开
+    }
   }
 }
 
@@ -476,10 +685,16 @@ async function fetchFiles(directory: string): Promise<TabNode[]> {
 const handleLoad = async (node: TabNode) => {
   if (!node.fullPath || node.isLeaf) return;
   const children = await fetchFiles(node.fullPath);
+  // 确保子节点有正确的 fullPath
+  children.forEach(child => {
+    if (!child.fullPath) {
+      child.fullPath = node.fullPath === '/' ? `/${child.label}` : `${node.fullPath}/${child.label}`;
+    }
+  });
   node.children = children;
 };
 
-// 初始化树数据
+// 初始化树数据 - 从根目录加载，展开到当前文件
 async function initTreeData(file: BackendFileItem | Api.Disk.FileItem) {
   const fileName = (file.name ?? file.fileName) as string;
   const fileId = (file.id ?? file.fileId) as string | number;
@@ -487,14 +702,57 @@ async function initTreeData(file: BackendFileItem | Api.Disk.FileItem) {
   let path = file.filePath || `/${fileName}`;
   if (!path.startsWith('/')) path = `/${path}`;
 
+  // 计算文件所在目录
   const lastSlashIndex = path.lastIndexOf('/');
   const parentDir = lastSlashIndex <= 0 ? '/' : path.substring(0, lastSlashIndex);
 
   currentDirectory.value = parentDir;
-  treeData.value = await fetchFiles(parentDir);
+
+  // 从根目录加载树数据
+  treeData.value = await fetchFiles('/');
 
   // 选中当前文件
   treeSelectedKeys.value = [fileId];
+
+  // 展开到当前文件所在的目录路径
+  // 需要收集路径上所有文件夹的 key
+  const pathSegments = parentDir.split('/').filter(Boolean);
+  const expandedKeys: Array<string | number> = [];
+
+  // 遍历树找到路径上的节点并展开
+  // 由于树是懒加载的，需要逐步展开
+  for (const segment of pathSegments) {
+    // 在当前树数据或已加载的子节点中查找该 segment 对应的节点
+    const node = findNodeByPathSegment(treeData.value, segment, expandedKeys);
+    if (node && node.key) {
+      expandedKeys.push(node.key);
+      // 模拟展开以触发懒加载
+      if (node.children === undefined && !node.isLeaf) {
+        await handleLoad(node);
+      }
+    }
+  }
+
+  treeExpandedKeys.value = expandedKeys;
+}
+
+// 根据路径段查找节点
+function findNodeByPathSegment(
+  nodes: TabNode[],
+  segment: string,
+  currentExpandedKeys: Array<string | number>
+): TabNode | null {
+  for (const node of nodes) {
+    if (node.label === segment) {
+      return node;
+    }
+    // 如果节点已展开，检查子节点
+    if (node.key && currentExpandedKeys.includes(node.key) && node.children) {
+      const found = findNodeByPathSegment(node.children, segment, currentExpandedKeys);
+      if (found) return found;
+    }
+  }
+  return null;
 }
 
 // 上一级目录
@@ -502,13 +760,14 @@ async function handleGoUp() {
   if (currentDirectory.value === '/') return;
   const parentDir = currentDirectory.value.substring(0, currentDirectory.value.lastIndexOf('/')) || '/';
   currentDirectory.value = parentDir;
-  treeData.value = await fetchFiles(parentDir);
   treeSelectedKeys.value = [];
 }
 
-// 刷新当前目录
+// 刷新当前目录 - 重新加载根目录树
 async function handleRefresh() {
-  treeData.value = await fetchFiles(currentDirectory.value);
+  treeData.value = await fetchFiles('/');
+  treeExpandedKeys.value = [];
+  treeSelectedKeys.value = [];
 }
 
 // 新建文件/文件夹
@@ -575,12 +834,32 @@ const renderTreeLabel = ({ option }: { option: TabNode }) => {
 };
 
 // 树节点选择
-const handleTreeSelect = (keys: Array<string | number>, options: Array<TabNode | null>) => {
+const handleTreeSelect = async (keys: Array<string | number>, options: Array<TabNode | null>) => {
   treeSelectedKeys.value = keys;
   const node = options[0];
   if (node?.file) {
     const isDir = (node.file.isDir ?? node.file.isFolder) ?? false;
-    if (!isDir) {
+    const fileId = (node.file.id ?? node.file.fileId) as string | number;
+
+    if (isDir) {
+      // 点击文件夹：选中文件夹，展开其内容，更新面包屑
+      currentDirectory.value = node.fullPath || '/';
+
+      // 如果节点还没有子节点，先加载子节点
+      if (!node.children || node.children.length === 0) {
+        await handleLoad(node);
+      }
+
+      // 展开文件夹
+      if (!treeExpandedKeys.value.includes(fileId)) {
+        treeExpandedKeys.value = [...treeExpandedKeys.value, fileId];
+      }
+    } else {
+      // 点击文件：选中文件，打开文件，更新面包屑为文件所在目录
+      const filePath = node.fullPath || '';
+      const lastSlash = filePath.lastIndexOf('/');
+      const parentDir = lastSlash > 0 ? filePath.substring(0, lastSlash) : '/';
+      currentDirectory.value = parentDir;
       initFile(node.file, node.fullPath);
     }
   }
@@ -637,35 +916,59 @@ watch(visible, show => {
     :on-close="handleClose"
     @after-leave="handleAfterLeave"
   >
-    <!-- 头部工具栏 -->
+    <!-- 左侧：面包屑导航 -->
+    <template #header>
+      <div v-if="!isShare" class="flex items-center gap-1 text-sm overflow-x-auto">
+        <NButton quaternary size="small" @click="handleBreadcrumbClick('/')">
+          <template #icon>
+            <icon-mdi-home />
+          </template>
+        </NButton>
+        <template v-for="(segment, index) in breadcrumbSegments" :key="segment.path">
+          <span class="text-gray-400 mx-1">/</span>
+          <NButton
+            quaternary
+            size="small"
+            :type="index === breadcrumbSegments.length - 1 ? 'primary' : 'default'"
+            @click="handleBreadcrumbClick(segment.path)"
+          >
+            {{ segment.name }}
+          </NButton>
+        </template>
+      </div>
+    </template>
+    <!-- 右侧：工具按钮 -->
     <template #header-extra>
-      <div class="w-full flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <!-- <span class="font-medium">{{ currentFile?.name }}</span> -->
-          <NTag v-if="isModified" type="warning" size="small" class="mr-2">已修改</NTag>
-        </div>
-        <div class="flex items-center gap-2">
-          <!-- 历史版本按钮 -->
-          <NButton v-if="!isShare && hasHistoryVersion" size="small" @click="showHistoryDrawer = true">
+      <div class="flex items-center gap-2">
+        <NTag v-if="isModified" type="warning" size="small">已修改</NTag>
+        <HistoryVersionPopover
+          v-if="!isShare && hasHistoryVersion"
+          :file-id="currentTab?.fileId"
+          @preview="handleHistoryPreview"
+          @restore="handleHistoryRestore"
+          @delete="handleHistoryDelete"
+          @emptied="handleHistoryEmptied"
+        >
+          <NButton size="small">
+            <template #icon>
+              <icon-mdi-history />
+            </template>
             历史版本
           </NButton>
-          <!-- 保存按钮 -->
-          <NButton v-if="isModified" type="primary" size="small" :loading="saving" @click="handleSave">保存</NButton>
-          <!-- Markdown 预览切换 -->
-          <NButton v-if="isMarkdown" quaternary size="small" @click="toggleMarkdownMode">
-            <template #icon>
-              <icon-ic-baseline-remove-red-eye v-if="!markdownMode" />
-              <icon-mdi-invoice-text-edit-outline v-else />
-            </template>
-          </NButton>
-          <!-- 全屏 -->
-          <NButton quaternary size="small" @click="toggleFullscreen">
-            <template #icon>
-              <icon-gridicons-fullscreen-exit v-if="isFullscreen" />
-              <icon-gridicons-fullscreen v-else />
-            </template>
-          </NButton>
-        </div>
+        </HistoryVersionPopover>
+        <NButton v-if="isModified" type="primary" size="small" :loading="saving" @click="handleSave">保存</NButton>
+        <NButton v-if="isMarkdown" quaternary size="small" @click="toggleMarkdownMode">
+          <template #icon>
+            <icon-ic-baseline-remove-red-eye v-if="!markdownMode" />
+            <icon-mdi-invoice-text-edit-outline v-else />
+          </template>
+        </NButton>
+        <NButton quaternary size="small" @click="toggleFullscreen">
+          <template #icon>
+            <icon-gridicons-fullscreen-exit v-if="isFullscreen" />
+            <icon-gridicons-fullscreen v-else />
+          </template>
+        </NButton>
       </div>
     </template>
     <!-- 内容区域 -->
@@ -705,9 +1008,9 @@ watch(visible, show => {
         </NButtonGroup>
         <NTree
           v-model:selected-keys="treeSelectedKeys"
+          v-model:expanded-keys="treeExpandedKeys"
           :data="treeData"
           block-line
-          expand-on-click
           selectable
           :on-load="handleLoad"
           :render-label="renderTreeLabel"
@@ -776,6 +1079,26 @@ watch(visible, show => {
         </div>
       </div>
     </template>
+  </NModal>
+
+  <!-- 历史版本预览对话框 -->
+  <NModal
+    v-model:show="showHistoryPreview"
+    preset="card"
+    title="历史版本预览"
+    :width="600"
+    :style="{ maxHeight: '80vh' }"
+  >
+    <div class="text-sm text-gray-500 mb-2">
+      版本时间：{{ historyPreviewVersion?.createTime }}
+    </div>
+    <NInput
+      :value="historyPreviewContent"
+      type="textarea"
+      readonly
+      :autosize="{ minRows: 10, maxRows: 20 }"
+      placeholder="加载中..."
+    />
   </NModal>
 </template>
 

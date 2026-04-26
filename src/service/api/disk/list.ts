@@ -63,11 +63,11 @@ export function fetchGetFileList(params?: {
 
 /** 更新文件内容 */
 export function fetchUpdateFileContent(data: { fileId: string | number; content: string }) {
-  // 确保 fileId 为数字类型（后端期望 int64）
-  const fileIdNum = typeof data.fileId === 'string' ? parseInt(data.fileId, 10) : data.fileId;
+  // 后端期望 fileId 为 string 类型
+  const fileIdStr = String(data.fileId);
   return request<boolean>({
     url: '/file-meta/updateContent',
     method: 'post',
-    data: { fileId: fileIdNum, content: data.content }
+    data: { fileId: fileIdStr, content: data.content }
   });
 }
