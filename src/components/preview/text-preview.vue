@@ -122,11 +122,11 @@ const modalContentStyle = {
 const modalSectionStyle = {
   flex: 'none'
 } as const;
-const siderContentStyle = {
-  height: '100%',
-  minHeight: 0,
-  overflow: 'auto'
-} as const;
+// const siderContentStyle = {
+//   height: '100%',
+//   minHeight: 0,
+//   overflow: 'auto'
+// } as const;
 
 const currentTab = computed(() => {
   return tabs.value.find(tab => tab.path === activeTab.value);
@@ -208,13 +208,13 @@ async function handleClose() {
         onPositiveClick: async () => {
           try {
             for (const tab of modifiedTabs) {
-               
+
               await saveTab(tab);
             }
             textPreviewVisible.value = false;
             resolve(true);
           } catch (error) {
-             
+
             console.log(error);
             resolve(false);
           }
@@ -380,7 +380,7 @@ async function loadFileContent(file: BackendFileItem | Api.Disk.FileItem, tab: T
     let result = '';
 
     while (true) {
-       
+
       const { done, value } = await reader.read();
       if (done) {
         // 确保最后一次更新
@@ -652,16 +652,14 @@ watch(visible, show => {
       <NLayoutSider
         v-if="!isShare"
         v-model:collapsed="collapsed"
-        collapse-mode="width"
+        collapse-mode="transform"
         :collapsed-width="0"
         :width="240"
         :show-collapsed-content="false"
         show-trigger="bar"
         bordered
         resizable
-        :native-scrollbar="true"
-        :content-style="siderContentStyle"
-        class="h-full min-h-0 overflow-hidden"
+        :native-scrollbar="false"
       >
         <NTree
           v-model:selected-keys="treeSelectedKeys"
