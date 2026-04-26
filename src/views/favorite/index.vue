@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
+import { fetchGetFavoriteList, fetchRemoveFavorite } from '@/service/api/disk/favorite';
 import SimpleToolbar from '../disk/modules/simple-toolbar.vue';
 import FileGrid from '../disk/modules/file-grid.vue';
 import FileList from '../disk/modules/file-list.vue';
@@ -12,10 +14,19 @@ defineOptions({
   name: 'FavoritePage'
 });
 
+const router = useRouter();
 const diskStore = useDiskStore();
 const { loading, startLoading, endLoading } = useLoading();
 
-// 收藏列表（Mock 数据）
+// 搜索参数
+const searchParams = ref<Api.Disk.FavoriteListParams>({
+  pageNum: 1,
+  pageSize: 50,
+  sortField: null,
+  sortOrder: null
+});
+
+// 收藏列表
 const favoriteList = ref<Api.Disk.FileItem[]>([]);
 
 // 本地选中状态（不污染 diskStore）
@@ -27,121 +38,24 @@ const selectedCount = computed(() => selectedFiles.value.length);
 // 是否显示空状态
 const showEmpty = computed(() => favoriteList.value.length === 0 && !loading.value);
 
-// 获取收藏列表（Mock 数据）
+// 获取收藏列表
 async function getData() {
   startLoading();
-  // TODO: 调用后端 API
-  // const { data, error } = await fetchGetFavoriteList(searchParams.value);
-
-  // 模拟 API 响应延迟
-  await new Promise(resolve => setTimeout(resolve, 300));
-
-  // 使用 Mock 数据
-  favoriteList.value = getMockFavoriteList();
+  const { data, error } = await fetchGetFavoriteList(searchParams.value);
   endLoading();
-}
 
-// Mock 数据
-function getMockFavoriteList(): Api.Disk.FileItem[] {
-  return [
-    {
-      fileId: 301,
-      fileName: '重要文档',
-      fileType: 'folder',
-      isFolder: true,
-      fileSize: 0,
-      filePath: '/重要文档',
-      parentId: null,
-      modifyTime: '2024-04-20 10:00:00',
-      createTime: '2024-04-10 08:00:00',
-      updateTime: '2024-04-20 10:00:00',
-      createBy: '',
-      updateBy: ''
-    },
-    {
-      fileId: 302,
-      fileName: '项目计划书.pdf',
-      fileType: 'document',
-      fileExtension: 'pdf',
-      isFolder: false,
-      fileSize: 1024000,
-      filePath: '/文档/项目计划书.pdf',
-      parentId: null,
-      modifyTime: '2024-04-18 14:30:00',
-      createTime: '2024-04-01 09:00:00',
-      updateTime: '2024-04-18 14:30:00',
-      createBy: '',
-      updateBy: ''
-    },
-    {
-      fileId: 303,
-      fileName: '产品演示视频.mp4',
-      fileType: 'video',
-      fileExtension: 'mp4',
-      isFolder: false,
-      fileSize: 52428800,
-      filePath: '/视频/产品演示视频.mp4',
-      parentId: null,
-      modifyTime: '2024-04-15 16:20:00',
-      createTime: '2024-03-20 10:00:00',
-      updateTime: '2024-04-15 16:20:00',
-      createBy: '',
-      updateBy: '',
-      mediaCover: true
-    },
-    {
-      fileId: 304,
-      fileName: '品牌Logo.png',
-      fileType: 'image',
-      fileExtension: 'png',
-      isFolder: false,
-      fileSize: 256000,
-      filePath: '/设计/品牌Logo.png',
-      parentId: null,
-      modifyTime: '2024-04-12 11:15:00',
-      createTime: '2024-02-28 14:00:00',
-      updateTime: '2024-04-12 11:15:00',
-      createBy: '',
-      updateBy: '',
-      mediaCover: true
-    },
-    {
-      fileId: 305,
-      fileName: '会议录音.mp3',
-      fileType: 'audio',
-      fileExtension: 'mp3',
-      isFolder: false,
-      fileSize: 2097152,
-      filePath: '/音频/会议录音.mp3',
-      parentId: null,
-      modifyTime: '2024-04-10 09:45:00',
-      createTime: '2024-04-08 13:30:00',
-      updateTime: '2024-04-10 09:45:00',
-      createBy: '',
-      updateBy: ''
-    },
-    {
-      fileId: 306,
-      fileName: '配置参数.xlsx',
-      fileType: 'document',
-      fileExtension: 'xlsx',
-      isFolder: false,
-      fileSize: 51200,
-      filePath: '/数据/配置参数.xlsx',
-      parentId: null,
-      modifyTime: '2024-04-05 15:00:00',
-      createTime: '2024-03-15 11:00:00',
-      updateTime: '2024-04-05 15:00:00',
-      createBy: '',
-      updateBy: ''
-    }
-  ];
+  if (!error && data) {
+    favoriteList.value = data.rows || [];
+  } else {
+    favoriteList.value = [];
+  }
 }
 
 // 处理排序
 function handleSort(field: string, order: 'asc' | 'desc') {
-  // TODO: 实现排序
-  console.log('Sort:', field, order);
+  searchParams.value.sortField = field as 'name' | 'size' | 'modifyTime' | 'type';
+  searchParams.value.sortOrder = order;
+  getData();
 }
 
 // 切换视图
@@ -167,14 +81,17 @@ function handleRemoveFavorite() {
     positiveText: $t('common.confirm'),
     negativeText: $t('common.cancel'),
     onPositiveClick: async () => {
-      // TODO: 调用后端 API 取消收藏
       startLoading();
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const { error } = await fetchRemoveFavorite(selectedIds as number[]);
       endLoading();
 
-      favoriteList.value = favoriteList.value.filter(item => !selectedIds.includes(item.fileId));
-      selectedFiles.value = [];
-      window.$message?.success('已取消收藏');
+      if (!error) {
+        favoriteList.value = favoriteList.value.filter(item => !selectedIds.includes(item.fileId));
+        selectedFiles.value = [];
+        window.$message?.success('已取消收藏');
+      } else {
+        window.$message?.error('取消收藏失败');
+      }
     }
   });
 }
@@ -190,10 +107,14 @@ function handleDownloadTip() {
   window.$message?.info('下载功能开发中');
 }
 
-// 处理文件双击
-function handleFileDblClick(_file: Api.Disk.FileItem) {
-  // TODO: 跳转到文件位置或打开文件
-  window.$message?.info('打开文件功能开发中');
+// 处理文件双击 - 跳转到文件位置
+function handleFileDblClick(file: Api.Disk.FileItem) {
+  const path = file.filePath;
+  if (path && path !== '/') {
+    router.push({ name: 'disk', query: { path } });
+  } else {
+    router.push({ name: 'disk' });
+  }
 }
 
 // 处理选中状态变化
