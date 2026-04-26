@@ -14,10 +14,13 @@ interface Props {
   type: 'file' | 'area';
   /** 页面类型，用于区分收藏/取消收藏菜单 */
   pageType?: 'disk' | 'favorite' | 'recent' | 'my-share' | 'trash';
+  /** 当前文件是否已收藏（右键单个文件时使用） */
+  fileIsFavorite?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  pageType: 'disk'
+  pageType: 'disk',
+  fileIsFavorite: false
 });
 
 const visible = defineModel<boolean>('visible');
@@ -31,48 +34,54 @@ const { SvgIconVNode } = useSvgIcon();
 // 是否在收藏页面
 const isFavoritePage = computed(() => props.pageType === 'favorite');
 
-const fileOptions = computed<DropdownOption[]>(() => [
-  {
-    label: $t('page.disk.contextMenu.open'),
-    key: 'open',
-    icon: SvgIconVNode({ icon: 'mdi:open-in-new', fontSize: 18 })
-  },
-  {
-    label: isFavoritePage.value ? $t('page.disk.contextMenu.removeFavorite') : $t('page.disk.contextMenu.addFavorite'),
-    key: isFavoritePage.value ? 'removeFavorite' : 'addFavorite',
-    icon: SvgIconVNode({ icon: isFavoritePage.value ? 'mdi:star-off-outline' : 'mdi:star-outline', fontSize: 18 })
-  },
-  {
-    label: $t('page.disk.contextMenu.download'),
-    key: 'download',
-    icon: SvgIconVNode({ icon: 'mdi:download-outline', fontSize: 18 })
-  },
-  {
-    label: $t('page.disk.contextMenu.share'),
-    key: 'share',
-    icon: SvgIconVNode({ icon: 'mdi:share-outline', fontSize: 18 })
-  },
-  {
-    label: $t('page.disk.contextMenu.copy'),
-    key: 'copy',
-    icon: SvgIconVNode({ icon: 'mdi:content-copy', fontSize: 18 })
-  },
-  {
-    label: $t('page.disk.contextMenu.move'),
-    key: 'move',
-    icon: SvgIconVNode({ icon: 'mdi:folder-move-outline', fontSize: 18 })
-  },
-  {
-    label: $t('page.disk.contextMenu.rename'),
-    key: 'rename',
-    icon: SvgIconVNode({ icon: 'mdi:pencil-outline', fontSize: 18 })
-  },
-  {
-    label: $t('page.disk.contextMenu.delete'),
-    key: 'delete',
-    icon: SvgIconVNode({ icon: 'mdi:delete-outline', fontSize: 18 })
-  }
-]);
+const fileOptions = computed<DropdownOption[]>(() => {
+  // 收藏页面始终显示"取消收藏"
+  // 网盘页面根据 fileIsFavorite 动态显示
+  const showRemoveFavorite = isFavoritePage.value || props.fileIsFavorite === true;
+
+  return [
+    {
+      label: $t('page.disk.contextMenu.open'),
+      key: 'open',
+      icon: SvgIconVNode({ icon: 'mdi:open-in-new', fontSize: 18 })
+    },
+    {
+      label: showRemoveFavorite ? $t('page.disk.contextMenu.removeFavorite') : $t('page.disk.contextMenu.addFavorite'),
+      key: showRemoveFavorite ? 'removeFavorite' : 'addFavorite',
+      icon: SvgIconVNode({ icon: showRemoveFavorite ? 'mdi:star-off-outline' : 'mdi:star-outline', fontSize: 18 })
+    },
+    {
+      label: $t('page.disk.contextMenu.download'),
+      key: 'download',
+      icon: SvgIconVNode({ icon: 'mdi:download-outline', fontSize: 18 })
+    },
+    {
+      label: $t('page.disk.contextMenu.share'),
+      key: 'share',
+      icon: SvgIconVNode({ icon: 'mdi:share-outline', fontSize: 18 })
+    },
+    {
+      label: $t('page.disk.contextMenu.copy'),
+      key: 'copy',
+      icon: SvgIconVNode({ icon: 'mdi:content-copy', fontSize: 18 })
+    },
+    {
+      label: $t('page.disk.contextMenu.move'),
+      key: 'move',
+      icon: SvgIconVNode({ icon: 'mdi:folder-move-outline', fontSize: 18 })
+    },
+    {
+      label: $t('page.disk.contextMenu.rename'),
+      key: 'rename',
+      icon: SvgIconVNode({ icon: 'mdi:pencil-outline', fontSize: 18 })
+    },
+    {
+      label: $t('page.disk.contextMenu.delete'),
+      key: 'delete',
+      icon: SvgIconVNode({ icon: 'mdi:delete-outline', fontSize: 18 })
+    }
+  ];
+});
 
 const areaOptions = computed<DropdownOption[]>(() => [
   {
