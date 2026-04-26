@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRoute } from 'vue-router';
 import { GLOBAL_SIDER_MENU_ID } from '@/constants/app';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
@@ -11,7 +10,6 @@ defineOptions({
   name: 'GlobalSider'
 });
 
-const route = useRoute();
 const appStore = useAppStore();
 const themeStore = useThemeStore();
 const routeStore = useRouteStore();

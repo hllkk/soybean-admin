@@ -8,9 +8,9 @@ import * as monaco from 'monaco-editor';
 import { fetchGetFileList, fetchUpdateFileContent } from '@/service/api/disk/list';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
-import { useSvgIcon } from '@/hooks/common/icon';
 import { getServiceBaseURL } from '@/utils/service';
 import { formatFileSize, formatTime } from '@/utils/file';
+import FileIcon from '@/views/disk/modules/file-icon.vue';
 
 const VditorEditor = defineAsyncComponent(() => import('@/components/preview/vditor-editor.vue'));
 const MonacoEditor = defineAsyncComponent(() => import('@/components/preview/monaco-editor.vue'));
@@ -71,7 +71,6 @@ const props = defineProps<Props>();
 const dialog = useDialog();
 const diskStore = useDiskStore();
 const authStore = useAuthStore();
-const { SvgIconVNode } = useSvgIcon();
 const { textPreviewVisible, textPreviewRow } = storeToRefs(diskStore);
 
 const isFullscreen = ref(false);
@@ -469,51 +468,20 @@ async function initTreeData(file: BackendFileItem | Api.Disk.FileItem) {
   treeSelectedKeys.value = [fileId];
 }
 
-const getFileIconClass = (filename: string) => {
-  const extension = filename.split('.').pop()?.toLowerCase() || '';
-  const iconMap: Record<string, string> = {
-    js: 'disk-file_js',
-    ts: 'disk-file_js',
-    vue: 'disk-file_html',
-    html: 'disk-file_html',
-    css: 'disk-file_css',
-    scss: 'disk-file_css',
-    less: 'disk-file_css',
-    json: 'disk-file_json',
-    md: 'disk-file_md',
-    txt: 'disk-file_txt',
-    xml: 'disk-file_other',
-    yaml: 'disk-file_yaml',
-    yml: 'disk-file_yaml',
-    sql: 'disk-file_other',
-    sh: 'disk-file_other',
-    bash: 'disk-file_other',
-    zsh: 'disk-file_other',
-    py: 'disk-file_python',
-    java: 'disk-file_other',
-    go: 'disk-file_other',
-    rs: 'disk-file_other',
-    c: 'disk-file_other',
-    cpp: 'disk-file_other',
-    dockerfile: 'disk-file_other'
-  };
-  return iconMap[extension] || 'disk-file_other';
-};
-
 const renderTreeIcon = ({ option }: { option: TabNode }) => {
   if (option.file) {
     const isDir = (option.file.isDir ?? option.file.isFolder) ?? false;
-    const fileName = (option.file.name ?? option.file.fileName) as string;
+    const extension = (option.file.extendName ?? option.file.fileExtension) ?? '';
+    const fileId = (option.file.id ?? option.file.fileId) as string | number;
 
-    if (isDir) {
-      const renderIcon = SvgIconVNode({ localIcon: 'disk-file_dir', fontSize: 18 });
-      return renderIcon ? renderIcon() : undefined;
-    }
-    const localIcon = getFileIconClass(fileName);
-    const renderIcon = SvgIconVNode({ localIcon, fontSize: 18 });
-    return renderIcon ? renderIcon() : undefined;
+    return h(FileIcon, {
+      fileType: isDir ? 'folder' : 'other',
+      extension,
+      size: 'small',
+      fileId
+    });
   }
-  return <icon-mdi-file-outline class="text-lg" />;
+  return h(FileIcon, { fileType: 'other', size: 'small' });
 };
 
 const closeTabLogic = (path: string) => {
@@ -661,19 +629,21 @@ watch(visible, show => {
         bordered
         resizable
         :native-scrollbar="false"
-        class="h-full min-h-500px"
+        class="h-full overflow-hidden"
       >
-        <NTree
-          v-model:selected-keys="treeSelectedKeys"
-          :data="treeData"
-          block-line
-          expand-on-click
-          selectable
-          :on-load="handleLoad"
-          :render-label="renderTreeLabel"
-          :render-prefix="renderTreeIcon"
-          @update:selected-keys="handleTreeSelect"
-        />
+        <div class="h-full overflow-auto">
+          <NTree
+            v-model:selected-keys="treeSelectedKeys"
+            :data="treeData"
+            block-line
+            expand-on-click
+            selectable
+            :on-load="handleLoad"
+            :render-label="renderTreeLabel"
+            :render-prefix="renderTreeIcon"
+            @update:selected-keys="handleTreeSelect"
+          />
+        </div>
       </NLayoutSider>
       <NLayoutContent class="h-full flex flex-col bg-white dark:bg-[#18181c]">
         <div v-if="currentTab" class="h-full flex flex-col">
