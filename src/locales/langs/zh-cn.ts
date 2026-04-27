@@ -466,6 +466,16 @@ const local: App.I18n.Schema = {
       },
       bindWeChat: {
         title: '绑定微信'
+      },
+      wecomLogin: {
+        title: '企业微信登录',
+        loading: '正在加载二维码...',
+        scanTip: '请使用企业微信扫描二维码登录',
+        countdown: '二维码将于 {seconds} 秒后过期',
+        expired: '二维码已过期，请点击刷新',
+        refresh: '刷新二维码',
+        backToLogin: '返回密码登录',
+        qrCodeLoadFailed: '加载二维码失败，请稍后重试'
       }
     },
     home: {

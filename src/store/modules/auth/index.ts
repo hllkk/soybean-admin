@@ -199,6 +199,40 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     }
   }
 
+  async function wecomLogin(loginToken: Api.Auth.LoginToken, redirect = true) {
+    startLoading();
+
+    localStg.set('token', loginToken.token);
+    localStg.set('refreshToken', loginToken.refreshToken);
+
+    const pass = await getUserInfo();
+
+    if (pass) {
+      token.value = loginToken.token;
+
+      await routeStore.initAuthRoute();
+
+      const isClear = checkTabClear();
+      let needRedirect = redirect;
+
+      if (isClear) {
+        needRedirect = false;
+      }
+
+      await redirectFromLogin(needRedirect);
+
+      window.$notification?.success({
+        title: $t('page.login.common.loginSuccess'),
+        content: $t('page.login.common.welcomeBack', { userName: userInfo.userName }),
+        duration: 4500
+      });
+    } else {
+      resetStore();
+    }
+
+    endLoading();
+  }
+
   return {
     token,
     userInfo,
@@ -207,6 +241,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     loginLoading,
     resetStore,
     login,
+    wecomLogin,
     initUserInfo
   };
 });

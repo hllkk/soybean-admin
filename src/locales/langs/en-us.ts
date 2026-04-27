@@ -470,6 +470,16 @@ const local: App.I18n.Schema = {
       },
       bindWeChat: {
         title: 'Bind WeChat'
+      },
+      wecomLogin: {
+        title: 'WeCom Login',
+        loading: 'Loading QR code...',
+        scanTip: 'Please scan the QR code with WeCom',
+        countdown: 'QR code expires in {seconds} seconds',
+        expired: 'QR code expired, click to refresh',
+        refresh: 'Refresh QR Code',
+        backToLogin: 'Back to password login',
+        qrCodeLoadFailed: 'Failed to load QR code, please try again'
       }
     },
     home: {

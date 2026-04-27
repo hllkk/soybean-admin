@@ -29,7 +29,7 @@ declare module "@elegant-router/types" {
     "log": "/log";
     "log_login": "/log/login";
     "log_operation": "/log/operation";
-    "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
+    "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat|wecom-login)?";
     "manage": "/manage";
     "manage_dept": "/manage/dept";
     "manage_dict": "/manage/dict";

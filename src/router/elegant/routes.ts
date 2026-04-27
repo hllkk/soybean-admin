@@ -145,7 +145,7 @@ export const generatedRoutes: GeneratedRoute[] = [
   },
   {
     name: 'login',
-    path: '/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?',
+    path: '/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat|wecom-login)?',
     component: 'layout.base$view.login',
     props: true,
     meta: {

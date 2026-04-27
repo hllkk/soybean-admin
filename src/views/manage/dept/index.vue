@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { NButton, NDivider } from 'naive-ui';
 import { jsonClone } from '@sa/utils';
 import { fetchBatchDeleteDept, fetchGetDeptList } from '@/service/api/system/dept';
+import { fetchSyncWecomStructure } from '@/service/api';
 import { useAppStore } from '@/store/modules/app';
 import { useAuth } from '@/hooks/business/auth';
 import { treeTransform, useNaiveTreeTable, useTableOperate } from '@/hooks/common/table';
@@ -21,6 +22,8 @@ useDict('sys_normal_disable');
 
 const appStore = useAppStore();
 const { hasAuth } = useAuth();
+
+const syncLoading = ref(false);
 
 const searchParams = ref<Api.System.DeptSearchParams>({
   deptName: null,
@@ -163,6 +166,16 @@ function addInRow(row: Api.System.Dept) {
   editingData.value = jsonClone(row);
   handleAdd();
 }
+
+async function handleSyncWecom() {
+  syncLoading.value = true;
+  const { error } = await fetchSyncWecomStructure();
+  syncLoading.value = false;
+  if (!error) {
+    window.$message?.success('同步企业微信组织架构成功');
+    getData();
+  }
+}
 </script>
 
 <template>
@@ -179,6 +192,12 @@ function addInRow(row: Api.System.Dept) {
           @refresh="getData"
         >
           <template #prefix>
+            <NButton size="small" :loading="syncLoading" @click="handleSyncWecom">
+              <template #icon>
+                <SvgIcon icon="mdi:sync" class="text-icon" />
+              </template>
+              同步企业微信
+            </NButton>
             <NButton v-if="!isCollapse" :disabled="!data.length" size="small" @click="expandAll">
               <template #icon>
                 <icon-quill-expand />

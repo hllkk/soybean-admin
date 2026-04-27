@@ -48,3 +48,20 @@ export function fetchRefreshToken(refreshToken: string) {
 export function fetchCustomBackendError(code: string, msg: string) {
   return request({ url: "/auth/error", params: { code, msg } });
 }
+
+/** Fetch WeChat Work login QR code info (returns OAuth URL + sceneId) */
+export function fetchWecomQrCode() {
+  return request<Api.Auth.WecomQrCodeInfo>({
+    url: "/auth/wecomLogin",
+    method: "get"
+  });
+}
+
+/** Poll QR code login status */
+export function fetchQrCodeStatus(sceneId: string) {
+  return request<Api.Auth.QrCodeStatus>({
+    url: "/auth/qrCodeStatus",
+    method: "get",
+    params: { sceneId }
+  });
+}

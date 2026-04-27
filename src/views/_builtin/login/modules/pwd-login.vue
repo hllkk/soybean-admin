@@ -71,7 +71,12 @@ function doLogin(captchaToken: string) {
   authStore.login(model.userName, model.password, captchaToken);
 }
 
-function handleThirdPartyLogin(_type: 'wecom' | 'github' | 'gitee') {
+function handleThirdPartyLogin(type: 'wecom' | 'github' | 'gitee') {
+  if (type === 'wecom') {
+    router.push({ name: 'login', params: { module: 'wecom-login' } });
+    return;
+  }
+
   window.$notification?.destroyAll();
   window.$notification?.warning({
     title: $t('common.warning'),

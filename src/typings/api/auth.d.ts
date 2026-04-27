@@ -11,6 +11,20 @@ declare namespace Api {
       expiresAt: number;
     }
 
+    interface WecomQrCodeInfo {
+      sceneId: string;
+      oauthUrl: string;
+      countdown: number;
+    }
+
+    interface QrCodeStatus {
+      sceneId: string;
+      status: 'waiting' | 'scanned' | 'confirmed' | 'expired' | 'fail';
+      token?: string;
+      refreshToken?: string;
+      expiresAt?: number;
+    }
+
     interface UserInfo {
       userId: CommonType.IdType;
       userName: string;

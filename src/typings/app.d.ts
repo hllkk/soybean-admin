@@ -607,6 +607,16 @@ declare namespace App {
           bindWeChat: {
             title: string;
           };
+          wecomLogin: {
+            title: string;
+            loading: string;
+            scanTip: string;
+            countdown: string;
+            expired: string;
+            refresh: string;
+            backToLogin: string;
+            qrCodeLoadFailed: string;
+          };
         };
         home: {
           branchDesc: string;
