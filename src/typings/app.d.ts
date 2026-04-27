@@ -1331,11 +1331,28 @@ declare namespace App {
             restore: string;
             deletePermanently: string;
             empty: string;
+            moveToTrash: string;
+            moveToTrashSuccess: string;
+            deletePermanentlySuccess: string;
+            permanentDeleteWarning: string;
+            permanentDeleteConfirmSingle: string;
+            permanentDeleteConfirmMultiple: string;
+            restoreConfirmSingle: string;
+            restoreConfirmMultiple: string;
+            restoreSuccess: string;
+            emptyConfirm: string;
+            emptySuccess: string;
+            cannotDownload: string;
           };
           favorite: {
             title: string;
             add: string;
             remove: string;
+            removeConfirmSingle: string;
+            removeConfirmMultiple: string;
+            removeSuccess: string;
+            removeFailed: string;
+            downloadNotReady: string;
           };
         };
         share: {

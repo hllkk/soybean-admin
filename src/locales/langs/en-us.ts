@@ -1546,12 +1546,29 @@ const local: App.I18n.Schema = {
         title: 'Trash',
         restore: 'Restore',
         deletePermanently: 'Delete Permanently',
-        empty: 'Empty Trash'
+        empty: 'Empty Trash',
+        moveToTrash: 'Move to Trash',
+        moveToTrashSuccess: 'Moved to trash',
+        deletePermanentlySuccess: 'Permanently deleted',
+        permanentDeleteWarning: 'Permanent deletion cannot be undone. Files will be unrecoverable. Continue?',
+        permanentDeleteConfirmSingle: 'This action cannot be undone. Permanently delete this file?',
+        permanentDeleteConfirmMultiple: 'This action cannot be undone. Permanently delete {count} files?',
+        restoreConfirmSingle: 'Restore this file to its original location?',
+        restoreConfirmMultiple: 'Restore {count} files to their original locations?',
+        restoreSuccess: 'Files restored',
+        emptyConfirm: 'This action cannot be undone. Empty the trash?',
+        emptySuccess: 'Trash emptied',
+        cannotDownload: 'Files in trash cannot be downloaded'
       },
       favorite: {
         title: 'Favorites',
         add: 'Add to Favorites',
-        remove: 'Remove from Favorites'
+        remove: 'Remove from Favorites',
+        removeConfirmSingle: 'Remove this file from favorites?',
+        removeConfirmMultiple: 'Remove {count} files from favorites?',
+        removeSuccess: 'Removed from favorites',
+        removeFailed: 'Failed to remove from favorites',
+        downloadNotReady: 'Download feature is not ready'
       }
     },
     share: {

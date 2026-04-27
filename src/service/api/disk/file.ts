@@ -164,14 +164,85 @@ export function fetchRenameFile(fileId: CommonType.IdType, newName: string) {
   });
 }
 
-/** 删除文件(移到回收站) */
-export function fetchDeleteFile(fileIds: CommonType.IdType[]) {
-  // 将ID转换为数字类型（后端期望 []int64）
+/** 删除文件(移到回收站或彻底删除) */
+export function fetchDeleteFile(fileIds: CommonType.IdType[], sweep = false) {
   const numericIds = fileIds.map(id => (typeof id === 'string' ? parseInt(id, 10) : id));
   return request<{ success: boolean; message: string }>({
-    url: '/file-meta/delete',
+    url: `/file-meta/delete${sweep ? '?sweep=true' : ''}`,
     method: 'delete',
-    data: { fileIds: numericIds }
+    data: sweep ? { trashIds: numericIds } : { fileIds: numericIds }
+  });
+}
+
+/** 将后端 TrashListResponse 转换为前端 RecycleItem 格式 */
+export function mapBackendTrashList(backendData: { list: any[]; total: number }) {
+  const list: Api.Disk.RecycleItem[] = (backendData.list || []).map(item => {
+    const purgeAt = item.purgeAt ? new Date(item.purgeAt) : null;
+    const expireDays = purgeAt
+      ? Math.max(0, Math.ceil((purgeAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      : 30;
+
+    return {
+      recycleId: item.id,
+      fileId: item.fileId,
+      fileName: item.name,
+      fileType: item.isDir ? 'folder' : contentTypeToFileType(item.contentType),
+      fileExtension: item.suffix || undefined,
+      isFolder: item.isDir,
+      fileSize: item.size,
+      deleteTime: item.trashedAt,
+      originalPath: item.originalPath || '',
+      expireDays,
+      mediaCover: false
+    };
+  });
+
+  return { rows: list, total: backendData.total || 0 };
+}
+
+/** 获取回收站列表 */
+export function fetchGetTrashList(params?: Api.Disk.RecycleListParams) {
+  const userId = Number(useAuthStore().userInfo.userId);
+  return request<any>({
+    url: '/file-meta/trash/list',
+    method: 'get',
+    params: {
+      userId,
+      page: params?.pageNum || 1,
+      pageSize: params?.pageSize || 50
+    }
+  });
+}
+
+/** 从回收站恢复文件 */
+export function fetchRestoreTrash(trashIds: CommonType.IdType[]) {
+  const userId = Number(useAuthStore().userInfo.userId);
+  const numericIds = trashIds.map(id => (typeof id === 'string' ? parseInt(id, 10) : id));
+  return request<{ success: boolean; message: string }>({
+    url: '/file-meta/trash/restore',
+    method: 'post',
+    data: { userId, trashIds: numericIds }
+  });
+}
+
+/** 彻底删除回收站文件 */
+export function fetchDeleteTrash(trashIds: CommonType.IdType[]) {
+  const userId = Number(useAuthStore().userInfo.userId);
+  const numericIds = trashIds.map(id => (typeof id === 'string' ? parseInt(id, 10) : id));
+  return request<{ success: boolean; message: string }>({
+    url: '/file-meta/trash/delete',
+    method: 'post',
+    data: { userId, trashIds: numericIds }
+  });
+}
+
+/** 清空回收站 */
+export function fetchEmptyTrash() {
+  const userId = Number(useAuthStore().userInfo.userId);
+  return request<{ success: boolean; message: string }>({
+    url: '/file-meta/trash/empty',
+    method: 'delete',
+    data: { userId }
   });
 }
 

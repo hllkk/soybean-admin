@@ -106,10 +106,6 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
       item => item.transferType === 'upload' && item.status !== 'completed'
     );
   });
-
-  // 计算属性：是否收藏缓存就绪
-  const isFavoriteCacheReady = computed(() => favoriteIds.value.size >= 0);
-
   // 切换文件类型
   function setFileType(type: Api.Disk.FileType) {
     currentFileType.value = type;
@@ -313,12 +309,15 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
 
   // 添加收藏ID到缓存
   function addFavoriteIds(ids: number[]) {
-    ids.forEach(id => favoriteIds.value.add(id));
+    const newSet = new Set(favoriteIds.value);
+    ids.forEach(id => newSet.add(id));
+    favoriteIds.value = newSet;
   }
 
   // 从缓存移除收藏ID
   function removeFavoriteIds(ids: number[]) {
-    ids.forEach(id => favoriteIds.value.delete(id));
+    const removeSet = new Set(ids);
+    favoriteIds.value = new Set([...favoriteIds.value].filter(id => !removeSet.has(id)));
   }
 
   // 判断是否已收藏
@@ -328,7 +327,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
 
   // 清空收藏缓存
   function clearFavoriteCache() {
-    favoriteIds.value.clear();
+    favoriteIds.value = new Set();
   }
 
   // 重置所有状态
@@ -374,7 +373,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     breadcrumbPath,
     hasUploadTask,
     uploadingCount,
-    isFavoriteCacheReady,
+    isFavoriteCacheReady: computed(() => favoriteIds.value.size > 0),
     // actions
     setFileType,
     enterFolder,

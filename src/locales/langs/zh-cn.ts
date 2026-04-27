@@ -1538,12 +1538,29 @@ const local: App.I18n.Schema = {
         title: '回收站',
         restore: '恢复',
         deletePermanently: '彻底删除',
-        empty: '清空回收站'
+        empty: '清空回收站',
+        moveToTrash: '移至回收站',
+        moveToTrashSuccess: '已移至回收站',
+        deletePermanentlySuccess: '已彻底删除',
+        permanentDeleteWarning: '彻底删除不可撤销，文件将无法恢复，确定继续？',
+        permanentDeleteConfirmSingle: '此操作不可撤销，确定彻底删除此文件？',
+        permanentDeleteConfirmMultiple: '此操作不可撤销，确定彻底删除 {count} 个文件？',
+        restoreConfirmSingle: '确定将此文件恢复到原位置？',
+        restoreConfirmMultiple: '确定将 {count} 个文件恢复到原位置？',
+        restoreSuccess: '文件已恢复',
+        emptyConfirm: '此操作不可撤销，确定清空回收站？',
+        emptySuccess: '回收站已清空',
+        cannotDownload: '回收站文件无法下载'
       },
       favorite: {
         title: '我的收藏',
         add: '添加收藏',
-        remove: '取消收藏'
+        remove: '取消收藏',
+        removeConfirmSingle: '确定取消收藏此文件？',
+        removeConfirmMultiple: '确定取消收藏 {count} 个文件？',
+        removeSuccess: '已取消收藏',
+        removeFailed: '取消收藏失败',
+        downloadNotReady: '下载功能开发中'
       }
     },
     share: {

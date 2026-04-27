@@ -46,9 +46,11 @@ interface Emits {
   (e: 'fileFavorite', file: Api.Disk.FileItem): void;
   (e: 'fileAddFavorite', file: Api.Disk.FileItem): void;
   (e: 'fileRemoveFavorite', file: Api.Disk.FileItem): void;
+  (e: 'fileRestore', file: Api.Disk.FileItem): void;
   (e: 'fileCreated', name: string): void;
   (e: 'folderCreated', name: string): void;
   (e: 'refresh'): void;
+  (e: 'emptyTrash'): void;
   (e: 'fileRenameConfirm', newName: string): void;
   (e: 'fileRenameCancel'): void;
   /** 选中状态变化（特殊页面使用） */
@@ -227,6 +229,9 @@ function handleCheckedRowKeysChange(keys: CommonType.IdType[]) {
 }
 
 function handleRowDblClick(row: Api.Disk.FileItem) {
+  // 回收站页面禁用双击预览
+  if (props.pageType === 'trash') return;
+
   if (row.isFolder) {
     diskStore.enterFolder(row);
   } else {
@@ -281,6 +286,8 @@ function handleContextSelect(key: string) {
     case 'delete': if (file) emit('fileDelete', file); break;
     case 'addFavorite': if (file) emit('fileAddFavorite', file); break;
     case 'removeFavorite': if (file) emit('fileRemoveFavorite', file); break;
+    case 'restore': if (file) emit('fileRestore', file); break;
+    case 'emptyTrash': emit('emptyTrash'); break;
     case 'view-grid': diskStore.setViewMode('grid'); break;
     case 'view-list': diskStore.setViewMode('list'); break;
     case 'sort-name': applySort('name'); break;

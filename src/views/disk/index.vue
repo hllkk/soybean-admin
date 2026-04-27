@@ -434,15 +434,31 @@ async function handleDeleteFile(file: Api.Disk.FileItem) {
   window.$dialog?.warning({
     title: $t('page.disk.toolbar.delete'),
     content: `${$t('page.disk.moveCopy.deleteConfirm')} "${file.fileName}"?`,
-    positiveText: $t('common.confirm'),
-    negativeText: $t('common.cancel'),
+    positiveText: $t('page.disk.trash.moveToTrash'),
+    negativeText: $t('page.disk.trash.deletePermanently'),
     onPositiveClick: async () => {
       const { fetchDeleteFile } = await import('@/service/api/disk/file');
       const { error } = await fetchDeleteFile([file.fileId]);
       if (!error) {
-        window.$message?.success($t('page.disk.moveCopy.deleteSuccess'));
+        window.$message?.success($t('page.disk.trash.moveToTrashSuccess'));
         getFileList();
       }
+    },
+    onNegativeClick: async () => {
+      window.$dialog?.error({
+        title: $t('page.disk.trash.deletePermanently'),
+        content: $t('page.disk.trash.permanentDeleteWarning'),
+        positiveText: $t('common.confirm'),
+        negativeText: $t('common.cancel'),
+        onPositiveClick: async () => {
+          const { fetchDeleteFile } = await import('@/service/api/disk/file');
+          const { error } = await fetchDeleteFile([file.fileId], true);
+          if (!error) {
+            window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
+            getFileList();
+          }
+        }
+      });
     }
   });
 }
@@ -561,24 +577,40 @@ function handleToolbarDelete() {
   const selectedFiles = diskStore.currentFileList.filter(f => selectedFileIds.includes(f.fileId));
   if (selectedFiles.length === 0) return;
 
-  const fileNames = selectedFiles.map(f => f.fileName).join(', ');
   const isMultiple = selectedFiles.length > 1;
 
   window.$dialog?.warning({
     title: $t('page.disk.toolbar.delete'),
     content: isMultiple
-      ? `${$t('page.disk.moveCopy.deleteConfirm')} ${selectedFiles.length} 个文件?\n${fileNames}`
+      ? `${$t('page.disk.moveCopy.deleteConfirm')} ${selectedFiles.length} 个文件?`
       : `${$t('page.disk.moveCopy.deleteConfirm')} "${selectedFiles[0].fileName}"?`,
-    positiveText: $t('common.confirm'),
-    negativeText: $t('common.cancel'),
+    positiveText: $t('page.disk.trash.moveToTrash'),
+    negativeText: $t('page.disk.trash.deletePermanently'),
     onPositiveClick: async () => {
       const { fetchDeleteFile } = await import('@/service/api/disk/file');
       const { error } = await fetchDeleteFile(selectedFileIds);
       if (!error) {
-        window.$message?.success($t('page.disk.moveCopy.deleteSuccess'));
+        window.$message?.success($t('page.disk.trash.moveToTrashSuccess'));
         diskStore.clearSelection();
         getFileList();
       }
+    },
+    onNegativeClick: async () => {
+      window.$dialog?.error({
+        title: $t('page.disk.trash.deletePermanently'),
+        content: $t('page.disk.trash.permanentDeleteWarning'),
+        positiveText: $t('common.confirm'),
+        negativeText: $t('common.cancel'),
+        onPositiveClick: async () => {
+          const { fetchDeleteFile } = await import('@/service/api/disk/file');
+          const { error } = await fetchDeleteFile(selectedFileIds, true);
+          if (!error) {
+            window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
+            diskStore.clearSelection();
+            getFileList();
+          }
+        }
+      });
     }
   });
 }
@@ -777,6 +809,7 @@ onMounted(async () => {
     </Teleport>
     <!-- Image Preview -->
     <ImagePreview ref="imagePreviewRef" />
+    <TextPreview />
   </TableSiderLayout>
 </template>
 

@@ -31,12 +31,27 @@ const emit = defineEmits<{
 
 const { SvgIconVNode } = useSvgIcon();
 
-// 是否在收藏页面
 const isFavoritePage = computed(() => props.pageType === 'favorite');
+const isTrashPage = computed(() => props.pageType === 'trash');
+
+const trashFileOptions = computed<DropdownOption[]>(() => [
+  {
+    label: $t('page.disk.trash.restore'),
+    key: 'restore',
+    icon: SvgIconVNode({ icon: 'mdi:restore', fontSize: 18 })
+  },
+  {
+    label: $t('page.disk.trash.deletePermanently'),
+    key: 'delete',
+    icon: SvgIconVNode({ icon: 'mdi:delete-forever', fontSize: 18 })
+  }
+]);
 
 const fileOptions = computed<DropdownOption[]>(() => {
-  // 收藏页面始终显示"取消收藏"
-  // 网盘页面根据 fileIsFavorite 动态显示
+  if (isTrashPage.value) {
+    return trashFileOptions.value;
+  }
+
   const showRemoveFavorite = isFavoritePage.value || props.fileIsFavorite === true;
 
   return [
@@ -83,57 +98,69 @@ const fileOptions = computed<DropdownOption[]>(() => {
   ];
 });
 
-const areaOptions = computed<DropdownOption[]>(() => [
-  {
-    label: $t('page.disk.contextMenu.view'),
-    key: 'view',
-    icon: SvgIconVNode({ icon: 'mdi:eye-outline', fontSize: 18 }),
-    children: [
-      {
-        label: $t('page.disk.contextMenu.viewGrid'),
-        key: 'view-grid',
-        icon: SvgIconVNode({ icon: 'mdi:view-grid-outline', fontSize: 18 })
-      },
-      {
-        label: $t('page.disk.contextMenu.viewList'),
-        key: 'view-list',
-        icon: SvgIconVNode({ icon: 'mdi:view-list-outline', fontSize: 18 })
-      }
-    ]
-  },
-  {
-    label: $t('page.disk.contextMenu.sortBy'),
-    key: 'sort',
-    icon: SvgIconVNode({ icon: 'mdi:sort', fontSize: 18 }),
-    children: [
-      {
-        label: $t('page.disk.contextMenu.sortName'),
-        key: 'sort-name',
-        icon: SvgIconVNode({ icon: 'mdi:sort-alphabetical-ascending', fontSize: 18 })
-      },
-      {
-        label: $t('page.disk.contextMenu.sortSize'),
-        key: 'sort-size',
-        icon: SvgIconVNode({ icon: 'mdi:sort-numeric-ascending', fontSize: 18 })
-      },
-      {
-        label: $t('page.disk.contextMenu.sortTime'),
-        key: 'sort-modifyTime',
-        icon: SvgIconVNode({ icon: 'mdi:clock-outline', fontSize: 18 })
-      }
-    ]
-  },
-  {
-    label: $t('page.disk.contextMenu.refresh'),
-    key: 'refresh',
-    icon: SvgIconVNode({ icon: 'mdi:refresh', fontSize: 18 })
-  },
-  {
-    label: $t('page.disk.contextMenu.reload'),
-    key: 'reload',
-    icon: SvgIconVNode({ icon: 'mdi:reload', fontSize: 18 })
+const areaOptions = computed<DropdownOption[]>(() => {
+  const options: DropdownOption[] = [
+    {
+      label: $t('page.disk.contextMenu.view'),
+      key: 'view',
+      icon: SvgIconVNode({ icon: 'mdi:eye-outline', fontSize: 18 }),
+      children: [
+        {
+          label: $t('page.disk.contextMenu.viewGrid'),
+          key: 'view-grid',
+          icon: SvgIconVNode({ icon: 'mdi:view-grid-outline', fontSize: 18 })
+        },
+        {
+          label: $t('page.disk.contextMenu.viewList'),
+          key: 'view-list',
+          icon: SvgIconVNode({ icon: 'mdi:view-list-outline', fontSize: 18 })
+        }
+      ]
+    },
+    {
+      label: $t('page.disk.contextMenu.sortBy'),
+      key: 'sort',
+      icon: SvgIconVNode({ icon: 'mdi:sort', fontSize: 18 }),
+      children: [
+        {
+          label: $t('page.disk.contextMenu.sortName'),
+          key: 'sort-name',
+          icon: SvgIconVNode({ icon: 'mdi:sort-alphabetical-ascending', fontSize: 18 })
+        },
+        {
+          label: $t('page.disk.contextMenu.sortSize'),
+          key: 'sort-size',
+          icon: SvgIconVNode({ icon: 'mdi:sort-numeric-ascending', fontSize: 18 })
+        },
+        {
+          label: $t('page.disk.contextMenu.sortTime'),
+          key: 'sort-modifyTime',
+          icon: SvgIconVNode({ icon: 'mdi:clock-outline', fontSize: 18 })
+        }
+      ]
+    },
+    {
+      label: $t('page.disk.contextMenu.refresh'),
+      key: 'refresh',
+      icon: SvgIconVNode({ icon: 'mdi:refresh', fontSize: 18 })
+    },
+    {
+      label: $t('page.disk.contextMenu.reload'),
+      key: 'reload',
+      icon: SvgIconVNode({ icon: 'mdi:reload', fontSize: 18 })
+    }
+  ];
+
+  if (isTrashPage.value) {
+    options.unshift({
+      label: $t('page.disk.trash.empty'),
+      key: 'emptyTrash',
+      icon: SvgIconVNode({ icon: 'mdi:delete-sweep', fontSize: 18 })
+    });
   }
-]);
+
+  return options;
+});
 
 const options = computed(() => (props.type === 'file' ? fileOptions.value : areaOptions.value));
 
