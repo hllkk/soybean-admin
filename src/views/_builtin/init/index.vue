@@ -3,7 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { getPaletteColorByNumber, mixColor } from '@sa/color';
 import { fetchCheckDB, fetchInitDB } from '@/service/api/init';
-import { useNaiveForm } from '@/hooks/common/form';
+import { useNaiveForm, createDynamicPwdRule, useFormRules } from '@/hooks/common/form';
 import { useThemeStore } from '@/store/modules/theme';
 import { localStg } from '@/utils/storage';
 import WaveBg from '@/components/custom/wave-bg.vue';
@@ -18,6 +18,7 @@ defineOptions({
 const router = useRouter();
 const themeStore = useThemeStore();
 const { formRef, validate } = useNaiveForm();
+const { createConfirmPwdRule } = useFormRules();
 
 // 背景颜色（与登录页面一致）
 const bgThemeColor = computed(() =>
@@ -88,24 +89,21 @@ const rules = computed(() => {
     dbName: [{ required: true, message: '请输入数据库名' }]
   };
 
+  // 密码策略配置（与系统默认配置一致）
+  const passwordPolicy = {
+    minLength: 8,
+    requireUppercase: false,
+    requireLowercase: true,
+    requireDigit: true,
+    requireSpecial: true
+  };
+
   const step3: Record<string, App.Global.FormRule[]> = {
     adminPassword: [
       { required: true, message: '请输入管理员密码' },
-      { min: 6, message: '密码长度至少6位' }
+      createDynamicPwdRule(passwordPolicy)
     ],
-    confirmPassword: [
-      { required: true, message: '请确认管理员密码' },
-      {
-        validator: (rule: any, value: string) => {
-          if (value.trim() !== '' && value !== model.adminPassword) {
-            return Promise.reject(rule.message);
-          }
-          return Promise.resolve();
-        },
-        message: '两次输入的密码不一致',
-        trigger: 'input'
-      }
-    ]
+    confirmPassword: createConfirmPwdRule(computed(() => model.adminPassword))
   };
 
   const empty: Record<string, App.Global.FormRule[]> = {};
@@ -382,7 +380,6 @@ checkDBStatus();
                   show-password-on="click"
                   placeholder="请输入管理员密码"
                 />
-                <NText depth="3" class="text-12px">至少8位，需包含大小写字母、数字和特殊字符</NText>
               </NFormItem>
               <NFormItem label="确认密码" path="confirmPassword">
                 <NInput
