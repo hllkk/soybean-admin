@@ -1,5 +1,13 @@
 import { request } from '@/service/request';
 
+/** 获取公开系统设置（无需登录） */
+export function fetchGetPublicSystemSettings() {
+  return request<Api.SystemManage.PublicSettings>({
+    url: '/system/settings/public',
+    method: 'get'
+  });
+}
+
 /** 获取系统设置 */
 export function fetchGetSystemSettings() {
   return request<Api.SystemManage.Settings>({

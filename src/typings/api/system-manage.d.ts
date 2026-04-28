@@ -164,6 +164,24 @@ declare namespace Api {
       enableGitee?: boolean;
     }
 
+    // 系统设置 - 公开设置（登录页面使用，不含敏感信息）
+    interface PublicSettings {
+      systemName: string;
+      systemDescription: string;
+      logoUrl: string;
+      faviconUrl: string;
+      enableVerifyCode?: boolean;
+      verifyCodeType?: 'click' | 'slide' | 'dragdrop' | 'rotate';
+      verifyCodeLen?: number;
+      verifyCodeExp?: number;
+      verifyCodeTokenExp?: number;
+      verifyInaccuracy?: number;
+      enableWecom?: boolean;
+      enableWechat?: boolean;
+      enableGitee?: boolean;
+      enableGithub?: boolean;
+    }
+
     // 系统设置 - 完整聚合
     interface Settings {
       general?: GeneralSettings;
