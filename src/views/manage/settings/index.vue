@@ -42,7 +42,7 @@ const config = ref<SettingConfig>({
   security: {
     passwordMinLength: 8,
     passwordRequireUppercase: false,
-    passwordRequireLowercase: false,
+    passwordRequireLowercase: true,
     passwordRequireDigit: true,
     passwordRequireSpecial: true,
     loginFailLockCount: 5,
@@ -144,7 +144,7 @@ async function loadConfig() {
       config.value.security = {
         passwordMinLength: sec.passwordMinLength || 8,
         passwordRequireUppercase: sec.passwordRequireUppercase ?? false,
-        passwordRequireLowercase: sec.passwordRequireLowercase ?? false,
+        passwordRequireLowercase: sec.passwordRequireLowercase ?? true,
         passwordRequireDigit: sec.passwordRequireDigit ?? true,
         passwordRequireSpecial: sec.passwordRequireSpecial ?? true,
         loginFailLockCount: sec.loginFailLockCount || 5,
@@ -186,7 +186,7 @@ async function loadConfig() {
         weworkDomainFileContent: auth.wecom?.validateDomainFileContent || '',
         wechatEnabled: auth.wechat?.enableWechat || false,
         giteeEnabled: auth.gitee?.enableGitee || false,
-        githubEnabled: false
+        githubEnabled: auth.github?.enableGithub || false
       };
     }
   } catch (error) {
@@ -240,6 +240,9 @@ async function handleSave() {
         },
         gitee: {
           enableGitee: auth.giteeEnabled
+        },
+        github: {
+          enableGithub: auth.githubEnabled
         }
       },
       disk: {

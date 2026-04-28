@@ -178,6 +178,7 @@ declare namespace Api {
       wecom?: WecomSettings;
       wechat?: WechatSettings;
       gitee?: GiteeSettings;
+      github?: GithubSettings;
     }
 
     interface WecomSettings {
@@ -194,6 +195,10 @@ declare namespace Api {
       enableGitee?: boolean;
     }
 
+    interface GithubSettings {
+      enableGithub?: boolean;
+    }
+
     interface SecuritySettings {
       passwordMinLength?: number;
       passwordRequireUppercase?: boolean;
@@ -206,11 +211,6 @@ declare namespace Api {
       ipValidationMode?: 'blacklist' | 'whitelist';
       ipBlacklist?: string;
       ipWhitelist?: string;
-      totp?: boolean;
-      ip_check?: boolean;
-      ip_check_mode?: number;
-      ip_black_list?: string[];
-      ip_white_list?: string[];
     }
 
     interface LdapSettings {
