@@ -13,11 +13,13 @@ export function fetchCheckDB() {
 /**
  * 初始化数据库
  * @param data 初始化参数
+ * 注意：初始化可能需要较长时间，设置较长的超时时间
  */
 export function fetchInitDB(data: Api.Init.InitDBRequest) {
-  return request<boolean>({
+  return request<void>({
     url: '/init/initDB',
     method: 'post',
-    data
+    data,
+    timeout: 5 * 60 * 1000 // 5分钟超时，初始化可能需要较长时间
   });
 }

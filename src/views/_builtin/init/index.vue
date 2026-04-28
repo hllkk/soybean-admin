@@ -220,7 +220,7 @@ async function handleSubmit() {
   const { data, error } = await fetchInitDB(params);
   loading.value = false;
 
-  if (!error && data) {
+  if (!error) {
     // 清除初始化状态缓存，确保跳转到登录页后不会被重定向回来
     localStg.remove(CHECK_DB_CACHE_KEY);
     window.$message?.destroyAll();
