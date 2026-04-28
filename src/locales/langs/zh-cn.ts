@@ -444,6 +444,7 @@ const local: App.I18n.Schema = {
         user: '普通用户',
         thirdPartyLogin: '第三方登录',
         wecomLogin: '企业微信登录',
+        wechatLogin: '微信登录',
         githubLogin: 'GitHub 登录',
         giteeLogin: 'Gitee 登录',
         featureNotImplemented: '该功能暂未实现'
@@ -471,6 +472,7 @@ const local: App.I18n.Schema = {
         title: '企业微信登录',
         loading: '正在加载二维码...',
         scanTip: '请使用企业微信扫描二维码登录',
+        scanned: '已扫码，正在登录...',
         countdown: '二维码将于 {seconds} 秒后过期',
         expired: '二维码已过期，请点击刷新',
         refresh: '刷新二维码',

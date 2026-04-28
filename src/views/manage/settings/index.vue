@@ -177,6 +177,18 @@ async function loadConfig() {
         transcodePreset: settings.disk.videoTranscode?.preset || 'medium'
       };
     }
+    // 加载认证配置
+    if (settings?.authentication) {
+      const auth = settings.authentication;
+      config.value.auth = {
+        weworkEnabled: auth.wecom?.enableWecom || false,
+        weworkDomainFileName: auth.wecom?.validateDomainFileName || '',
+        weworkDomainFileContent: auth.wecom?.validateDomainFileContent || '',
+        wechatEnabled: auth.wechat?.enableWechat || false,
+        giteeEnabled: auth.gitee?.enableGitee || false,
+        githubEnabled: false
+      };
+    }
   } catch (error) {
     console.error('加载配置失败:', error);
   }
@@ -188,6 +200,7 @@ async function handleSave() {
     // 构建后端需要的 Settings 结构
     const disk = config.value.disk;
     const security = config.value.security;
+    const auth = config.value.auth;
     const settings: Api.SystemManage.Settings = {
       general: {
         systemName: config.value.general.systemName,
@@ -215,6 +228,19 @@ async function handleSave() {
         ipValidationMode: security.ipValidationMode,
         ipBlacklist: security.ipBlacklist,
         ipWhitelist: security.ipWhitelist
+      },
+      authentication: {
+        wecom: {
+          enableWecom: auth.weworkEnabled,
+          validateDomainFileName: auth.weworkDomainFileName,
+          validateDomainFileContent: auth.weworkDomainFileContent
+        },
+        wechat: {
+          enableWechat: auth.wechatEnabled
+        },
+        gitee: {
+          enableGitee: auth.giteeEnabled
+        }
       },
       disk: {
         diskName: disk.diskName,

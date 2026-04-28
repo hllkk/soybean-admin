@@ -584,6 +584,7 @@ declare namespace App {
             user: string;
             thirdPartyLogin: string;
             wecomLogin: string;
+            wechatLogin: string;
             githubLogin: string;
             giteeLogin: string;
             featureNotImplemented: string;
@@ -611,6 +612,7 @@ declare namespace App {
             title: string;
             loading: string;
             scanTip: string;
+            scanned: string;
             countdown: string;
             expired: string;
             refresh: string;

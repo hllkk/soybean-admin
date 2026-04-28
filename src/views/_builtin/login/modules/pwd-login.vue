@@ -2,6 +2,7 @@
 import { computed, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
+import { useSystemConfigStore } from '@/store/modules/system-config';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { useLoginInit } from '@/hooks/business/useLoginInit';
 import { $t } from '@/locales';
@@ -13,7 +14,14 @@ defineOptions({
 
 const router = useRouter();
 const authStore = useAuthStore();
+const systemConfigStore = useSystemConfigStore();
 const { formRef, validate } = useNaiveForm();
+
+// 第三方登录开关状态
+const wecomEnabled = computed(() => systemConfigStore.isWecomEnabled());
+const wechatEnabled = computed(() => systemConfigStore.isWechatEnabled());
+const giteeEnabled = computed(() => systemConfigStore.isGiteeEnabled());
+const hasThirdPartyLogin = computed(() => systemConfigStore.hasAnyThirdPartyLogin);
 
 interface FormModel {
   userName: string;
@@ -71,7 +79,7 @@ function doLogin(captchaToken: string) {
   authStore.loginWithInfo(model.userName, model.password, captchaToken);
 }
 
-function handleThirdPartyLogin(type: 'wecom' | 'github' | 'gitee') {
+function handleThirdPartyLogin(type: 'wecom' | 'wechat' | 'gitee') {
   if (type === 'wecom') {
     router.push({ name: 'login', params: { module: 'wecom-login' } });
     return;
@@ -118,39 +126,41 @@ function goToInit() {
           </template>
           前往系统初始化
         </NButton>
-        <NDivider class="text-14px text-#666 !m-0">{{ $t('page.login.pwdLogin.thirdPartyLogin') }}</NDivider>
-        <div class="flex-center gap-24px">
-          <NTooltip trigger="hover">
-            <template #trigger>
-              <NButton quaternary circle size="large" class="third-party-btn wecom" @click="handleThirdPartyLogin('wecom')">
-                <template #icon>
-                  <icon-tdesign-logo-wecom class="size-5" />
-                </template>
-              </NButton>
-            </template>
-            {{ $t('page.login.pwdLogin.wecomLogin') }}
-          </NTooltip>
-          <NTooltip trigger="hover">
-            <template #trigger>
-              <NButton quaternary circle size="large" class="third-party-btn github" @click="handleThirdPartyLogin('github')">
-                <template #icon>
-                  <icon-radix-icons-github-logo class="size-5" />
-                </template>
-              </NButton>
-            </template>
-            {{ $t('page.login.pwdLogin.githubLogin') }}
-          </NTooltip>
-          <NTooltip trigger="hover">
-            <template #trigger>
-              <NButton quaternary circle size="large" class="third-party-btn gitee" @click="handleThirdPartyLogin('gitee')">
-                <template #icon>
-                  <icon-simple-icons-gitee class="size-5" />
-                </template>
-              </NButton>
-            </template>
-            {{ $t('page.login.pwdLogin.giteeLogin') }}
-          </NTooltip>
-        </div>
+        <template v-if="hasThirdPartyLogin">
+          <NDivider class="text-14px text-#666 !m-0">{{ $t('page.login.pwdLogin.thirdPartyLogin') }}</NDivider>
+          <div class="flex-center gap-24px">
+            <NTooltip v-if="wecomEnabled" trigger="hover">
+              <template #trigger>
+                <NButton quaternary circle size="large" class="third-party-btn wecom" @click="handleThirdPartyLogin('wecom')">
+                  <template #icon>
+                    <icon-tdesign-logo-wecom class="size-5" />
+                  </template>
+                </NButton>
+              </template>
+              {{ $t('page.login.pwdLogin.wecomLogin') }}
+            </NTooltip>
+            <NTooltip v-if="wechatEnabled" trigger="hover">
+              <template #trigger>
+                <NButton quaternary circle size="large" class="third-party-btn wechat" @click="handleThirdPartyLogin('wechat')">
+                  <template #icon>
+                    <icon-mdi-wechat class="size-5" />
+                  </template>
+                </NButton>
+              </template>
+              {{ $t('page.login.pwdLogin.wechatLogin') }}
+            </NTooltip>
+            <NTooltip v-if="giteeEnabled" trigger="hover">
+              <template #trigger>
+                <NButton quaternary circle size="large" class="third-party-btn gitee" @click="handleThirdPartyLogin('gitee')">
+                  <template #icon>
+                    <icon-simple-icons-gitee class="size-5" />
+                  </template>
+                </NButton>
+              </template>
+              {{ $t('page.login.pwdLogin.giteeLogin') }}
+            </NTooltip>
+          </div>
+        </template>
       </NSpace>
     </NForm>
 
@@ -177,10 +187,10 @@ function goToInit() {
 :root.dark .third-party-btn.wecom { color: #5B9DFA; }
 :root.dark .third-party-btn.wecom:hover { background-color: rgba(91, 157, 250, 0.15); }
 
-.third-party-btn.github { color: #24292F; }
-.third-party-btn.github:hover { background-color: rgba(36, 41, 47, 0.1); }
-:root.dark .third-party-btn.github { color: #E6EDF3; }
-:root.dark .third-party-btn.github:hover { background-color: rgba(230, 237, 243, 0.1); }
+.third-party-btn.wechat { color: #07C160; }
+.third-party-btn.wechat:hover { background-color: rgba(7, 193, 96, 0.1); }
+:root.dark .third-party-btn.wechat { color: #2AAE67; }
+:root.dark .third-party-btn.wechat:hover { background-color: rgba(42, 174, 103, 0.15); }
 
 .third-party-btn.gitee { color: #C71D23; }
 .third-party-btn.gitee:hover { background-color: rgba(199, 29, 35, 0.1); }

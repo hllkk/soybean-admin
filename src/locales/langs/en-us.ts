@@ -448,6 +448,7 @@ const local: App.I18n.Schema = {
         user: 'User',
         thirdPartyLogin: 'Third Party Login',
         wecomLogin: 'WeCom Login',
+        wechatLogin: 'WeChat Login',
         githubLogin: 'GitHub Login',
         giteeLogin: 'Gitee Login',
         featureNotImplemented: 'This feature is not implemented yet'
@@ -475,6 +476,7 @@ const local: App.I18n.Schema = {
         title: 'WeCom Login',
         loading: 'Loading QR code...',
         scanTip: 'Please scan the QR code with WeCom',
+        scanned: 'Scanned, logging in...',
         countdown: 'QR code expires in {seconds} seconds',
         expired: 'QR code expired, click to refresh',
         refresh: 'Refresh QR Code',

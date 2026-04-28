@@ -21,6 +21,7 @@ const countdown = ref(120);
 const errorMessage = ref('');
 const pollInterval = ref(3000);
 const lastStatus = ref('');
+const scanned = ref(false); // 用户已扫码状态
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
@@ -30,6 +31,7 @@ async function loadQrCode() {
   expired.value = false;
   errorMessage.value = '';
   lastStatus.value = '';
+  scanned.value = false;
   pollInterval.value = 3000;
 
   stopPolling();
@@ -68,9 +70,10 @@ function scheduleNextPoll() {
 
     const { data, error } = await fetchQrCodeStatus(sceneId.value);
     if (!error && data) {
-      // 已扫描但未确认，加速轮询
+      // 已扫描但未确认，加速轮询并显示提示
       if (data.status === 'scanned' && lastStatus.value !== 'scanned') {
         pollInterval.value = 1000;
+        scanned.value = true; // 显示"已扫码"提示
       }
       lastStatus.value = data.status;
 
@@ -174,13 +177,18 @@ loadQrCode();
       </div>
 
       <div class="mt-16px flex-col-center gap-8px">
-        <p class="text-14px text-gray-500">
+        <!-- 已扫码提示 -->
+        <div v-if="scanned && !expired" class="scanned-tip">
+          <NSpin size="small" />
+          <span class="ml-8px">{{ $t('page.login.wecomLogin.scanned') }}</span>
+        </div>
+        <p v-else class="text-14px text-gray-500">
           {{ $t('page.login.wecomLogin.scanTip') }}
         </p>
-        <p v-if="!expired" class="text-12px text-gray-400">
+        <p v-if="!expired && !scanned" class="text-12px text-gray-400">
           {{ $t('page.login.wecomLogin.countdown', { seconds: countdown }) }}
         </p>
-        <p v-else class="text-12px text-orange-500">
+        <p v-else-if="expired" class="text-12px text-orange-500">
           {{ $t('page.login.wecomLogin.expired') }}
         </p>
       </div>
@@ -223,5 +231,16 @@ loadQrCode();
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(4px);
+}
+
+.scanned-tip {
+  display: flex;
+  align-items: center;
+  color: #52c41a;
+  font-size: 14px;
+}
+
+:root.dark .scanned-tip {
+  color: #73d13d;
 }
 </style>

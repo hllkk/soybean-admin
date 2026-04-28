@@ -159,6 +159,9 @@ declare namespace Api {
       verifyCodeExp?: number;       // 过期时间(分钟)
       verifyCodeTokenExp?: number;  // Token过期时间(分钟)
       verifyInaccuracy?: number;    // 误差范围(像素)
+      // 第三方登录开关（兼容旧配置）
+      enableWechat?: boolean;
+      enableGitee?: boolean;
     }
 
     // 系统设置 - 完整聚合
