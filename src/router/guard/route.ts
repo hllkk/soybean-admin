@@ -8,7 +8,7 @@ import { getRouteName } from '@/router/elegant/transform';
 import { fetchCheckDB } from '@/service/api/init';
 
 // 初始化状态缓存配置
-const CHECK_DB_CACHE_KEY = 'check_db_result';
+export const CHECK_DB_CACHE_KEY = 'check_db_result';
 const CHECK_DB_CACHE_EXPIRE = 5 * 60 * 1000; // 5分钟缓存
 
 interface CheckDBCache {
@@ -18,6 +18,14 @@ interface CheckDBCache {
 
 // 初始化状态（内存缓存，避免路由守卫频繁调用 API）
 let initStatusCache: { needInit: boolean; timestamp: number } | null = null;
+
+/**
+ * 清除初始化状态缓存（初始化成功后调用）
+ */
+export function clearInitStatusCache() {
+  initStatusCache = null;
+  localStg.remove(CHECK_DB_CACHE_KEY);
+}
 
 /**
  * 检查系统初始化状态（带缓存）

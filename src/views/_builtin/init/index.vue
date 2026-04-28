@@ -5,11 +5,8 @@ import { getPaletteColorByNumber, mixColor } from '@sa/color';
 import { fetchCheckDB, fetchInitDB } from '@/service/api/init';
 import { useNaiveForm, createDynamicPwdRule, useFormRules } from '@/hooks/common/form';
 import { useThemeStore } from '@/store/modules/theme';
-import { localStg } from '@/utils/storage';
+import { clearInitStatusCache } from '@/router/guard/route';
 import WaveBg from '@/components/custom/wave-bg.vue';
-
-// 初始化状态缓存 Key（与路由守卫保持一致）
-const CHECK_DB_CACHE_KEY = 'check_db_result';
 
 defineOptions({
   name: 'InitPage'
@@ -217,12 +214,12 @@ async function handleSubmit() {
     params.redisDB = model.redisDB;
   }
 
-  const { data, error } = await fetchInitDB(params);
+  const { error } = await fetchInitDB(params);
   loading.value = false;
 
   if (!error) {
-    // 清除初始化状态缓存，确保跳转到登录页后不会被重定向回来
-    localStg.remove(CHECK_DB_CACHE_KEY);
+    // 清除初始化状态缓存（包括内存缓存和 localStorage 缓存），确保跳转到登录页后不会被重定向回来
+    clearInitStatusCache();
     window.$message?.destroyAll();
     window.$message?.success('初始化成功，请登录');
     router.replace('/login/pwd-login');
