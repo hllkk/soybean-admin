@@ -2,7 +2,6 @@
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { PDFViewer } from '@embedpdf/vue-pdf-viewer';
 import type { PluginRegistry } from '@embedpdf/vue-pdf-viewer';
-import { useAuthStore } from '@/store/modules/auth';
 import { useThemeStore } from '@/store/modules/theme';
 import { useAppStore } from '@/store/modules/app';
 import { storeToRefs } from 'pinia';
@@ -28,10 +27,8 @@ interface Emits {
 
 const emit = defineEmits<Emits>();
 
-const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const appStore = useAppStore();
-const { token } = storeToRefs(authStore);
 const { darkMode } = storeToRefs(themeStore);
 const { locale } = storeToRefs(appStore);
 
@@ -41,9 +38,7 @@ let i18nCap: I18nCapability | null = null;
 
 const pdfUrl = computed(() => {
   if (!props.fileId) return '';
-  const baseUrl = getPreviewUrl(props.fileId);
-  const separator = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${separator}token=${token.value}`;
+  return getPreviewUrl(props.fileId);
 });
 
 const embedLocale = computed(() => (locale.value === 'zh-CN' ? 'zh-CN' : 'en'));

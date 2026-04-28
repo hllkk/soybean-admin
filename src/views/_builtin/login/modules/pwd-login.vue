@@ -68,7 +68,7 @@ function onCaptchaSuccess(captchaToken: string) {
 
 function doLogin(captchaToken: string) {
   saveRememberedUser(model.userName);
-  authStore.login(model.userName, model.password, captchaToken);
+  authStore.loginWithInfo(model.userName, model.password, captchaToken);
 }
 
 function handleThirdPartyLogin(type: 'wecom' | 'github' | 'gitee') {

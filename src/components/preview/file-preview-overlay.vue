@@ -3,9 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { getPreviewCategory, getMonacoLanguage } from '@/utils/file-type';
 import { getServiceBaseURL } from '@/utils/service';
-import { useAuthStore } from '@/store/modules/auth';
 import { useAppStore } from '@/store/modules/app';
-import { localStg } from '@/utils/storage';
 import OfficePreview from './office-preview.vue';
 import PdfPreview from './pdf-preview.vue';
 import ImagePreview from './image-preview.vue';
@@ -37,9 +35,7 @@ interface Emits {
 
 const emit = defineEmits<Emits>();
 
-const authStore = useAuthStore();
 const appStore = useAppStore();
-const { token } = storeToRefs(authStore);
 const { isMobile } = storeToRefs(appStore);
 
 const showOverlay = computed(() => props.visible && props.file);
@@ -85,7 +81,7 @@ interface AudioPreviewPlaylistItem {
 
 // 构建媒体 URL
 function buildMediaUrl(fileId: CommonType.IdType): string {
-  return `${baseURL}/preview/file/${fileId}?token=${token.value}`;
+  return `${baseURL}/preview/file/${fileId}`;
 }
 
 // 加载文本/代码文件内容
@@ -94,14 +90,8 @@ async function loadTextContent() {
 
   codeLoading.value = true;
   try {
-    const headers = new Headers();
-    const t = localStg.get('token');
-    if (t) {
-      headers.append('Authorization', `Bearer ${t}`);
-    }
-
     const url = `${baseURL}/preview/text/stream?fileId=${props.file.fileId}&t=${new Date().getTime()}`;
-    const response = await fetch(url, { method: 'GET', headers });
+    const response = await fetch(url, { method: 'GET', credentials: 'include' });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

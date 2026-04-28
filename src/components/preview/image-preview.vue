@@ -2,7 +2,6 @@
 import { api as viewerApi } from 'v-viewer';
 import 'viewerjs/dist/viewer.css';
 import { getServiceBaseURL } from '@/utils/service';
-import { getToken } from '@/store/modules/auth/shared';
 
 defineOptions({
   name: 'ImagePreview'
@@ -15,10 +14,9 @@ interface ImageItem {
 
 const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
 const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
-const token = getToken();
 
 function buildImageUrl(fileId: CommonType.IdType): string {
-  return `${baseURL}/preview/file/${fileId}?token=${token}`;
+  return `${baseURL}/preview/file/${fileId}`;
 }
 
 function show(images: ImageItem[], initialIndex = 0) {

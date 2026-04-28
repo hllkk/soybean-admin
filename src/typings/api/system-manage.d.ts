@@ -192,6 +192,17 @@ declare namespace Api {
     }
 
     interface SecuritySettings {
+      passwordMinLength?: number;
+      passwordRequireUppercase?: boolean;
+      passwordRequireLowercase?: boolean;
+      passwordRequireDigit?: boolean;
+      passwordRequireSpecial?: boolean;
+      loginFailLockCount?: number;
+      loginFailLockTime?: number;
+      ipValidationEnabled?: boolean;
+      ipValidationMode?: 'blacklist' | 'whitelist';
+      ipBlacklist?: string;
+      ipWhitelist?: string;
       totp?: boolean;
       ip_check?: boolean;
       ip_check_mode?: number;

@@ -3,7 +3,6 @@ import { computed, defineComponent, useAttrs } from 'vue';
 import type { UploadFileInfo } from 'naive-ui';
 import type { JSX } from 'vue/jsx-runtime';
 import { fetchBatchDeleteOss } from '@/service/api/system/oss';
-import { getToken } from '@/store/modules/auth/shared';
 import { getServiceBaseURL } from '@/utils/service';
 import { AcceptType } from '@/enum/business';
 
@@ -98,7 +97,6 @@ const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === '
 const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
 
 const headers: Record<string, string> = {
-  Authorization: `Bearer ${getToken()}`,
   clientid: import.meta.env.VITE_APP_CLIENT_ID!
 };
 
@@ -183,6 +181,7 @@ async function handleRemove(file: UploadFileInfo) {
       :data="data"
       :headers="headers"
       :max="max"
+      with-credentials
       :accept="accept"
       :multiple="max > 1"
       directory-dnd

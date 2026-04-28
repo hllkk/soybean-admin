@@ -20,7 +20,6 @@ import videoIcon from '@/assets/imgs/file-icons/video.png';
 import xlsIcon from '@/assets/imgs/file-icons/xls.png';
 import zipIcon from '@/assets/imgs/file-icons/zip.png';
 import { getServiceBaseURL } from '@/utils/service';
-import { getToken } from '@/store/modules/auth/shared';
 
 defineOptions({
   name: 'FileIcon'
@@ -89,9 +88,8 @@ const thumbnailUrl = computed(() => {
   if (thumbnailError.value) return '';
   const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
   const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
-  const token = getToken();
   const separator = isVideo.value ? '/view/cover' : '/view/thumbnail';
-  return `${baseURL}${separator}?id=${props.fileId}&token=${token}`;
+  return `${baseURL}${separator}?id=${props.fileId}`;
 });
 
 const showThumbnail = computed(() => thumbnailUrl.value !== '');

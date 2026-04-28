@@ -3,7 +3,6 @@ import { ref, computed, nextTick } from 'vue';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import { getToken } from '@/store/modules/auth/shared';
 import {
   fetchGetRecentList,
   fetchDeleteRecent,
@@ -91,7 +90,6 @@ const fileList = computed(() => recentList.value.map(convertToFileItem));
 const audioPlaylist = computed(() => {
   const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
   const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
-  const token = getToken();
 
   return fileList.value
     .filter(file => !file.isFolder && getPreviewCategory(file.fileName) === 'audio')
@@ -100,8 +98,8 @@ const audioPlaylist = computed(() => {
       title: file.fileName.replace(/\.[^.]+$/, ''),
       artist: '未知歌手',
       album: '',
-      cover: file.mediaCover ? `${baseURL}/view/cover?id=${file.fileId}&token=${token}` : '',
-      src: `${baseURL}/preview/file/${file.fileId}?token=${token}`,
+      cover: file.mediaCover ? `${baseURL}/view/cover?id=${file.fileId}` : '',
+      src: `${baseURL}/preview/file/${file.fileId}`,
       duration: undefined,
       lyrics: undefined
     }));

@@ -1,12 +1,14 @@
 import { localStg } from '@/utils/storage';
 
-/** Get token */
-export function getToken() {
-  return localStg.get('token') || '';
+/** Get authentication status - checks cookie-based auth flag */
+export function getToken(): string {
+  const isAuthenticated = localStg.get('isAuthenticated');
+  return isAuthenticated ? 'authenticated' : '';
 }
 
 /** Clear auth storage */
 export function clearAuthStorage() {
+  localStg.remove('isAuthenticated');
   localStg.remove('token');
   localStg.remove('refreshToken');
 }

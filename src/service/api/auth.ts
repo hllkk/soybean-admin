@@ -24,18 +24,27 @@ export function fetchGetUserInfo() {
   return request<Api.Auth.UserInfo>({ url: "/auth/getUserInfo" });
 }
 
+/** Login and get user info in one request */
+export function fetchLoginWithInfo(userName: string, password: string, captchaToken?: string) {
+  return request<Api.Auth.LoginWithInfoResponse>({
+    url: "/auth/loginWithInfo",
+    method: "post",
+    data: {
+      userName,
+      password,
+      captchaToken
+    }
+  });
+}
+
 /**
- * Refresh token
- *
- * @param refreshToken Refresh token
+ * Refresh token - refresh token is sent via HttpOnly cookie
  */
-export function fetchRefreshToken(refreshToken: string) {
+export function fetchRefreshToken() {
   return request<Api.Auth.LoginToken>({
     url: "/auth/refreshToken",
     method: "post",
-    data: {
-      refreshToken
-    }
+    data: {}
   });
 }
 

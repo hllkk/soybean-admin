@@ -40,8 +40,11 @@ const config = ref<SettingConfig>({
     verifyInaccuracy: 40
   },
   security: {
-    passwordMinLength: 6,
-    passwordRequireSpecial: false,
+    passwordMinLength: 8,
+    passwordRequireUppercase: false,
+    passwordRequireLowercase: false,
+    passwordRequireDigit: true,
+    passwordRequireSpecial: true,
     loginFailLockCount: 5,
     loginFailLockTime: 30,
     ipValidationEnabled: false,
@@ -136,6 +139,22 @@ async function loadConfig() {
         verifyInaccuracy: settings.general.verifyInaccuracy || 40
       };
     }
+    if (settings?.security) {
+      const sec = settings.security;
+      config.value.security = {
+        passwordMinLength: sec.passwordMinLength || 8,
+        passwordRequireUppercase: sec.passwordRequireUppercase ?? false,
+        passwordRequireLowercase: sec.passwordRequireLowercase ?? false,
+        passwordRequireDigit: sec.passwordRequireDigit ?? true,
+        passwordRequireSpecial: sec.passwordRequireSpecial ?? true,
+        loginFailLockCount: sec.loginFailLockCount || 5,
+        loginFailLockTime: sec.loginFailLockTime || 30,
+        ipValidationEnabled: sec.ipValidationEnabled ?? false,
+        ipValidationMode: sec.ipValidationMode || 'blacklist',
+        ipBlacklist: sec.ipBlacklist || '',
+        ipWhitelist: sec.ipWhitelist || ''
+      };
+    }
     if (settings?.disk) {
       config.value.disk = {
         maxUploadSize: settings.disk.maxUploadSize || 100,
@@ -168,6 +187,7 @@ async function handleSave() {
   try {
     // 构建后端需要的 Settings 结构
     const disk = config.value.disk;
+    const security = config.value.security;
     const settings: Api.SystemManage.Settings = {
       general: {
         systemName: config.value.general.systemName,
@@ -182,6 +202,19 @@ async function handleSave() {
         verifyCodeExp: config.value.general.verifyCodeExp,
         verifyCodeTokenExp: config.value.general.verifyCodeTokenExp,
         verifyInaccuracy: config.value.general.verifyInaccuracy
+      },
+      security: {
+        passwordMinLength: security.passwordMinLength,
+        passwordRequireUppercase: security.passwordRequireUppercase,
+        passwordRequireLowercase: security.passwordRequireLowercase,
+        passwordRequireDigit: security.passwordRequireDigit,
+        passwordRequireSpecial: security.passwordRequireSpecial,
+        loginFailLockCount: security.loginFailLockCount,
+        loginFailLockTime: security.loginFailLockTime,
+        ipValidationEnabled: security.ipValidationEnabled,
+        ipValidationMode: security.ipValidationMode,
+        ipBlacklist: security.ipBlacklist,
+        ipWhitelist: security.ipWhitelist
       },
       disk: {
         diskName: disk.diskName,

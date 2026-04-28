@@ -10,7 +10,6 @@ import { fetchGenerateStreamToken } from '@/service/api/disk';
 import { fetchGetShareInfo } from '@/service/api/disk/share';
 import { fetchAddRecent } from '@/service/api/disk/recent';
 import { getServiceBaseURL } from '@/utils/service';
-import { getToken } from '@/store/modules/auth/shared';
 import { getPreviewCategory } from '@/utils/file-type';
 import FileTypeMenu from './modules/file-type-menu.vue';
 import Toolbar from './modules/toolbar.vue';
@@ -54,7 +53,6 @@ const shareResult = ref<Api.Disk.ShareResult | null>(null);
 const audioPlaylist = computed(() => {
   const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
   const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
-  const token = getToken();
 
   return fileList.value
     .filter(file => file.fileType === 'audio' && !file.isFolder)
@@ -63,8 +61,8 @@ const audioPlaylist = computed(() => {
       title: file.music?.songName || file.fileName.replace(/\.[^.]+$/, ''),
       artist: file.music?.singer || '未知歌手',
       album: file.music?.album || '',
-      cover: file.mediaCover ? `${baseURL}/view/cover?id=${file.fileId}&token=${token}` : '',
-      src: `${baseURL}/preview/file/${file.fileId}?token=${token}`,
+      cover: file.mediaCover ? `${baseURL}/view/cover?id=${file.fileId}` : '',
+      src: `${baseURL}/preview/file/${file.fileId}`,
       duration: undefined, // 后端暂未返回时长，由 audio 元素获取
       lyrics: undefined // 后端暂不支持歌词，可后续扩展单独接口获取
     }));

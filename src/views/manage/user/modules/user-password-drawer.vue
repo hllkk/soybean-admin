@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue';
-import { fetchResetUserPassword } from '@/service/api/system';
-import { useFormRules, useNaiveForm } from '@/hooks/common/form';
+import type { PasswordPolicy } from '@/hooks/common/form';
+import { onMounted, reactive, ref, watch } from 'vue';
+import { fetchGetSystemSettings, fetchResetUserPassword } from '@/service/api/system';
+import { createDynamicPwdRule, buildPasswordHint, useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { $t } from '@/locales';
 
 defineOptions({
@@ -42,11 +43,46 @@ function createDefaultModel(): Model {
   };
 }
 
+// 密码策略
+const passwordPolicy = ref<PasswordPolicy>({
+  minLength: 8,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireDigit: true,
+  requireSpecial: true
+});
+
+const pwdHint = ref('至少8位，需包含数字和特殊字符');
+
 type RuleKey = Extract<keyof Model, 'password'>;
 
-const rules: Record<RuleKey, App.Global.FormRule[]> = {
+const rules = ref<Record<RuleKey, App.Global.FormRule[]>>({
   password: [{ ...patternRules.pwd }]
-};
+});
+
+// 加载密码策略
+async function loadPasswordPolicy() {
+  try {
+    const { data, error } = await fetchGetSystemSettings();
+    if (!error && data?.security) {
+      const sec = data.security;
+      const policy: PasswordPolicy = {
+        minLength: sec.passwordMinLength || 8,
+        requireUppercase: sec.passwordRequireUppercase ?? false,
+        requireLowercase: sec.passwordRequireLowercase ?? false,
+        requireDigit: sec.passwordRequireDigit ?? true,
+        requireSpecial: sec.passwordRequireSpecial ?? true
+      };
+      passwordPolicy.value = policy;
+      pwdHint.value = buildPasswordHint(policy);
+      rules.value = {
+        password: [createDynamicPwdRule(policy)]
+      };
+    }
+  } catch {
+    // 使用默认规则
+  }
+}
 
 function handleUpdateModelWhenEdit() {
   Object.assign(model, props.rowData);
@@ -77,6 +113,10 @@ watch(visible, () => {
     restoreValidation();
   }
 });
+
+onMounted(() => {
+  loadPasswordPolicy();
+});
 </script>
 
 <template>
@@ -100,6 +140,7 @@ watch(visible, () => {
             :input-props="{ autocomplete: 'off' }"
             :placeholder="$t('page.system.user.form.password.required')"
           />
+          <NText depth="3" class="ml-8px text-12px whitespace-nowrap">{{ pwdHint }}</NText>
         </NFormItem>
       </NForm>
       <template #footer>

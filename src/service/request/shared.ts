@@ -3,31 +3,25 @@ import { localStg } from '@/utils/storage';
 import { fetchRefreshToken } from '../api';
 import type { RequestInstanceState } from './type';
 
-export function getAuthorization() {
-  const token = localStg.get('token');
-  const Authorization = token ? `Bearer ${token}` : null;
-
-  return Authorization;
+export function getAuthorization(): null {
+  return null;
 }
 
 /** refresh token */
 async function handleRefreshToken() {
   const { resetStore } = useAuthStore();
 
-  const rToken = localStg.get('refreshToken') || '';
-  const { error, data } = await fetchRefreshToken(rToken);
+  // Refresh token is sent via HttpOnly cookie by the browser
+  const { error } = await fetchRefreshToken();
   if (!error) {
-    localStg.set('token', data.token);
-    localStg.set('refreshToken', data.refreshToken);
     return true;
   }
 
   // 清除认证信息，resetStore 内部会尝试跳转登录页
-  // 使用 try-catch 防止路由未就绪时导致 Promise 挂起
   try {
     await resetStore();
   } catch {
-    // 路由未就绪时 resetStore 可能失败，手动清除认证信息
+    localStg.remove('isAuthenticated');
     localStg.remove('token');
     localStg.remove('refreshToken');
   }

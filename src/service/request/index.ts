@@ -1,7 +1,6 @@
 import type { AxiosResponse } from 'axios';
 import { BACKEND_ERROR_CODE, createFlatRequest, createRequest } from '@sa/axios';
 import { useAuthStore } from '@/store/modules/auth';
-import { localStg } from '@/utils/storage';
 import { getServiceBaseURL } from '@/utils/service';
 import { $t } from '@/locales';
 import { getAuthorization, handleExpiredRequest, showErrorMsg } from './shared';
@@ -12,7 +11,8 @@ const { baseURL, otherBaseURL } = getServiceBaseURL(import.meta.env, isHttpProxy
 
 export const request = createFlatRequest(
   {
-    baseURL
+    baseURL,
+    withCredentials: true
   },
   {
     defaultState: {
@@ -132,20 +132,14 @@ export const request = createFlatRequest(
 
 export const demoRequest = createRequest(
   {
-    baseURL: otherBaseURL.demo
+    baseURL: otherBaseURL.demo,
+    withCredentials: true
   },
   {
     transform(response: AxiosResponse<App.Service.DemoResponse>) {
       return response.data.result;
     },
     async onRequest(config) {
-      const { headers } = config;
-
-      // set token
-      const token = localStg.get('token');
-      const Authorization = token ? `Bearer ${token}` : null;
-      Object.assign(headers, { Authorization });
-
       return config;
     },
     isBackendSuccess(response) {

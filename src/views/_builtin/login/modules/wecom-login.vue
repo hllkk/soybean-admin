@@ -19,14 +19,18 @@ const loading = ref(false);
 const expired = ref(false);
 const countdown = ref(120);
 const errorMessage = ref('');
+const pollInterval = ref(3000);
+const lastStatus = ref('');
 
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
 async function loadQrCode() {
   loading.value = true;
   expired.value = false;
   errorMessage.value = '';
+  lastStatus.value = '';
+  pollInterval.value = 3000;
 
   stopPolling();
   stopCountdown();
@@ -49,7 +53,7 @@ async function loadQrCode() {
     });
 
     startCountdown();
-    startPolling();
+    scheduleNextPoll();
   } catch {
     errorMessage.value = $t('page.login.wecomLogin.qrCodeLoadFailed');
   } finally {
@@ -57,27 +61,37 @@ async function loadQrCode() {
   }
 }
 
-function startPolling() {
-  pollTimer = setInterval(async () => {
+function scheduleNextPoll() {
+  stopPolling();
+  pollTimer = setTimeout(async () => {
     if (!sceneId.value) return;
 
     const { data, error } = await fetchQrCodeStatus(sceneId.value);
     if (!error && data) {
+      // 已扫描但未确认，加速轮询
+      if (data.status === 'scanned' && lastStatus.value !== 'scanned') {
+        pollInterval.value = 1000;
+      }
+      lastStatus.value = data.status;
+
       if (data.status === 'confirmed' && data.token && data.refreshToken) {
-        stopPolling();
         stopCountdown();
         await handleLoginSuccess(data.token, data.refreshToken, data.expiresAt);
-      } else if (data.status === 'expired') {
-        stopPolling();
+        return;
+      }
+      if (data.status === 'expired') {
         stopCountdown();
         expired.value = true;
-      } else if (data.status === 'fail') {
-        stopPolling();
+        return;
+      }
+      if (data.status === 'fail') {
         stopCountdown();
         errorMessage.value = $t('page.login.wecomLogin.qrCodeLoadFailed');
+        return;
       }
     }
-  }, 2000);
+    scheduleNextPoll();
+  }, pollInterval.value);
 }
 
 function startCountdown() {
@@ -93,7 +107,7 @@ function startCountdown() {
 
 function stopPolling() {
   if (pollTimer) {
-    clearInterval(pollTimer);
+    clearTimeout(pollTimer);
     pollTimer = null;
   }
 }

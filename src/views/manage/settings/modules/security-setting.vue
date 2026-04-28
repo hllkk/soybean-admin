@@ -24,7 +24,16 @@ const isWhitelistMode = computed(() => configModel.value.ipValidationMode === 'w
       <NFormItem label="密码最小长度" path="passwordMinLength">
         <NInputNumber v-model:value="configModel.passwordMinLength" :min="6" :max="32" class="w-180px" />
       </NFormItem>
-      <NFormItem label="密码包含特殊字符" path="passwordRequireSpecial">
+      <NFormItem label="密码需要大写字母" path="passwordRequireUppercase">
+        <NSwitch v-model:value="configModel.passwordRequireUppercase" />
+      </NFormItem>
+      <NFormItem label="密码需要小写字母" path="passwordRequireLowercase">
+        <NSwitch v-model:value="configModel.passwordRequireLowercase" />
+      </NFormItem>
+      <NFormItem label="密码需要数字" path="passwordRequireDigit">
+        <NSwitch v-model:value="configModel.passwordRequireDigit" />
+      </NFormItem>
+      <NFormItem label="密码需要特殊字符" path="passwordRequireSpecial">
         <NSwitch v-model:value="configModel.passwordRequireSpecial" />
       </NFormItem>
       <NFormItem label="登录失败锁定次数" path="loginFailLockCount">

@@ -140,7 +140,6 @@ function buildEditorConfig(): EditorConfig {
   const file = fileInfo.value!;
   const callbackBaseUrl = getCallbackBaseUrl();
   const username = userInfo.value.userName;
-  const userToken = token.value;
 
   // 生成文档 key
   const docKey = props.readOnly && props.shareId
@@ -162,7 +161,7 @@ function buildEditorConfig(): EditorConfig {
       userInfo.value.userId,
       file.path,
       file.name,
-      userToken,
+      undefined,
       callbackBaseUrl
     );
   }
@@ -170,7 +169,7 @@ function buildEditorConfig(): EditorConfig {
   // 回调 URL
   let callbackUrl: string | null = null;
   if (!props.readOnly) {
-    callbackUrl = getOfficeCallbackUrl(callbackBaseUrl, userToken, username, file.id);
+    callbackUrl = getOfficeCallbackUrl(callbackBaseUrl, undefined, username, file.id);
   }
 
   // [DIAG] 打印 OnlyOffice 实际使用的配置

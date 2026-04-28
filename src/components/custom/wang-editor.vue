@@ -5,7 +5,6 @@ import { Editor, Toolbar } from '@wangeditor-next/editor-for-vue';
 import { i18nChangeLanguage } from '@wangeditor-next/editor';
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor-next/editor';
 import { useAppStore } from '@/store/modules/app';
-import { getToken } from '@/store/modules/auth/shared';
 import { getServiceBaseURL } from '@/utils/service';
 
 defineOptions({
@@ -32,11 +31,11 @@ const editorConfig: Partial<IEditorConfig> = {
       server: `${baseURL}/resource/oss/upload`,
       fieldName: 'file',
       meta: {},
-      headers: {
-        // @ts-expect-error ignore this type error
-        Authorization: `Bearer ${getToken()}`,
-        clientid: import.meta.env.VITE_APP_CLIENT_ID!
-      },
+      headers: (() => {
+        const h = new Headers();
+        h.set('clientid', import.meta.env.VITE_APP_CLIENT_ID!);
+        return h;
+      })(),
       metaWithUrl: false,
       allowedFileTypes: ['image/*'],
       customInsert(res: any, insertFn: InsertFnType) {

@@ -2,7 +2,7 @@ import { computed, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 import { defineStore } from "pinia";
 import { useLoading } from "@sa/hooks";
-import { fetchGetUserInfo, fetchLogin } from "@/service/api";
+import { fetchGetUserInfo, fetchLoginWithInfo } from "@/service/api";
 import { useRouterPush } from "@/hooks/common/router";
 import { localStg } from "@/utils/storage";
 import { SetupStoreId } from "@/enum";
@@ -114,63 +114,42 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   }
 
   /**
-   * Login
+   * Login and get user info in one request (cookie-based auth)
    *
    * @param userName User name
    * @param password Password
-   * @param captchaToken Captcha token (required when captcha is enabled)
+   * @param captchaToken Captcha token (optional, required when captcha is enabled)
    * @param redirect Whether to redirect after login. Default is true
    */
-  async function login(userName: string, password: string, captchaToken?: string, redirect = true) {
+  async function loginWithInfo(userName: string, password: string, captchaToken?: string, redirect = true) {
     startLoading();
 
-    const { data: loginToken, error } = await fetchLogin(userName, password, captchaToken);
+    const { data, error } = await fetchLoginWithInfo(userName, password, captchaToken);
 
-    if (!error) {
-      const pass = await loginByToken(loginToken);
+    if (!error && data) {
+      localStg.set("isAuthenticated", true);
+      token.value = "authenticated";
+      Object.assign(userInfo, data.userInfo);
 
-      if (pass) {
-        // 初始化动态路由，获取用户授权菜单和首页设置
-        await routeStore.initAuthRoute();
+      await routeStore.initAuthRoute();
+      const isClear = checkTabClear();
+      let needRedirect = redirect;
 
-        // Check if the tab needs to be cleared
-        const isClear = checkTabClear();
-        let needRedirect = redirect;
-
-        if (isClear) {
-          // If the tab needs to be cleared, it means we do not need to redirect.
-          needRedirect = false;
-        }
-        await redirectFromLogin(needRedirect);
-
-        window.$notification?.success({
-          title: $t("page.login.common.loginSuccess"),
-          content: $t("page.login.common.welcomeBack", { userName: userInfo.userName }),
-          duration: 4500
-        });
+      if (isClear) {
+        needRedirect = false;
       }
+      await redirectFromLogin(needRedirect);
+
+      window.$notification?.success({
+        title: $t("page.login.common.loginSuccess"),
+        content: $t("page.login.common.welcomeBack", { userName: userInfo.userName }),
+        duration: 4500
+      });
     } else {
       resetStore();
     }
 
     endLoading();
-  }
-
-  async function loginByToken(loginToken: Api.Auth.LoginToken) {
-    // 1. stored in the localStorage, the later requests need it in headers
-    localStg.set("token", loginToken.token);
-    localStg.set("refreshToken", loginToken.refreshToken);
-
-    // 2. get user info
-    const pass = await getUserInfo();
-
-    if (pass) {
-      token.value = loginToken.token;
-
-      return true;
-    }
-
-    return false;
   }
 
   async function getUserInfo() {
@@ -202,13 +181,13 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   async function wecomLogin(loginToken: Api.Auth.LoginToken, redirect = true) {
     startLoading();
 
-    localStg.set('token', loginToken.token);
-    localStg.set('refreshToken', loginToken.refreshToken);
+    // Cookie-based auth: tokens set as HttpOnly cookies by backend
+    localStg.set('isAuthenticated', true);
 
     const pass = await getUserInfo();
 
     if (pass) {
-      token.value = loginToken.token;
+      token.value = "authenticated";
 
       await routeStore.initAuthRoute();
 
@@ -240,7 +219,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     isLogin,
     loginLoading,
     resetStore,
-    login,
+    loginWithInfo,
     wecomLogin,
     initUserInfo
   };

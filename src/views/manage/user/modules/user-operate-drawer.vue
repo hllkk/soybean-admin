@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import type { PasswordPolicy } from '@/hooks/common/form';
+import { computed, onMounted, ref, watch } from 'vue';
 import { jsonClone } from '@sa/utils';
 import { useLoading } from '@sa/hooks';
-import { fetchCreateUser, fetchGetUserInfo, fetchUpdateUser, fetchGetRoleSelect, fetchRestoreDeletedUser } from '@/service/api/system';
-import { useFormRules, useNaiveForm } from '@/hooks/common/form';
+import { fetchCreateUser, fetchGetSystemSettings, fetchGetUserInfo, fetchUpdateUser, fetchGetRoleSelect, fetchRestoreDeletedUser } from '@/service/api/system';
+import { buildPasswordHint, createDynamicPwdRule, useFormRules, useNaiveForm } from '@/hooks/common/form';
 import { $t } from '@/locales';
 
 defineOptions({
@@ -71,14 +72,48 @@ function createDefaultModel(): Model {
 
 type RuleKey = Extract<keyof Model, 'userName' | 'nickName' | 'password' | 'status' | 'phonenumber' | 'roleIds'>;
 
-const rules: Record<RuleKey, App.Global.FormRule[]> = {
+const passwordPolicy = ref<PasswordPolicy>({
+  minLength: 8,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireDigit: true,
+  requireSpecial: true
+});
+
+const pwdHint = ref('至少8位，需包含数字和特殊字符');
+
+const rules = ref<Record<RuleKey, App.Global.FormRule[]>>({
   userName: [createRequiredRule($t('page.system.user.form.userName.required'))],
   nickName: [createRequiredRule($t('page.system.user.form.nickName.required'))],
   password: [{ ...patternRules.pwd, required: props.operateType === 'add' }],
   phonenumber: [patternRules.phone],
   status: [createRequiredRule($t('page.system.user.form.status.required'))],
   roleIds: [{ ...createRequiredRule('请选择角色'), type: 'array' }]
-};
+});
+
+async function loadPasswordPolicy() {
+  try {
+    const { data, error } = await fetchGetSystemSettings();
+    if (!error && data?.security) {
+      const sec = data.security;
+      const policy: PasswordPolicy = {
+        minLength: sec.passwordMinLength || 8,
+        requireUppercase: sec.passwordRequireUppercase ?? false,
+        requireLowercase: sec.passwordRequireLowercase ?? false,
+        requireDigit: sec.passwordRequireDigit ?? true,
+        requireSpecial: sec.passwordRequireSpecial ?? true
+      };
+      passwordPolicy.value = policy;
+      pwdHint.value = buildPasswordHint(policy);
+      rules.value = {
+        ...rules.value,
+        password: [{ ...createDynamicPwdRule(policy), required: props.operateType === 'add' }]
+      };
+    }
+  } catch {
+    // 使用默认规则
+  }
+}
 
 async function getUserInfo(id: CommonType.IdType) {
   startLoading();
@@ -263,6 +298,10 @@ function handleCancelConflict() {
   pendingUserData.value = null;
 }
 
+
+onMounted(() => {
+  loadPasswordPolicy();
+});
 watch(visible, () => {
   if (visible.value) {
     handleUpdateModelWhenEdit();
@@ -308,6 +347,7 @@ watch(visible, () => {
               :input-props="{ autocomplete: 'off' }"
               :placeholder="$t('page.system.user.form.password.required')"
             />
+            <NText depth="3" class="ml-8px text-12px whitespace-nowrap">{{ pwdHint }}</NText>
           </NFormItem>
           <NFormItem :label="$t('page.system.user.sex')" path="sex">
             <DictRadio

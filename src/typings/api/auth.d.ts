@@ -25,6 +25,14 @@ declare namespace Api {
       expiresAt?: number;
     }
 
+    /** Combined login + user info response */
+    interface LoginWithInfoResponse {
+      token: string;
+      refreshToken: string;
+      expiresAt: number;
+      userInfo: UserInfo;
+    }
+
     interface UserInfo {
       userId: CommonType.IdType;
       userName: string;

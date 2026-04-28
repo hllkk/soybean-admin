@@ -382,6 +382,7 @@ checkDBStatus();
                   show-password-on="click"
                   placeholder="请输入管理员密码"
                 />
+                <NText depth="3" class="text-12px">至少8位，需包含大小写字母、数字和特殊字符</NText>
               </NFormItem>
               <NFormItem label="确认密码" path="confirmPassword">
                 <NInput

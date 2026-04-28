@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { h, ref, watch } from 'vue';
 import type { UploadFileInfo, UploadInst } from 'naive-ui';
-import { getToken } from '@/store/modules/auth/shared';
 import { useDownload } from '@/hooks/business/download';
 import { getServiceBaseURL } from '@/utils/service';
 import { $t } from '@/locales';
@@ -19,7 +18,6 @@ const { download } = useDownload();
 const { baseURL } = getServiceBaseURL(import.meta.env);
 
 const headers: Record<string, string> = {
-  Authorization: `Bearer ${getToken()}`,
   clientid: import.meta.env.VITE_APP_CLIENT_ID!
 };
 
@@ -137,6 +135,7 @@ watch(visible, () => {
       :file-size="50"
       accept=".xls,.xlsx"
       :multiple="false"
+      with-credentials
       :default-upload="false"
       list-type="text"
       :is-error-state="isErrorState"

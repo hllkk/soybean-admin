@@ -5,6 +5,15 @@ import { REG_CODE_SIX, REG_EMAIL, REG_PHONE, REG_PWD, REG_USER_NAME } from '@/co
 import { $t } from '@/locales';
 import { isNull } from '@/utils/common';
 
+/** 密码策略配置 */
+export interface PasswordPolicy {
+  minLength: number;
+  requireUppercase: boolean;
+  requireLowercase: boolean;
+  requireDigit: boolean;
+  requireSpecial: boolean;
+}
+
 export function useFormRules() {
   const patternRules = {
     userName: {
@@ -88,6 +97,50 @@ export function useFormRules() {
     createRequiredRule,
     createConfirmPwdRule,
     createNumberRequiredRule
+  };
+}
+
+/** 构建密码策略描述文本 */
+export function buildPasswordHint(policy: PasswordPolicy): string {
+  const parts: string[] = [`${policy.minLength}位`];
+  if (policy.requireUppercase) parts.push('大写字母');
+  if (policy.requireLowercase) parts.push('小写字母');
+  if (policy.requireDigit) parts.push('数字');
+  if (policy.requireSpecial) parts.push('特殊字符');
+  return `至少${parts.join('、')}`;
+}
+
+/** 根据密码策略动态构建密码校验规则 */
+export function createDynamicPwdRule(policy: PasswordPolicy): App.Global.FormRule {
+  const hints: string[] = [];
+  if (policy.requireUppercase) hints.push('大写字母');
+  if (policy.requireLowercase) hints.push('小写字母');
+  if (policy.requireDigit) hints.push('数字');
+  if (policy.requireSpecial) hints.push('特殊字符');
+
+  const hint = `密码至少${policy.minLength}位，需包含${hints.join('、')}`;
+
+  return {
+    trigger: 'change',
+    validator: (_rule: any, value: string) => {
+      if (!value) return true;
+      if (value.length < policy.minLength) {
+        return new Error(hint);
+      }
+      if (policy.requireUppercase && !/[A-Z]/.test(value)) {
+        return new Error(hint);
+      }
+      if (policy.requireLowercase && !/[a-z]/.test(value)) {
+        return new Error(hint);
+      }
+      if (policy.requireDigit && !/\d/.test(value)) {
+        return new Error(hint);
+      }
+      if (policy.requireSpecial && !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(value)) {
+        return new Error(hint);
+      }
+      return true;
+    }
   };
 }
 

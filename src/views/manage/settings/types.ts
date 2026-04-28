@@ -26,6 +26,9 @@ export interface GeneralSettingConfig {
 /** 安全配置 */
 export interface SecuritySettingConfig {
   passwordMinLength: number;
+  passwordRequireUppercase: boolean;
+  passwordRequireLowercase: boolean;
+  passwordRequireDigit: boolean;
   passwordRequireSpecial: boolean;
   loginFailLockCount: number;
   loginFailLockTime: number;

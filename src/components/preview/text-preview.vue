@@ -11,7 +11,6 @@ import { fetchRefreshToken } from '@/service/api';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
 import { getServiceBaseURL } from '@/utils/service';
-import { localStg } from '@/utils/storage';
 import { formatFileSize, formatTime } from '@/utils/file';
 import { $t } from '@/locales';
 import FileIcon from '@/views/disk/modules/file-icon.vue';
@@ -148,17 +147,8 @@ async function handleAuthError(code: string, msg: string): Promise<boolean> {
 
 // 刷新 Token
 async function handleRefreshToken(): Promise<boolean> {
-  const rToken = localStg.get('refreshToken') || '';
-
-  if (!rToken) {
-    authStore.resetStore();
-    return false;
-  }
-
-  const { error, data } = await fetchRefreshToken(rToken);
-  if (!error && data) {
-    localStg.set('token', data.token);
-    localStg.set('refreshToken', data.refreshToken);
+  const { error } = await fetchRefreshToken();
+  if (!error) {
     return true;
   }
 
@@ -519,15 +509,9 @@ async function loadFileContent(file: BackendFileItem | Api.Disk.FileItem, tab: T
     const queryString = new URLSearchParams(params).toString();
     const fullUrl = `${url}?${queryString}&t=${new Date().getTime()}`;
 
-    const headers = new Headers();
-    const token = localStg.get('token');
-    if (token) {
-      headers.append('Authorization', `Bearer ${token}`);
-    }
-
     const response = await fetch(fullUrl, {
       method: 'GET',
-      headers,
+      credentials: 'include',
       signal: abortController.signal
     });
 
