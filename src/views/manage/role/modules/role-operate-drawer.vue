@@ -55,6 +55,8 @@ type Model = Api.System.RoleOperateParams;
 
 const model = ref<Model>(createDefaultModel());
 
+const homeMenuIds = ref<Record<string, number>>({});
+
 function createDefaultModel(): Model {
   return {
     menuIds: [],
@@ -80,6 +82,7 @@ const rules: Record<RuleKey, App.Global.FormRule> = {
 async function handleUpdateModelWhenEdit() {
   model.value = createDefaultModel();
   model.value.menuIds = [];
+  homeMenuIds.value = {};
 
   if (props.operateType === 'add') {
     // 新增时组件会自动加载数据 (immediate=true)
@@ -124,7 +127,8 @@ async function handleSubmit() {
       status,
       remark,
       menuIds,
-      buttonIds
+      buttonIds,
+      homeMenuIds: homeMenuIds.value
     });
     if (error) return;
   }
@@ -139,7 +143,8 @@ async function handleSubmit() {
       status,
       remark,
       menuIds,
-      buttonIds
+      buttonIds,
+      homeMenuIds: homeMenuIds.value
     });
     if (error) return;
   }
@@ -190,6 +195,7 @@ watch(visible, () => {
             v-model:options="menuOptions"
             v-model:cascade="model.menuCheckStrictly"
             v-model:loading="menuLoading"
+            v-model:home-menu-ids="homeMenuIds"
             :show-module-tabs="true"
             :immediate="true"
           />

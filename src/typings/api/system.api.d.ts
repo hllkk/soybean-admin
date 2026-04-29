@@ -57,7 +57,7 @@ declare namespace Api {
         | 'dataScope'
         | 'status'
         | 'remark'
-      > & { menuIds: CommonType.IdType[]; deptIds: CommonType.IdType[]; buttonIds: CommonType.IdType[] }
+      > & { menuIds: CommonType.IdType[]; deptIds: CommonType.IdType[]; buttonIds: CommonType.IdType[]; homeMenuIds?: Record<string, number> }
     >;
 
     /** role detail response */
@@ -106,6 +106,7 @@ declare namespace Api {
     type RoleAuthTreeResponse = {
       trees: Record<string, MenuTreeSelectItem[]>;
       checkedKeys: Record<string, { menus: CommonType.IdType[]; buttons: CommonType.IdType[] }>;
+      homeMenuIds: Record<string, number>;
     };
 
     /** teannt-package menu tree select */

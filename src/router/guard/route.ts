@@ -1,5 +1,6 @@
 import type { LocationQueryRaw, RouteLocationNormalized, RouteLocationRaw, Router } from 'vue-router';
 import type { ElegantConstRoute, RouteKey, RoutePath } from '@elegant-router/types';
+import type { RouteModule } from '@/typings/router.d.ts';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
 import { getToken } from '@/store/modules/auth/shared';
@@ -113,6 +114,48 @@ function isRouteAuthorized(to: RouteLocationNormalized, routeStore: ReturnType<t
 }
 
 /**
+ * Collect all accessible modules from authorized routes
+ */
+function getAccessibleModules(routes: ElegantConstRoute[]): Set<RouteModule> {
+  const modules = new Set<RouteModule>();
+  routes.forEach(route => {
+    const { module: routeModule, modules: routeModules } = route.meta ?? {};
+    if (routeModule) modules.add(routeModule as RouteModule);
+    if (routeModules) routeModules.forEach(m => modules.add(m as RouteModule));
+    if (route.children?.length) {
+      getAccessibleModules(route.children).forEach(m => modules.add(m));
+    }
+  });
+  return modules;
+}
+
+/**
+ * Check if route belongs to a module the user has access to (defense-in-depth)
+ */
+function isRouteModuleAccessible(to: RouteLocationNormalized, routeStore: ReturnType<typeof useRouteStore>): boolean {
+  const { module: routeModule, modules: routeModules } = to.meta;
+
+  // Global routes (no module info) are always accessible
+  if (!routeModule && !(routeModules && routeModules.length > 0)) {
+    return true;
+  }
+
+  const accessibleModules = getAccessibleModules(routeStore.authRoutes);
+
+  // Check single module
+  if (routeModule && accessibleModules.has(routeModule as RouteModule)) {
+    return true;
+  }
+
+  // Check modules array
+  if (routeModules && routeModules.some(m => accessibleModules.has(m as RouteModule))) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * create route guard
  *
  * @param router router instance
@@ -161,6 +204,11 @@ export function createRouteGuard(router: Router) {
 
     // check if route is in user's authorized route list (dynamic route mode)
     if (routeStore.isInitAuthRoute && !isRouteAuthorized(to, routeStore)) {
+      return { name: noAuthorizationRoute };
+    }
+
+    // check if route belongs to a module the user has access to (defense-in-depth)
+    if (routeStore.isInitAuthRoute && !isRouteModuleAccessible(to, routeStore)) {
       return { name: noAuthorizationRoute };
     }
 

@@ -33,6 +33,7 @@ const checkedKeys = defineModel<CommonType.IdType[]>('checkedKeys', { required: 
 const options = defineModel<Api.System.MenuList>('options', { required: false, default: [] });
 const cascade = defineModel<boolean>('cascade', { required: false, default: true });
 const loading = defineModel<boolean>('loading', { required: false, default: false });
+const homeMenuIds = defineModel<Record<string, number>>('homeMenuIds', { required: false, default: () => ({}) });
 const attrs = useAttrs();
 
 // 模块相关状态
@@ -168,6 +169,9 @@ function renderLabel({ option }: { option: TreeOption }) {
     );
   }
 
+  const isHome = homeMenuIds.value[activeModule.value] === option.id;
+  const canSetHome = option.id !== 0 && option.menuType !== 'F';
+
   // 禁用的菜单显示红色（status='0'表示停用）
   if (option.status === '0') {
     return (
@@ -186,7 +190,36 @@ function renderLabel({ option }: { option: TreeOption }) {
       </div>
     );
   }
-  return <div>{label}</div>;
+
+  return (
+    <div class="menu-tree-node flex items-center gap-4px w-full">
+      <span class="flex-1">{label}</span>
+      {isHome && <SvgIcon icon="material-symbols:home" class="text-primary text-14px flex-shrink-0" />}
+      {canSetHome && !isHome && (
+        <NTooltip>
+          {{
+            trigger: () => (
+              <button
+                class="set-home-btn opacity-0 text-14px text-gray-400 hover:text-primary flex-shrink-0 cursor-pointer border-none bg-transparent p-0"
+                onClick={(e: Event) => {
+                  e.stopPropagation();
+                  setHomePage(option.id as number);
+                }}
+              >
+                <SvgIcon icon="material-symbols:home-outline-rounded" />
+              </button>
+            ),
+            default: () => '设为首页'
+          }}
+        </NTooltip>
+      )}
+    </div>
+  );
+}
+
+function setHomePage(menuId: number) {
+  const newHomeMenuIds = { ...homeMenuIds.value, [activeModule.value]: menuId };
+  homeMenuIds.value = newHomeMenuIds;
 }
 
 function renderPrefix({ option }: { option: TreeOption }) {
@@ -365,6 +398,11 @@ async function loadRoleAuthTree(roleId: CommonType.IdType) {
     return null;
   }
 
+  // 加载各模块首页配置
+  if (data?.homeMenuIds) {
+    homeMenuIds.value = { ...data.homeMenuIds };
+  }
+
   // 清除之前的选中状态，并确保所有模块都有初始值
   for (const module of Object.keys(moduleCheckedKeys)) {
     moduleCheckedKeys[module] = [];
@@ -512,6 +550,10 @@ defineExpose({
     :deep(.n-tree__empty) {
       min-height: 200px;
       justify-content: center;
+    }
+
+    :deep(.n-tree-node-content:hover) .set-home-btn {
+      opacity: 1;
     }
   }
 
