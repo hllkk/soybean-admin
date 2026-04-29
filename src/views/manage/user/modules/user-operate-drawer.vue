@@ -53,6 +53,10 @@ const model = ref<Model>(createDefaultModel());
 
 const roleOptions = ref<CommonType.Option<CommonType.IdType>[]>([]);
 
+// 配额相关状态
+const globalQuotaGB = ref(10); // 全局默认配额（GB）
+const usedSpaceGB = ref(0); // 已用空间（GB）
+
 function createDefaultModel(): Model {
   return {
     deptId: null,
@@ -94,21 +98,28 @@ const rules = ref<Record<RuleKey, App.Global.FormRule[]>>({
 async function loadPasswordPolicy() {
   try {
     const { data, error } = await fetchGetSystemSettings();
-    if (!error && data?.security) {
-      const sec = data.security;
-      const policy: PasswordPolicy = {
-        minLength: sec.passwordMinLength || 8,
-        requireUppercase: sec.passwordRequireUppercase ?? false,
-        requireLowercase: sec.passwordRequireLowercase ?? false,
-        requireDigit: sec.passwordRequireDigit ?? true,
-        requireSpecial: sec.passwordRequireSpecial ?? true
-      };
-      passwordPolicy.value = policy;
-      pwdHint.value = buildPasswordHint(policy);
-      rules.value = {
-        ...rules.value,
-        password: [{ ...createDynamicPwdRule(policy), required: props.operateType === 'add' }]
-      };
+    if (!error && data) {
+      // 加载密码策略
+      if (data.security) {
+        const sec = data.security;
+        const policy: PasswordPolicy = {
+          minLength: sec.passwordMinLength || 8,
+          requireUppercase: sec.passwordRequireUppercase ?? false,
+          requireLowercase: sec.passwordRequireLowercase ?? false,
+          requireDigit: sec.passwordRequireDigit ?? true,
+          requireSpecial: sec.passwordRequireSpecial ?? true
+        };
+        passwordPolicy.value = policy;
+        pwdHint.value = buildPasswordHint(policy);
+        rules.value = {
+          ...rules.value,
+          password: [{ ...createDynamicPwdRule(policy), required: props.operateType === 'add' }]
+        };
+      }
+      // 加载全局默认配额
+      if (data.disk?.storageQuota) {
+        globalQuotaGB.value = data.disk.storageQuota;
+      }
     }
   } catch {
     // 使用默认规则
@@ -144,6 +155,7 @@ async function handleUpdateModelWhenEdit() {
 
   if (props.operateType === 'add') {
     model.value.deptId = props.deptId;
+    usedSpaceGB.value = 0; // 新用户已用空间为 0
     return;
   }
 
@@ -156,6 +168,12 @@ async function handleUpdateModelWhenEdit() {
       model.value.quota = Math.round(model.value.quota / (1024 * 1024 * 1024));
     } else {
       model.value.quota = 0;
+    }
+    // 获取已用空间（字节转GB）
+    if ((props.rowData as any).takeUpSpace) {
+      usedSpaceGB.value = Math.round((props.rowData as any).takeUpSpace / (1024 * 1024 * 1024));
+    } else {
+      usedSpaceGB.value = 0;
     }
     await getUserInfo(props.rowData.userId);
     endDeptLoading();
@@ -373,11 +391,19 @@ watch(visible, () => {
             <DictRadio v-model:value="model.status" dict-code="sys_normal_disable" />
           </NFormItem>
           <NFormItem label="存储配额" path="quota">
-            <NInputNumber v-model:value="model.quota" :min="0" class="max-w-200px">
+            <NInputNumber
+              v-model:value="model.quota"
+              :min="operateType === 'edit' ? usedSpaceGB : 0"
+              :precision="0"
+              class="max-w-200px"
+            >
               <template #suffix>GB</template>
             </NInputNumber>
-            <div class="text-12px text-[var(--n-text-color-3)] mt-4px">
-              0 表示使用全局默认配额
+            <div class="text-12px text-[var(--n-text-color-3)] mt-4px flex flex-col gap-2px">
+              <span>0 表示使用全局默认配额（当前 {{ globalQuotaGB }} GB）</span>
+              <span v-if="operateType === 'edit' && usedSpaceGB > 0" class="text-warning">
+                已用空间 {{ usedSpaceGB }} GB，配额不能低于此值
+              </span>
             </div>
           </NFormItem>
           <NFormItem :label="$t('page.system.user.remark')" path="remark">
