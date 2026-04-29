@@ -419,6 +419,7 @@ declare namespace App {
         logoutWithModalMsg: string;
         refreshToken: string;
         tokenExpired: string;
+        sessionExpired: string;
       };
       theme: {
         themeDrawerTitle: string;
@@ -571,6 +572,8 @@ declare namespace App {
             validateSuccess: string;
             loginSuccess: string;
             welcomeBack: string;
+            sessionExpiredTitle: string;
+            sessionExpiredContent: string;
           };
           pwdLogin: {
             title: string;

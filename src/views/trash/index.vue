@@ -4,6 +4,7 @@ import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { fetchGetTrashList, fetchRestoreTrash, fetchDeleteTrash, fetchEmptyTrash, mapBackendTrashList } from '@/service/api/disk/file';
+import { fetchGetQuota } from '@/service/api/disk';
 import SimpleToolbar from '../disk/modules/simple-toolbar.vue';
 import FileGrid from '../disk/modules/file-grid.vue';
 import FileList from '../disk/modules/file-list.vue';
@@ -56,6 +57,14 @@ async function getData() {
     recycleList.value = [];
   }
   endLoading();
+}
+
+// 刷新配额信息（通知 disk store 更新）
+async function refreshQuota() {
+  const { data } = await fetchGetQuota();
+  if (data) {
+    diskStore.updateQuotaInfo(data);
+  }
 }
 
 function handleSort(field: string, order: 'asc' | 'desc') {
@@ -115,6 +124,7 @@ function handleDeletePermanently() {
         window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
         selectedFiles.value = [];
         getData();
+        refreshQuota(); // 刷新配额信息
       }
     }
   });
@@ -132,6 +142,7 @@ function handleEmptyTrash() {
         window.$message?.success($t('page.disk.trash.emptySuccess'));
         selectedFiles.value = [];
         getData();
+        refreshQuota(); // 刷新配额信息
       }
     }
   });

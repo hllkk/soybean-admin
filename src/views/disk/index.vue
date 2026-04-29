@@ -132,13 +132,8 @@ function handleAudioClose() {
   isAudioCompact.value = false;
 }
 
-// 配额信息
-const quotaInfo = ref<Api.Disk.QuotaInfo>({
-  usedSpace: 0,
-  quota: 0,
-  unlimited: false,
-  quotaSource: 'none'
-});
+// 配额信息（从 disk store 共享）
+const quotaInfo = computed(() => diskStore.quotaInfo);
 const quotaLoading = ref(false);
 
 // 测试数据 - 用于无后端时测试前端效果
@@ -159,7 +154,7 @@ async function loadQuotaInfo() {
   quotaLoading.value = true;
   const { data, error } = await fetchGetQuota();
   if (!error && data) {
-    quotaInfo.value = data;
+    diskStore.updateQuotaInfo(data); // 更新到 disk store
   }
   quotaLoading.value = false;
 }
@@ -454,6 +449,7 @@ async function handleDeleteFile(file: Api.Disk.FileItem) {
           if (!error) {
             window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
             getFileList();
+            loadQuotaInfo(); // 刷新配额信息
           }
         }
       });
@@ -606,6 +602,7 @@ function handleToolbarDelete() {
             window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
             diskStore.clearSelection();
             getFileList();
+            loadQuotaInfo(); // 刷新配额信息
           }
         }
       });

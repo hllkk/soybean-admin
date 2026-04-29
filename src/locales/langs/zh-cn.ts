@@ -89,7 +89,8 @@ const local: App.I18n.Schema = {
     logoutWithModal: '请求失败后弹出模态框再登出用户',
     logoutWithModalMsg: '用户状态失效，请重新登录',
     refreshToken: '请求的token已过期，刷新token',
-    tokenExpired: 'token已过期'
+    tokenExpired: 'token已过期',
+    sessionExpired: '登录会话已过期，请重新登录'
   },
   theme: {
     themeDrawerTitle: '主题配置',
@@ -430,7 +431,9 @@ const local: App.I18n.Schema = {
         back: '返回',
         validateSuccess: '验证成功',
         loginSuccess: '登录成功',
-        welcomeBack: '欢迎回来，{userName} ！'
+        welcomeBack: '欢迎回来，{userName} ！',
+        sessionExpiredTitle: '会话过期',
+        sessionExpiredContent: '您的登录会话已过期，请重新登录以继续操作'
       },
       pwdLogin: {
         title: '密码登录',

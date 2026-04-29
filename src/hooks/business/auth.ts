@@ -1,3 +1,6 @@
+import { localStg } from '@/utils/storage';
+import { getToken } from '@/store/modules/auth/shared';
+import { scheduleProactiveRefresh } from '@/service/request/shared';
 import { useAuthStore } from '@/store/modules/auth';
 
 export function useAuth() {
@@ -43,4 +46,41 @@ export function useAuth() {
     hasAuth,
     hasRole
   };
+}
+
+let visibilityHandlerBound = false;
+let cachedExpiresAt: number | null = null;
+
+/** Restore proactive token refresh timer on app startup */
+export function initProactiveRefresh() {
+  if (!getToken()) return;
+
+  const expiresAt = localStg.get('tokenExpiresAt');
+  if (expiresAt && expiresAt !== cachedExpiresAt) {
+    cachedExpiresAt = expiresAt;
+    scheduleProactiveRefresh(expiresAt);
+  }
+
+  if (!visibilityHandlerBound) {
+    visibilityHandlerBound = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+
+      if (!getToken()) return;
+
+      const storedExpiresAt = localStg.get('tokenExpiresAt');
+      if (!storedExpiresAt) return;
+
+      cachedExpiresAt = storedExpiresAt;
+      const remaining = storedExpiresAt - Date.now();
+      if (remaining > 0 && remaining < 5 * 60 * 1000) {
+        scheduleProactiveRefresh(storedExpiresAt);
+      }
+    });
+  }
+}
+
+/** Invalidate cached expiresAt (call after login/refresh sets new value) */
+export function invalidateRefreshCache() {
+  cachedExpiresAt = null;
 }

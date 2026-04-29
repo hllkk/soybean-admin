@@ -167,10 +167,13 @@ export function fetchRenameFile(fileId: CommonType.IdType, newName: string) {
 /** 删除文件(移到回收站或彻底删除) */
 export function fetchDeleteFile(fileIds: CommonType.IdType[], sweep = false) {
   const numericIds = fileIds.map(id => (typeof id === 'string' ? parseInt(id, 10) : id));
+  // 后端现在支持两种方式:
+  // - sweep=false: 发送 fileIds (移入回收站)
+  // - sweep=true: 发送 fileIds (直接彻底删除，后端会先移入回收站再删除)
   return request<{ success: boolean; message: string }>({
     url: `/file-meta/delete${sweep ? '?sweep=true' : ''}`,
     method: 'delete',
-    data: sweep ? { trashIds: numericIds } : { fileIds: numericIds }
+    data: { fileIds: numericIds }
   });
 }
 

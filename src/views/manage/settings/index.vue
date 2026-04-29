@@ -67,7 +67,8 @@ const config = ref<SettingConfig>({
   },
   disk: {
     maxUploadSize: 100,
-    allowedFileTypes: '.jpg,.png,.pdf,.doc,.zip',
+    allowedFileTypes: '',  // 空=允许全部
+    blockedFileTypes: '',  // 禁止的文件类型
     storageQuota: 10,
     diskName: '',
     diskLogo: '',
@@ -159,6 +160,7 @@ async function loadConfig() {
       config.value.disk = {
         maxUploadSize: settings.disk.maxUploadSize || 100,
         allowedFileTypes: (settings.disk.allowedExtensions || []).join(','),
+        blockedFileTypes: (settings.disk.blockedExtensions || []).join(','),
         storageQuota: settings.disk.storageQuota || 10,
         diskName: settings.disk.diskName || '',
         diskLogo: '',
@@ -250,6 +252,9 @@ async function handleSave() {
         maxUploadSize: disk.maxUploadSize,
         allowedExtensions: disk.allowedFileTypes
           ? disk.allowedFileTypes.split(',').map(s => s.trim()).filter(Boolean)
+          : [],
+        blockedExtensions: disk.blockedFileTypes
+          ? disk.blockedFileTypes.split(',').map(s => s.trim()).filter(Boolean)
           : [],
         storageQuota: disk.storageQuota,
         onlyOffice: {

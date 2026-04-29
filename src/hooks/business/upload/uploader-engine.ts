@@ -1,4 +1,5 @@
 import { isCancel } from 'axios';
+import type { AxiosError } from 'axios';
 import { fetchCheckFile, fetchMergeChunks, fetchUploadChunk } from '@/service/api/disk/file';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
@@ -11,6 +12,7 @@ import {
   sliceChunk,
   getFileExtension
 } from './chunk-manager';
+import { BACKEND_ERROR_CODE } from '@sa/axios';
 
 /** Chunk retry limit */
 const CHUNK_MAX_RETRIES = 3;
@@ -56,6 +58,24 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => {
     setTimeout(resolve, ms);
   });
+}
+
+/** Extract actual error message from axios error (backend response or default) */
+function getErrorMessage(error: unknown, defaultMessage: string): string {
+  if (!error) return defaultMessage;
+
+  // Handle AxiosError with backend response
+  const axiosError = error as AxiosError<{ msg?: string }>;
+  if (axiosError.code === BACKEND_ERROR_CODE && axiosError.response?.data?.msg) {
+    return axiosError.response.data.msg;
+  }
+
+  // Standard Error object
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return defaultMessage;
 }
 
 /**
@@ -322,7 +342,7 @@ export class UploaderEngine {
         return;
       }
 
-      const message = error instanceof Error ? error.message : '上传失败';
+      const message = getErrorMessage(error, '上传失败');
       task.status = 'failed';
       task.error = message;
       task.speed = 0;
@@ -423,7 +443,7 @@ export class UploaderEngine {
     }
 
     if (error) {
-      throw new Error(error.message || '上传失败');
+      throw new Error(getErrorMessage(error, '上传失败'));
     }
 
     task.transferredSize = task.fileSize;
@@ -525,7 +545,7 @@ export class UploaderEngine {
         });
 
         if (error) {
-          throw new Error(error.message || '分片上传失败');
+          throw new Error(getErrorMessage(error, '分片上传失败'));
         }
 
         // Success: record the uploaded chunk
@@ -537,7 +557,7 @@ export class UploaderEngine {
       } catch (error: unknown) {
         if (isCancel(error) || signal.aborted) return;
 
-        lastError = error instanceof Error ? error : new Error('分片上传失败');
+        lastError = new Error(getErrorMessage(error, '分片上传失败'));
 
         if (attempt < CHUNK_MAX_RETRIES) {
           const delay = RETRY_BASE_DELAY * 2 ** attempt; // 1s, 2s, 4s
@@ -577,12 +597,12 @@ export class UploaderEngine {
         });
 
         if (error) {
-          throw new Error(error.message || '合并分片失败');
+          throw new Error(getErrorMessage(error, '合并分片失败'));
         }
 
         return;
       } catch (error: unknown) {
-        lastError = error instanceof Error ? error : new Error('合并分片失败');
+        lastError = new Error(getErrorMessage(error, '合并分片失败'));
 
         if (attempt < MERGE_MAX_RETRIES) {
           const delay = RETRY_BASE_DELAY * 2 ** attempt;

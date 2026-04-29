@@ -20,6 +20,8 @@ declare namespace StorageType {
     refreshToken: string;
     /** Cookie-based auth flag */
     isAuthenticated: boolean;
+    /** Token expiration timestamp (ms since epoch) for proactive refresh */
+    tokenExpiresAt: number;
     /** The theme color */
     themeColor: string;
     /** The dark mode */

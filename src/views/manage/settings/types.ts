@@ -57,7 +57,8 @@ export interface LdapSettingConfig {
 export interface DiskSettingConfig {
   // 基础配置
   maxUploadSize: number;
-  allowedFileTypes: string;
+  allowedFileTypes: string;   // 允许上传的文件类型（逗号分隔），空=允许全部
+  blockedFileTypes: string;   // 禁止上传的文件类型（逗号分隔），优先级高于 allowedFileTypes
   storageQuota: number;
   // 个性化配置
   diskName: string;

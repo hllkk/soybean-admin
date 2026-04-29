@@ -31,7 +31,32 @@ const transcodePresetOptions = [
             </NInputNumber>
           </NFormItem>
           <NFormItem label="允许的文件类型" path="allowedFileTypes">
-            <NInput v-model:value="configModel.allowedFileTypes" placeholder="请输入允许的文件类型，多个用逗号分隔" class="max-w-400px" />
+            <NInput v-model:value="configModel.allowedFileTypes" placeholder="空表示允许全部，多个用逗号分隔，如: jpg,png,pdf" class="max-w-400px" />
+            <template #label>
+              <NTooltip trigger="hover">
+                <template #trigger>
+                  <span class="flex items-center gap-4px">
+                    允许的文件类型
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  </span>
+                </template>
+                留空表示允许所有文件类型。填写文件扩展名（不含点号），多个用逗号分隔。
+              </NTooltip>
+            </template>
+          </NFormItem>
+          <NFormItem label="禁止的文件类型" path="blockedFileTypes">
+            <NInput v-model:value="configModel.blockedFileTypes" placeholder="禁止上传的文件类型，多个用逗号分隔，如: exe,bat,sh" class="max-w-400px" />
+            <template #label>
+              <NTooltip trigger="hover">
+                <template #trigger>
+                  <span class="flex items-center gap-4px">
+                    禁止的文件类型
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  </span>
+                </template>
+                填写禁止上传的文件扩展名（不含点号），优先级高于"允许的文件类型"。留空表示不禁止任何类型。
+              </NTooltip>
+            </template>
           </NFormItem>
           <NFormItem label="存储配额" path="storageQuota">
             <NInputNumber v-model:value="configModel.storageQuota" :min="1" class="max-w-200px">

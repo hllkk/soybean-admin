@@ -10,6 +10,16 @@ import { $t } from "@/locales";
 import { useRouteStore } from "../route";
 import { useTabStore } from "../tab";
 import { clearAuthStorage, getToken } from "./shared";
+import { clearProactiveRefreshTimer, scheduleProactiveRefresh } from "@/service/request/shared";
+import { invalidateRefreshCache } from "@/hooks/business/auth";
+
+function storeTokenExpiry(expiresAt: number | undefined) {
+  if (expiresAt) {
+    localStg.set('tokenExpiresAt', expiresAt);
+    scheduleProactiveRefresh(expiresAt);
+    invalidateRefreshCache();
+  }
+}
 
 export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   const route = useRoute();
@@ -47,9 +57,11 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   const isLogin = computed(() => Boolean(token.value));
 
   /** Reset auth store */
-  async function resetStore() {
+  async function resetStore(reason?: 'session_expired' | 'auth_failure') {
     recordUserId();
 
+    clearProactiveRefreshTimer();
+    localStg.remove('tokenExpiresAt');
     clearAuthStorage();
 
     // Reset state manually (Pinia setup style)
@@ -69,6 +81,14 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
       roles: [],
       buttons: []
     });
+
+    if (reason === 'session_expired') {
+      window.$notification?.warning({
+        title: $t('page.login.common.sessionExpiredTitle'),
+        content: $t('page.login.common.sessionExpiredContent'),
+        duration: 5000
+      });
+    }
 
     if (!route.meta.constant) {
       await toLogin();
@@ -131,6 +151,8 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
       token.value = "authenticated";
       Object.assign(userInfo, data.userInfo);
 
+      storeTokenExpiry(data.expiresAt);
+
       await routeStore.initAuthRoute();
       const isClear = checkTabClear();
       let needRedirect = redirect;
@@ -188,6 +210,8 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
 
     if (pass) {
       token.value = "authenticated";
+
+      storeTokenExpiry(loginToken.expiresAt);
 
       await routeStore.initAuthRoute();
 

@@ -7,6 +7,7 @@ import { getToken } from '@/store/modules/auth/shared';
 import { localStg } from '@/utils/storage';
 import { getRouteName } from '@/router/elegant/transform';
 import { fetchCheckDB } from '@/service/api/init';
+import { initProactiveRefresh } from '@/hooks/business/auth';
 
 // 初始化状态缓存配置
 export const CHECK_DB_CACHE_KEY = 'check_db_result';
@@ -307,6 +308,7 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
   }
 
   routeStore.onRouteSwitchWhenLoggedIn();
+  initProactiveRefresh();
 
   // the auth route is initialized
   // it is not the "not-found" route, then it is allowed to access

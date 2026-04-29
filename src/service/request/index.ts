@@ -38,7 +38,7 @@ export const request = createFlatRequest(
       const responseCode = String(response.data.code);
 
       function handleLogout() {
-        authStore.resetStore();
+        authStore.resetStore('session_expired');
       }
 
       function logoutAndCleanup() {

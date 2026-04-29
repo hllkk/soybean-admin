@@ -95,6 +95,14 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   // 收藏文件ID缓存（用于跨页面状态同步）
   const favoriteIds = ref<Set<number>>(new Set());
 
+  // 配额信息（跨页面共享）
+  const quotaInfo = ref<Api.Disk.QuotaInfo>({
+    usedSpace: 0,
+    quota: 0,
+    unlimited: false,
+    quotaSource: 'none'
+  });
+
   // 计算属性：面包屑路径显示
   const breadcrumbPath = computed(() => {
     return currentPath.value.map(item => item.fileName);
@@ -330,6 +338,11 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     favoriteIds.value = new Set();
   }
 
+  // 更新配额信息
+  function updateQuotaInfo(info: Api.Disk.QuotaInfo) {
+    quotaInfo.value = info;
+  }
+
   // 重置所有状态
   function $reset() {
     currentFileType.value = 'all';
@@ -369,6 +382,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     videoPreviewVisible,
     videoPreviewRow,
     favoriteIds,
+    quotaInfo,
     // computed
     breadcrumbPath,
     hasUploadTask,
@@ -401,6 +415,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     removeFavoriteIds,
     isFileFavorite,
     clearFavoriteCache,
+    updateQuotaInfo,
     $reset,
     // URL同步
     getCurrentPathString,

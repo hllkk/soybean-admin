@@ -280,7 +280,8 @@ declare namespace Api {
     interface DiskSettings {
       diskName?: string;
       maxUploadSize?: number;
-      allowedExtensions?: string[];
+      allowedExtensions?: string[];  // 允许上传的文件扩展名，空=允许全部
+      blockedExtensions?: string[];  // 禁止上传的文件扩展名，优先级高于 allowedExtensions
       trashRetentionDays?: number;
       storageQuota?: number;
       onlyOffice?: OnlyOfficeSettings;

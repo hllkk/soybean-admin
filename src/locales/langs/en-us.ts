@@ -89,7 +89,8 @@ const local: App.I18n.Schema = {
     logoutWithModal: 'Pop up modal after request failed and then log out user',
     logoutWithModalMsg: 'User status is invalid, please log in again',
     refreshToken: 'The requested token has expired, refresh the token',
-    tokenExpired: 'The requested token has expired'
+    tokenExpired: 'The requested token has expired',
+    sessionExpired: 'Session expired, please log in again'
   },
   theme: {
     themeDrawerTitle: 'Theme Configuration',
@@ -434,7 +435,9 @@ const local: App.I18n.Schema = {
         back: 'Back',
         validateSuccess: 'Verification passed',
         loginSuccess: 'Login successfully',
-        welcomeBack: 'Welcome back, {userName} !'
+        welcomeBack: 'Welcome back, {userName} !',
+        sessionExpiredTitle: 'Session Expired',
+        sessionExpiredContent: 'Your session has expired. Please log in again to continue.'
       },
       pwdLogin: {
         title: 'Password Login',
