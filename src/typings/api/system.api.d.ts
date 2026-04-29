@@ -166,6 +166,8 @@ declare namespace Api {
       remark?: string;
       /** 存储配额（字节） */
       quota?: number;
+      /** 已用空间（字节） */
+      takeUpSpace?: number;
     }>;
 
     /** user search params */

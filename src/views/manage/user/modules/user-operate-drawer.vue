@@ -170,8 +170,8 @@ async function handleUpdateModelWhenEdit() {
       model.value.quota = 0;
     }
     // 获取已用空间（字节转GB）
-    if ((props.rowData as any).takeUpSpace) {
-      usedSpaceGB.value = Math.round((props.rowData as any).takeUpSpace / (1024 * 1024 * 1024));
+    if (props.rowData?.takeUpSpace) {
+      usedSpaceGB.value = Math.round(props.rowData.takeUpSpace / (1024 * 1024 * 1024));
     } else {
       usedSpaceGB.value = 0;
     }
