@@ -10,6 +10,8 @@ declare namespace Api {
       chunkSizeMedium: number;
       /** >1GB 文件分片大小 (MB) */
       chunkSizeLarge: number;
+      /** 最大上传大小 (MB)，联动网盘系统设置 */
+      maxUploadSize?: number;
     };
 
     /** 上传任务状态 */

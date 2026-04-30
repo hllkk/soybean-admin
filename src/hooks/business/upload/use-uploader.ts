@@ -1,7 +1,7 @@
 import { $t } from '@/locales';
 import { fetchCheckQuota } from '@/service/api/disk/quota';
 import { useDiskStore } from '@/store/modules/disk';
-import { getFileExtension } from './chunk-manager';
+import { getFileExtension, getMaxUploadSize } from './chunk-manager';
 import { UploaderEngine } from './uploader-engine';
 
 let engineInstance: UploaderEngine | null = null;
@@ -86,6 +86,15 @@ export function useUploader() {
     const entries: FileEntry[] = files.map(f =>
       f instanceof File ? { file: f } : (f as FileEntry)
     );
+
+    // === 文件大小联动校验 - 从网盘系统设置读取最大上传大小 ===
+    const maxUploadMB = await getMaxUploadSize();
+    const maxUploadBytes = maxUploadMB * 1024 * 1024;
+    const oversized = entries.filter(e => e.file.size > maxUploadBytes);
+    if (oversized.length > 0) {
+      window.$message?.error(`文件大小超过限制（最大 ${maxUploadMB}MB）`);
+      return;
+    }
 
     // === 配额校验 - 计算总大小并校验 ===
     const totalSize = entries.reduce((sum, entry) => sum + entry.file.size, 0);

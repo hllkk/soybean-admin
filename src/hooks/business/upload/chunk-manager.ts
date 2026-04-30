@@ -12,7 +12,8 @@ const DEFAULT_CONFIG: Api.Disk.UploadConfig = {
   chunkConcurrency: 6,
   chunkSizeSmall: DEFAULT_CHUNK_SIZES.small,
   chunkSizeMedium: DEFAULT_CHUNK_SIZES.medium,
-  chunkSizeLarge: DEFAULT_CHUNK_SIZES.large
+  chunkSizeLarge: DEFAULT_CHUNK_SIZES.large,
+  maxUploadSize: 100
 };
 
 /** 从后端获取上传配置（带缓存） */
@@ -66,6 +67,12 @@ export function needsChunking(fileSize: number): boolean {
 export function getTotalChunks(fileSize: number, chunkSize: number): number {
   if (chunkSize === 0) return 1;
   return Math.ceil(fileSize / chunkSize);
+}
+
+/** 获取最大上传大小（MB），联动网盘系统设置 */
+export async function getMaxUploadSize(): Promise<number> {
+  const config = await loadUploadConfig();
+  return config.maxUploadSize ?? 100;
 }
 
 /** 切出指定分片 */

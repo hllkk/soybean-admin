@@ -74,13 +74,13 @@ function handleRemoveFavorite() {
     negativeText: $t('common.cancel'),
     onPositiveClick: async () => {
       startLoading();
-      const { error } = await fetchRemoveFavorite(selectedIds as number[]);
+      const { error } = await fetchRemoveFavorite(selectedIds.map(id => Number(id)));
       endLoading();
 
       if (!error) {
         favoriteList.value = favoriteList.value.filter(item => !selectedIds.includes(item.fileId));
         selectedFiles.value = [];
-        diskStore.removeFavoriteIds(selectedIds as number[]);
+        diskStore.removeFavoriteIds(selectedIds.map(id => Number(id)));
         window.$message?.success($t('page.disk.favorite.removeSuccess'));
       } else {
         window.$message?.error($t('page.disk.favorite.removeFailed'));
@@ -151,7 +151,7 @@ getData();
             @file-dbl-click="handleFileDblClick"
             @file-download="handleFileAction('download', $event)"
             @file-delete="handleFileAction('removeFavorite', $event)"
-            @file-favorite="handleRemoveFavoriteFile"
+            @file-remove-favorite="handleRemoveFavoriteFile"
             @selection-change="handleSelectionChange"
             @refresh="getData"
           />
@@ -166,7 +166,7 @@ getData();
             @file-dbl-click="handleFileDblClick"
             @file-download="handleFileAction('download', $event)"
             @file-delete="handleFileAction('removeFavorite', $event)"
-            @file-favorite="handleRemoveFavoriteFile"
+            @file-remove-favorite="handleRemoveFavoriteFile"
             @selection-change="handleSelectionChange"
             @refresh="getData"
           />
