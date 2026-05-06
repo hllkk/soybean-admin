@@ -172,11 +172,7 @@ function buildEditorConfig(): EditorConfig {
     callbackUrl = getOfficeCallbackUrl(callbackBaseUrl, undefined, username, file.id);
   }
 
-  // [DIAG] 打印 OnlyOffice 实际使用的配置
-  console.log('[Office诊断] callbackBaseUrl:', callbackBaseUrl);
-  console.log('[Office诊断] docUrl:', docUrl);
-  console.log('[Office诊断] file.path:', file.path, 'file.name:', file.name, 'file.suffix:', file.suffix);
-  console.log('[Office诊断] callbackUrl:', callbackUrl);
+
 
   const editorConfig: EditorConfig = {
     document: {
