@@ -61,9 +61,9 @@ const _extractionCode = computed(() => {
 // 提取码验证
 const codeValid = computed(() => {
   if (!isPrivate.value) return true;
-  if (codeMode.value === 'random') return randomCode.value.length === 4;
-  // 自定义：4位大写字母和数字组合
-  return /^[A-Z0-9]{4}$/.test(customCode.value.toUpperCase());
+  if (codeMode.value === 'random') return randomCode.value.length === 6;
+  // 自定义：6位大写字母和数字组合
+  return /^[A-Z0-9]{6}$/.test(customCode.value.toUpperCase());
 });
 
 // 自定义地址验证（字母、数字、中划线、下划线，至少3位）
@@ -97,12 +97,15 @@ const fileInfo = computed(() => {
   };
 });
 
-/** 生成随机提取码（4位大写字母和数字） */
+/** 生成随机提取码（6位大写字母和数字，使用 crypto.getRandomValues） */
 function generateRandomCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const length = 6;
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
   let code = '';
-  for (let i = 0; i < 4; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < length; i++) {
+    code += chars[array[i] % chars.length];
   }
   return code;
 }
@@ -225,13 +228,13 @@ async function handleConfirm() {
           <NInput
             v-model:value="customCode"
             :placeholder="$t('page.disk.share.extractionCode')"
-            :maxlength="4"
+            :maxlength="6"
             size="large"
             class="text-center"
             @input="customCode = customCode.toUpperCase().replace(/[^A-Z0-9]/g, '')"
           />
           <div v-if="customCode && !codeValid" class="text-12px text-error mt-4px">
-            提取码需为4位字母或数字组合
+            提取码需为6位字母或数字组合
           </div>
         </div>
       </div>

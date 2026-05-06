@@ -5,8 +5,21 @@ import { useAppStore } from '@/store/modules/app';
 import FileIcon from './file-icon.vue';
 import { formatFileSize } from '@/utils/format';
 import { useUploader } from '@/hooks/business/upload/use-uploader';
-import * as echarts from 'echarts';
-import 'echarts-liquidfill';
+
+/** 懒加载 ECharts 及 liquidfill 插件，仅在球体视图需要时加载 */
+let echartsModule: typeof import('echarts') | null = null;
+let echartsLoading: Promise<typeof import('echarts')> | null = null;
+
+async function loadEcharts() {
+  if (echartsModule) return echartsModule;
+  if (echartsLoading) return echartsLoading;
+  echartsLoading = import('echarts').then(async (mod) => {
+    await import('echarts-liquidfill');
+    echartsModule = mod;
+    return mod;
+  });
+  return echartsLoading;
+}
 
 defineOptions({
   name: 'TransferPanel'
@@ -19,7 +32,7 @@ const { pause, resume, cancel, retry, pauseAll, resumeAll } = useUploader();
 const isVisible = ref(false);
 // PC端默认list，手机端默认sphere
 const viewMode = ref<'list' | 'sphere'>(appStore.isMobile ? 'sphere' : 'list');
-const liquidfillChart = ref<echarts.ECharts | null>(null);
+const liquidfillChart = ref<ReturnType<typeof import('echarts')['init']> | null>(null);
 const chartContainerRef = ref<HTMLDivElement | null>(null);
 
 const activeTransfers = computed(() =>
@@ -47,9 +60,11 @@ const overallProgress = computed(() => {
   return Math.round(total / activeItems.length);
 });
 
-// 初始化 ECharts liquidfill 图表
-function initLiquidfillChart() {
+// 初始化 ECharts liquidfill 图表（懒加载）
+async function initLiquidfillChart() {
   if (!chartContainerRef.value) return;
+
+  const echarts = await loadEcharts();
 
   liquidfillChart.value = echarts.init(chartContainerRef.value);
 

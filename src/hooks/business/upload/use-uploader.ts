@@ -144,6 +144,7 @@ export function useUploader() {
       if (files) {
         upload(Array.from(files), parentId);
       }
+      input.remove();
     });
     input.click();
   }
@@ -163,6 +164,7 @@ export function useUploader() {
           name: folderName
         });
       }
+      input.remove();
     });
     input.click();
   }

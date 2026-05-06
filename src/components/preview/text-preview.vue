@@ -303,14 +303,11 @@ async function handleClose() {
         onPositiveClick: async () => {
           try {
             for (const tab of modifiedTabs) {
-
               await saveTab(tab);
             }
             textPreviewVisible.value = false;
             resolve(true);
-          } catch (error) {
-
-            console.log(error);
+          } catch {
             resolve(false);
           }
         },

@@ -310,6 +310,7 @@ function triggerBrowserDownload(downloadUrl: string) {
   link.href = fullUrl;
   link.style.display = 'none';
   link.target = '_blank';
+  link.rel = 'noopener noreferrer';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

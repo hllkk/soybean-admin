@@ -1,4 +1,5 @@
 import { computed, ref, watch } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { SetupStoreId } from '@/enum';
 import { localStg } from '@/utils/storage';
@@ -354,8 +355,11 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     selectedFiles.value = [];
   }
 
-  // 持久化：transferList 变化时自动保存到 localStorage
-  watch(transferList, list => persistTransferList(list), { deep: true });
+  // 持久化：transferList 变化时自动保存到 localStorage（防抖 500ms，避免频繁写入）
+  const debouncedPersist = useDebounceFn((list: Api.Disk.TransferItem[]) => {
+    persistTransferList(list);
+  }, 500);
+  watch(transferList, list => debouncedPersist(list), { deep: true });
 
   return {
     // state
