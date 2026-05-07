@@ -223,6 +223,22 @@ function clearFavicon() {
         </NFormItem>
       </template>
     </NForm>
+
+    <NDivider />
+
+    <div class="section-title">日志清理配置</div>
+    <NForm :model="configModel" label-placement="left" :label-width="120" class="mt-16px">
+      <NFormItem label="登录日志保留" path="loginLogRetentionDays">
+        <NInputNumber v-model:value="configModel.loginLogRetentionDays" :min="7" :max="365" class="max-w-200px">
+          <template #suffix>天</template>
+        </NInputNumber>
+      </NFormItem>
+      <NFormItem label="操作日志保留" path="operationLogRetentionDays">
+        <NInputNumber v-model:value="configModel.operationLogRetentionDays" :min="7" :max="365" class="max-w-200px">
+          <template #suffix>天</template>
+        </NInputNumber>
+      </NFormItem>
+    </NForm>
   </div>
 </template>
 

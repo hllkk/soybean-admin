@@ -32,7 +32,8 @@ const searchParams = ref<Api.System.LoginLogSearchParams>({
   userName: null,
   ipaddr: null,
   status: null,
-  params: {}
+  beginTime: null,
+  endTime: null
 });
 
 const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination, scrollX } =

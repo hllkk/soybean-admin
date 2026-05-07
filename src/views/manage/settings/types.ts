@@ -21,6 +21,9 @@ export interface GeneralSettingConfig {
   verifyCodeExp: number;       // 过期时间(分钟)
   verifyCodeTokenExp: number;  // Token过期时间(分钟)
   verifyInaccuracy: number;    // 误差范围(像素)
+  // 日志清理配置
+  loginLogRetentionDays: number;     // 登录日志保留天数
+  operationLogRetentionDays: number; // 操作日志保留天数
 }
 
 /** 安全配置 */

@@ -21,7 +21,7 @@ export function fetchBatchDeleteLoginInfor(infoIds: CommonType.IdType[]) {
 export function fetchUnlockLoginInfor(username: string) {
   return request<boolean>({
     url: `/monitor/logininfor/unlock/${username}`,
-    method: 'get'
+    method: 'post'
   });
 }
 

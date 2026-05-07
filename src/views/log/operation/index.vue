@@ -14,6 +14,7 @@ import { useDownload } from '@/hooks/business/download';
 import ButtonIcon from '@/components/custom/button-icon.vue';
 import { $t } from '@/locales';
 import OperationSearch from './modules/operation-search.vue';
+import OperationDetailDrawer from './modules/operation-detail-drawer.vue';
 
 defineOptions({
   name: 'OperationLogList'
@@ -146,14 +147,14 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         title: $t('common.operate'),
         align: 'center',
         width: 80,
-        render: () => {
+        render: (row: Api.System.OperationLog) => {
           return (
             <ButtonIcon
               text
               type="primary"
               icon="material-symbols:visibility-outline"
               tooltipContent={$t('common.detail')}
-              onClick={() => handleDetail()}
+              onClick={() => handleDetail(row.operId!)}
             />
           );
         }
@@ -161,7 +162,11 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
     ]
   });
 
-const { checkedRowKeys, onDeleted, onBatchDeleted } = useTableOperate(data, 'operId', getData);
+const { checkedRowKeys, onDeleted, onBatchDeleted, drawerVisible, editingData, handleEdit } = useTableOperate(
+  data,
+  'operId',
+  getData
+);
 
 async function handleBatchDelete() {
   const { error } = await fetchBatchDeleteOperationLog(checkedRowKeys.value);
@@ -175,8 +180,8 @@ async function _handleDelete(operId: CommonType.IdType) {
   onDeleted();
 }
 
-function handleDetail() {
-  window.$message?.info($t('common.lookForward'));
+function handleDetail(operId: CommonType.IdType) {
+  handleEdit(operId);
 }
 
 async function handleClean() {
@@ -243,6 +248,7 @@ function handleResetSearch() {
         :pagination="mobilePagination"
         class="sm:h-full"
       />
+      <OperationDetailDrawer v-model:visible="drawerVisible" :row-data="editingData" />
     </NCard>
   </div>
 </template>

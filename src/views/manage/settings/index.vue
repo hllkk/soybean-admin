@@ -37,7 +37,9 @@ const config = ref<SettingConfig>({
     verifyCodeLen: 4,
     verifyCodeExp: 5,
     verifyCodeTokenExp: 5,
-    verifyInaccuracy: 40
+    verifyInaccuracy: 40,
+    loginLogRetentionDays: 90,
+    operationLogRetentionDays: 90
   },
   security: {
     passwordMinLength: 8,
@@ -137,7 +139,9 @@ async function loadConfig() {
         verifyCodeLen: settings.general.verifyCodeLen || 4,
         verifyCodeExp: settings.general.verifyCodeExp || 5,
         verifyCodeTokenExp: settings.general.verifyCodeTokenExp || 5,
-        verifyInaccuracy: settings.general.verifyInaccuracy || 40
+        verifyInaccuracy: settings.general.verifyInaccuracy || 40,
+        loginLogRetentionDays: settings.general.loginLogRetentionDays || 90,
+        operationLogRetentionDays: settings.general.operationLogRetentionDays || 90
       };
     }
     if (settings?.security) {
@@ -216,7 +220,9 @@ async function handleSave() {
         verifyCodeLen: config.value.general.verifyCodeLen,
         verifyCodeExp: config.value.general.verifyCodeExp,
         verifyCodeTokenExp: config.value.general.verifyCodeTokenExp,
-        verifyInaccuracy: config.value.general.verifyInaccuracy
+        verifyInaccuracy: config.value.general.verifyInaccuracy,
+        loginLogRetentionDays: config.value.general.loginLogRetentionDays,
+        operationLogRetentionDays: config.value.general.operationLogRetentionDays
       },
       security: {
         passwordMinLength: security.passwordMinLength,

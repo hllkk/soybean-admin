@@ -24,8 +24,8 @@ const defaultModel = jsonClone(toRaw(model.value));
 
 function onDateRangeLoginTimeUpdate(value: [string, string] | null) {
   if (value?.length) {
-    model.value.params!.beginTime = value[0];
-    model.value.params!.endTime = value[1];
+    model.value.beginTime = value[0];
+    model.value.endTime = value[1];
   }
 }
 
