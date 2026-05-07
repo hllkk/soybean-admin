@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import type { GeneralSettingConfig } from '../types';
 import { fetchUploadLogo, fetchUploadFavicon } from '@/service/api/system/setting';
-import RoleSelect from '@/components/custom/role-select.vue';
+import { fetchGetRoleSelect } from '@/service/api/system';
 
 defineOptions({
   name: 'GeneralSetting'
@@ -21,6 +21,20 @@ const captchaTypeOptions = [
   { label: '拖拽式', value: 'dragdrop' },
   { label: '旋转式', value: 'rotate' }
 ];
+
+const roleNameOptions = ref<CommonType.Option<string>[]>([]);
+
+async function getRoleNameOptions() {
+  const { error, data } = await fetchGetRoleSelect();
+  if (!error) {
+    roleNameOptions.value = data.map(item => ({
+      label: item.roleName,
+      value: item.roleName
+    }));
+  }
+}
+
+getRoleNameOptions();
 
 const logoUploading = ref(false);
 const faviconUploading = ref(false);
@@ -181,11 +195,12 @@ function clearFavicon() {
         />
       </NFormItem>
       <NFormItem label="默认角色" path="userDefaultRole">
-        <RoleSelect
+        <NSelect
           v-model:value="configModel.userDefaultRole"
+          :options="roleNameOptions"
           class="max-w-200px"
           clearable
-          :max-tag-count="1"
+          placeholder="请选择角色"
         />
       </NFormItem>
     </NForm>

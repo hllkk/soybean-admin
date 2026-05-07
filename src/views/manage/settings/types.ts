@@ -13,7 +13,7 @@ export interface GeneralSettingConfig {
   logoUrl: string;
   faviconUrl: string;
   userDefaultPassword: string;
-  userDefaultRole: number | null;
+  userDefaultRole: string | null;
   // 验证码配置 - 完整版
   enableVerifyCode: boolean;
   verifyCodeType: 'click' | 'slide' | 'dragdrop' | 'rotate'; // 修正 drag -> dragdrop
