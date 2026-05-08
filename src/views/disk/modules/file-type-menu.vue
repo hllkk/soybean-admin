@@ -85,13 +85,29 @@ const fileTypeList = computed(() => [
     name: $t('page.disk.fileType.other'),
     value: 'other',
     localIcon: 'disk-file-other'
+  },
+  {
+    name: '共享给我',
+    value: 'shared-with-me',
+    localIcon: 'disk-menu-file'
+  },
+  {
+    name: '我的共享',
+    value: 'my-shared',
+    localIcon: 'disk-menu-file'
   }
 ]);
 
 // 当前选中的文件类型
 const selectedType = computed({
   get: () => diskStore.currentFileType,
-  set: (val: Api.Disk.FileType) => diskStore.setFileType(val)
+  set: (val: Api.Disk.FileType | 'shared-with-me' | 'my-shared') => {
+    if (val === 'shared-with-me' || val === 'my-shared') {
+      diskStore.currentFileType = val as any;
+    } else {
+      diskStore.setFileType(val);
+    }
+  }
 });
 
 // 菜单选项配置

@@ -20,6 +20,8 @@ import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
 import ShareDialog from './modules/share-dialog.vue';
 import ShareResultDialog from './modules/share-result-dialog.vue';
+import SharedWithMe from './modules/shared-with-me.vue';
+import MyShared from './modules/my-shared.vue';
 import VideoPreview from '@/components/preview/video-preview.vue';
 import FilePreviewOverlay from '@/components/preview/file-preview-overlay.vue';
 import ImagePreview from '@/components/preview/image-preview.vue';
@@ -613,6 +615,10 @@ function handleToolbarDelete() {
 
 // Watch file type changes
 watch(() => diskStore.currentFileType, () => {
+  // 共享页面不需要加载文件列表
+  if (diskStore.currentFileType === 'shared-with-me' || diskStore.currentFileType === 'my-shared') {
+    return;
+  }
   getFileList();
 });
 
@@ -696,8 +702,9 @@ onMounted(async () => {
     </template>
     <div class="h-full flex-col-stretch gap-12px overflow-hidden lt-sm:overflow-auto">
       <NCard :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
-        <!-- Toolbar -->
+        <!-- Toolbar - 隐藏在共享页面 -->
         <Toolbar
+          v-if="diskStore.currentFileType !== 'shared-with-me' && diskStore.currentFileType !== 'my-shared'"
           @search="handleSearch"
           @refresh="handleRefresh"
           @share="handleToolbarShare"
@@ -709,52 +716,63 @@ onMounted(async () => {
           @remove-favorite="handleToolbarRemoveFavorite"
           @show-transfer="transferPanelRef?.showDefault()"
         />
-        <!-- Breadcrumb -->
-        <Breadcrumb :total-count="totalCount" />
-        <!-- File Content -->
-        <FileGrid
-          v-if="diskStore.viewMode === 'grid'"
-          :files="fileList"
-          :loading="loading"
-          page-type="disk"
-          class="h-full"
-          @file-dbl-click="handleFileDblClick"
-          @file-created="handleFileCreated"
-          @folder-created="handleFolderCreated"
-          @file-share="handleFileAction('share', $event)"
-          @file-download="handleFileAction('download', $event)"
-          @file-delete="handleFileAction('delete', $event)"
-          @file-rename="handleFileAction('rename', $event)"
-          @file-rename-confirm="handleRenameConfirm"
-          @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
-          @file-copy="handleFileAction('copy', $event)"
-          @file-move="handleFileAction('move', $event)"
-          @file-favorite="handleFileFavorite"
-          @file-add-favorite="handleAddFavorite"
-          @file-remove-favorite="handleRemoveFavorite"
-          @refresh="handleRefresh"
+        <!-- Breadcrumb - 隐藏在共享页面 -->
+        <Breadcrumb
+          v-if="diskStore.currentFileType !== 'shared-with-me' && diskStore.currentFileType !== 'my-shared'"
+          :total-count="totalCount"
         />
-        <FileList
-          v-if="diskStore.viewMode === 'list'"
-          :files="fileList"
-          :loading="loading"
-          page-type="disk"
-          @file-dbl-click="handleFileDblClick"
-          @file-created="handleFileCreated"
-          @folder-created="handleFolderCreated"
-          @file-share="handleFileAction('share', $event)"
-          @file-download="handleFileAction('download', $event)"
-          @file-delete="handleFileAction('delete', $event)"
-          @file-rename="handleFileAction('rename', $event)"
-          @file-rename-confirm="handleRenameConfirm"
-          @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
-          @file-copy="handleFileAction('copy', $event)"
-          @file-move="handleFileAction('move', $event)"
-          @file-favorite="handleFileFavorite"
-          @file-add-favorite="handleAddFavorite"
-          @file-remove-favorite="handleRemoveFavorite"
-          @refresh="handleRefresh"
-        />
+        <!-- File Content - 隐藏在共享页面 -->
+        <template v-if="diskStore.currentFileType !== 'shared-with-me' && diskStore.currentFileType !== 'my-shared'">
+          <FileGrid
+            v-if="diskStore.viewMode === 'grid'"
+            :files="fileList"
+            :loading="loading"
+            page-type="disk"
+            class="h-full"
+            @file-dbl-click="handleFileDblClick"
+            @file-created="handleFileCreated"
+            @folder-created="handleFolderCreated"
+            @file-share="handleFileAction('share', $event)"
+            @file-download="handleFileAction('download', $event)"
+            @file-delete="handleFileAction('delete', $event)"
+            @file-rename="handleFileAction('rename', $event)"
+            @file-rename-confirm="handleRenameConfirm"
+            @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
+            @file-copy="handleFileAction('copy', $event)"
+            @file-move="handleFileAction('move', $event)"
+            @file-favorite="handleFileFavorite"
+            @file-add-favorite="handleAddFavorite"
+            @file-remove-favorite="handleRemoveFavorite"
+            @refresh="handleRefresh"
+          />
+          <FileList
+            v-if="diskStore.viewMode === 'list'"
+            :files="fileList"
+            :loading="loading"
+            page-type="disk"
+            @file-dbl-click="handleFileDblClick"
+            @file-created="handleFileCreated"
+            @folder-created="handleFolderCreated"
+            @file-share="handleFileAction('share', $event)"
+            @file-download="handleFileAction('download', $event)"
+            @file-delete="handleFileAction('delete', $event)"
+            @file-rename="handleFileAction('rename', $event)"
+            @file-rename-confirm="handleRenameConfirm"
+            @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
+            @file-copy="handleFileAction('copy', $event)"
+            @file-move="handleFileAction('move', $event)"
+            @file-favorite="handleFileFavorite"
+            @file-add-favorite="handleAddFavorite"
+            @file-remove-favorite="handleRemoveFavorite"
+            @refresh="handleRefresh"
+          />
+        </template>
+
+        <!-- Shared with me view -->
+        <SharedWithMe v-if="diskStore.currentFileType === 'shared-with-me'" />
+
+        <!-- My shared view -->
+        <MyShared v-if="diskStore.currentFileType === 'my-shared'" />
       </NCard>
     </div>
     <!-- Transfer Panel -->

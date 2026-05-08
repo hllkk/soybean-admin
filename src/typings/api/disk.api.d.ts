@@ -11,7 +11,7 @@ declare namespace Api {
    */
   namespace Disk {
     /** 文件类型枚举 */
-    type FileType = 'all' | 'image' | 'document' | 'video' | 'audio' | 'other';
+    type FileType = 'all' | 'image' | 'document' | 'video' | 'audio' | 'other' | 'shared-with-me' | 'my-shared';
 
     /** 文件项 */
     type FileItem = Common.CommonRecord<{
