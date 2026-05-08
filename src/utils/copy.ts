@@ -6,28 +6,54 @@ export async function handleCopy(source?: string) {
   }
 
   try {
-    // 优先使用原生 Clipboard API（需要安全上下文 HTTPS）
+    // 方案1（推荐）: ClipboardEvent 拦截 — 在 copy 事件回调中直接写入数据
+    // 不受 HTTP/HTTPS 限制，是现代浏览器中 HTTP 环境下最可靠的复制方式
+    const ok = copyWithClipboardEvent(source);
+    if (ok) {
+      window.$message?.success($t('common.copySuccess'));
+      return;
+    }
+
+    // 方案2: 原生 Clipboard API — 需要 HTTPS
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(source);
-    } else {
-      // Fallback for HTTP: 使用更可靠的 textarea 方法
-      copyWithTextarea(source);
+      window.$message?.success($t('common.copySuccess'));
+      return;
     }
+
+    // 方案3: textarea + execCommand fallback
+    copyWithTextarea(source);
     window.$message?.success($t('common.copySuccess'));
-  } catch (error) {
-    console.error('Copy failed:', error);
+  } catch {
     window.$message?.error($t('common.copyFail'));
   }
 }
 
-// HTTP 环境下的 fallback 复制方法
+/** 通过 ClipboardEvent 拦截写入剪贴板（HTTP/HTTPS 均可用） */
+function copyWithClipboardEvent(text: string): boolean {
+  try {
+    let success = false;
+    const listener = (e: ClipboardEvent) => {
+      e.preventDefault();
+      e.clipboardData?.setData('text/plain', text);
+      success = true;
+    };
+    document.addEventListener('copy', listener);
+    document.execCommand('copy');
+    document.removeEventListener('copy', listener);
+    return success;
+  } catch {
+    return false;
+  }
+}
+
+/** textarea + execCommand fallback */
 function copyWithTextarea(text: string) {
   const textarea = document.createElement('textarea');
   textarea.value = text;
 
-  // 确保 textarea 可见且可选中（但不能让用户看到）
-  textarea.style.position = 'absolute';
-  textarea.style.left = '0';
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
   textarea.style.top = '0';
   textarea.style.width = '2em';
   textarea.style.height = '2em';
@@ -36,10 +62,12 @@ function copyWithTextarea(text: string) {
   textarea.style.outline = 'none';
   textarea.style.boxShadow = 'none';
   textarea.style.background = 'transparent';
+  textarea.style.opacity = '0';
 
   document.body.appendChild(textarea);
 
-  // iOS 需要特殊处理
+  const activeEl = document.activeElement;
+
   const isIOS = navigator.userAgent.match(/ipad|ipod|iphone/i);
   if (isIOS) {
     const range = document.createRange();
@@ -51,14 +79,19 @@ function copyWithTextarea(text: string) {
     }
     textarea.setSelectionRange(0, 999999);
   } else {
+    textarea.focus();
     textarea.select();
   }
 
-  // 执行复制
-  const success = document.execCommand('copy');
+  const ok = document.execCommand('copy');
+
+  if (activeEl instanceof HTMLElement) {
+    activeEl.focus();
+  }
+
   document.body.removeChild(textarea);
 
-  if (!success) {
+  if (!ok) {
     throw new Error('Fallback copy failed');
   }
 }

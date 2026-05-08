@@ -213,7 +213,7 @@ async function handleLinkShare() {
     isPrivate: isPrivate.value,
     validity: validity.value,
     autoFillExtractCode: isPrivate.value && codeMode.value === 'random',
-    extractionCode: isPrivate.value && codeMode.value === 'custom' ? customCode.value : undefined,
+    extractionCode: isPrivate.value ? (codeMode.value === 'custom' ? customCode.value : randomCode.value) : undefined,
     customAddress: customAddressEnabled.value ? customAddress.value : undefined
   };
 
