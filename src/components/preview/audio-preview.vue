@@ -54,6 +54,29 @@ const isDraggingProgress = ref(false);
 const volume = ref(80);
 const showVolumeSlider = ref(false);
 
+// 从响应头获取的时长（用于转码音频流）
+const headerDuration = ref(0);
+
+// 异步获取音频时长（从响应头读取，用于转码流）
+async function fetchAudioDurationFromHeader(src: string): Promise<number> {
+  try {
+    const response = await fetch(src, { method: 'HEAD' });
+    const durationHeader = response.headers.get('X-Audio-Duration');
+    if (durationHeader) {
+      const d = parseInt(durationHeader, 10);
+      if (d > 0) return d;
+    }
+    const contentDuration = response.headers.get('X-Content-Duration');
+    if (contentDuration) {
+      const d = parseFloat(contentDuration);
+      if (d > 0) return Math.round(d);
+    }
+  } catch {
+    // HEAD 请求失败时静默处理
+  }
+  return 0;
+}
+
 // 播放模式：single(单曲循环)、loop(列表循环)、random(随机播放)
 type PlayMode = 'single' | 'loop' | 'random';
 const playMode = ref<PlayMode>('loop');
@@ -412,6 +435,20 @@ async function handleTrackClick(index: number) {
   currentTrackIndex.value = index;
   const track = props.playlist[index];
   if (track && audioRef.value) {
+    // 先尝试从响应头获取时长（用于转码流）
+    headerDuration.value = 0;
+    if (track.src) {
+      fetchAudioDurationFromHeader(track.src).then(d => {
+        if (d > 0) {
+          headerDuration.value = d;
+          // 如果当前 audio.duration 仍是 Infinity，立即更新显示
+          if (audioRef.value && (audioRef.value.duration === Infinity || audioRef.value.duration <= 0)) {
+            duration.value = d;
+          }
+        }
+      });
+    }
+
     // src 通过模板 :src="currentTrack.src" 响应式绑定，load() 会触发重新加载
     audioRef.value.load();
 
@@ -456,7 +493,13 @@ function handleTimeUpdate() {
 
 function handleLoadedMetadata() {
   if (audioRef.value) {
-    duration.value = audioRef.value.duration;
+    const audioDuration = audioRef.value.duration;
+    // 如果 audio.duration 是 Infinity（流式传输无 Content-Length），使用响应头获取的时长
+    if (audioDuration === Infinity || audioDuration <= 0) {
+      duration.value = headerDuration.value;
+    } else {
+      duration.value = audioDuration;
+    }
   }
 }
 
@@ -542,11 +585,21 @@ watch(
     if (newList.length > 0 && audioRef.value) {
       const index = Math.min(currentTrackIndex.value, newList.length - 1);
       currentTrackIndex.value = index;
-      audioRef.value.src = newList[index].src;
+      const track = newList[index];
+      audioRef.value.src = track.src;
       audioRef.value.load();
       // 解析歌词
-      parsedLyrics.value = parseLyrics(newList[index].lyrics || '');
+      parsedLyrics.value = parseLyrics(track.lyrics || '');
       currentLyricIndex.value = -1;
+      // 尝试从响应头获取时长
+      headerDuration.value = 0;
+      if (track.src) {
+        fetchAudioDurationFromHeader(track.src).then(d => {
+          if (d > 0) {
+            headerDuration.value = d;
+          }
+        });
+      }
     }
   },
   { immediate: true }

@@ -19,6 +19,7 @@ const emit = defineEmits<{
 }>();
 
 const playerContainer = ref<HTMLDivElement>();
+const isPip = ref(false);
 let artInstance: Artplayer | null = null;
 let renewalTimer: ReturnType<typeof setInterval> | null = null;
 const currentToken = ref(props.streamToken);
@@ -92,6 +93,10 @@ onMounted(async () => {
     }
   });
 
+  artInstance.on('pip', (state: boolean) => {
+    isPip.value = state;
+  });
+
   startRenewalTimer();
 });
 
@@ -116,7 +121,12 @@ function handleClose() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-9999 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="handleClose">
+  <!-- 画中画时隐藏遮罩和播放器容器，仅保留视频小窗 -->
+  <div
+    v-show="!isPip"
+    class="fixed inset-0 z-9999 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+    @click.self="handleClose"
+  >
     <!-- 播放器容器 -->
     <div class="relative w-full max-w-[90vw] sm:w-[800px]">
       <div ref="playerContainer" class="aspect-video w-full overflow-hidden rounded-lg" />

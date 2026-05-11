@@ -104,6 +104,10 @@ function handleVideoTokenUpdate(token: string) {
 }
 
 async function openVideoPreview(file: Api.Disk.FileItem) {
+  if (diskStore.videoPreviewVisible) {
+    window.$message?.info('请先关闭当前播放的视频');
+    return;
+  }
   const res = await fetchGenerateStreamToken(String(file.fileId));
   if (res.data) {
     videoStreamToken.value = res.data.token;
