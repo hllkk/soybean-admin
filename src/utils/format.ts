@@ -23,6 +23,25 @@ export function formatFileSize(bytes: number): string {
 }
 
 /**
+ * Format date string to "YYYY-MM-DD HH:mm:ss"
+ *
+ * @param dateStr - ISO date string or date string
+ * @returns Formatted string like "2024-01-15 08:30:00"
+ */
+export function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return dateStr;
+  const y = date.getFullYear();
+  const mo = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const h = String(date.getHours()).padStart(2, '0');
+  const mi = String(date.getMinutes()).padStart(2, '0');
+  const s = String(date.getSeconds()).padStart(2, '0');
+  return `${y}-${mo}-${d} ${h}:${mi}:${s}`;
+}
+
+/**
  * Format date string to "MM-DD HH:mm"
  *
  * @param dateStr - ISO date string or date string

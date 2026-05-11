@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { $t } from '@/locales';
+import { formatDateTime } from '@/utils/format';
 
 defineOptions({
   name: 'OperationDetailDrawer'
@@ -42,21 +43,18 @@ function closeDrawer() {
         <NDescriptionsItem label="系统模块">
           {{ props.rowData?.title }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="业务类型">
-          <NTag
-            :type="props.rowData?.businessType === 1 ? 'success' : props.rowData?.businessType === 3 ? 'error' : 'default'"
-            size="small"
-          >
-            {{ businessTypeMap[props.rowData?.businessType ?? 0] || '未知' }}
-          </NTag>
-        </NDescriptionsItem>
-        <NDescriptionsItem label="请求方式">
-          <NTag
-            :type="props.rowData?.requestMethod === 'GET' ? 'success' : props.rowData?.requestMethod === 'POST' ? 'primary' : props.rowData?.requestMethod === 'PUT' ? 'warning' : 'error'"
-            size="small"
-          >
-            {{ props.rowData?.requestMethod }}
-          </NTag>
+        <NDescriptionsItem label="操作类型">
+          <NSpace :size="8">
+            <NTag
+              :type="props.rowData?.businessType === 1 ? 'success' : props.rowData?.businessType === 3 ? 'error' : props.rowData?.businessType === 2 ? 'primary' : 'default'"
+              size="small"
+            >
+              {{ businessTypeMap[props.rowData?.businessType ?? 0] || '未知' }}
+            </NTag>
+            <NTag :bordered="false" size="small">
+              {{ props.rowData?.requestMethod }}
+            </NTag>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="操作人员">
           {{ props.rowData?.operName }}
@@ -82,7 +80,7 @@ function closeDrawer() {
           <NText type="error">{{ props.rowData?.errorMsg }}</NText>
         </NDescriptionsItem>
         <NDescriptionsItem label="操作时间" :span="2">
-          {{ props.rowData?.operTime }}
+          {{ formatDateTime(props.rowData?.operTime) }}
         </NDescriptionsItem>
       </NDescriptions>
 

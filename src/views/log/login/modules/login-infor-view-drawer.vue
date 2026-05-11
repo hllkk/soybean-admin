@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { $t } from '@/locales';
 import { getBrowserIcon, getOsIcon } from '@/utils/icon';
+import { formatDateTime } from '@/utils/format';
 
 defineOptions({
   name: 'LoginInforViewDrawer'
@@ -41,8 +42,8 @@ function closeDrawer() {
         </NDescriptionsItem>
         <NDescriptionsItem label="浏览器类型">
           <div class="flex items-center gap-2">
-            <SvgIcon :icon="getBrowserIcon(props.rowData?.browser ?? '')" />
-            {{ props.rowData?.browser }}
+            <SvgIcon :icon="getBrowserIcon((props.rowData?.browser ?? '').split(' ')[0])" />
+            {{ (props.rowData?.browser ?? '').split(' ')[0] }}
           </div>
         </NDescriptionsItem>
         <NDescriptionsItem label="操作系统">
@@ -58,7 +59,7 @@ function closeDrawer() {
           {{ props.rowData?.msg }}
         </NDescriptionsItem>
         <NDescriptionsItem label="访问时间">
-          {{ props.rowData?.loginTime }}
+          {{ formatDateTime(props.rowData?.loginTime) }}
         </NDescriptionsItem>
       </NDescriptions>
       <template #footer>

@@ -15,6 +15,7 @@ import ButtonIcon from '@/components/custom/button-icon.vue';
 import { $t } from '@/locales';
 import OperationSearch from './modules/operation-search.vue';
 import OperationDetailDrawer from './modules/operation-detail-drawer.vue';
+import { formatDateTime } from '@/utils/format';
 
 defineOptions({
   name: 'OperationLogList'
@@ -82,21 +83,6 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         }
       },
       {
-        key: 'requestMethod',
-        title: $t('page.system.operationLog.requestMethod'),
-        align: 'center',
-        width: 80,
-        render: row => {
-          const methodType: Record<string, 'default' | 'primary' | 'info' | 'success' | 'warning' | 'error'> = {
-            GET: 'success',
-            POST: 'primary',
-            PUT: 'warning',
-            DELETE: 'error'
-          };
-          return <NTag type={methodType[row.requestMethod] || 'default'} size="small">{row.requestMethod}</NTag>;
-        }
-      },
-      {
         key: 'operName',
         title: $t('page.system.operationLog.operName'),
         align: 'center',
@@ -140,7 +126,8 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         key: 'operTime',
         title: $t('page.system.operationLog.operTime'),
         align: 'center',
-        width: 160
+        width: 160,
+        render: row => formatDateTime(row.operTime)
       },
       {
         key: 'operate',

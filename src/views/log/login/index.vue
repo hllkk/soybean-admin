@@ -14,6 +14,7 @@ import LoginInforSearch from './modules/login-infor-search.vue';
 import LoginInforViewDrawer from './modules/login-infor-view-drawer.vue';
 import { fetchBatchDeleteLoginInfor, fetchCleanLoginInfor, fetchGetLoginInforList, fetchUnlockLoginInfor } from '@/service/api/logfor';
 import { getBrowserIcon, getOsIcon } from '@/utils/icon';
+import { formatDateTime } from '@/utils/format';
 
 defineOptions({
   name: 'LoginInforList'
@@ -88,12 +89,13 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         key: 'browser',
         title: '浏览器类型',
         align: 'center',
-        minWidth: 120,
+        minWidth: 100,
         render: row => {
+          const browserName = row.browser?.split(' ')[0] ?? '';
           return (
             <div class="flex items-center justify-center gap-2">
-              <SvgIcon icon={getBrowserIcon(row.browser)} />
-              {row.browser}
+              <SvgIcon icon={getBrowserIcon(browserName)} />
+              {browserName}
             </div>
           );
         }
@@ -107,11 +109,10 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         },
         minWidth: 120,
         render: row => {
-          const osName = row.os?.split(' or ')[0] ?? '';
           return (
             <div class="flex items-center justify-center gap-2">
-              <SvgIcon icon={getOsIcon(osName)} />
-              {osName}
+              <SvgIcon icon={getOsIcon(row.os ?? '')} />
+              {row.os}
             </div>
           );
         }
@@ -132,7 +133,8 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         ellipsis: {
           tooltip: true
         },
-        minWidth: 120
+        minWidth: 160,
+        render: row => formatDateTime(row.loginTime)
       },
       {
         key: 'operate',
