@@ -51,6 +51,9 @@ const previewFile = ref<Api.Disk.PreviewFileInfo | null>(null);
 const shareResultVisible = ref(false);
 const shareResult = ref<Api.Disk.ShareResult | null>(null);
 
+// 已有链接分享信息（传入 share-dialog 供展示）
+const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
+
 // 当前目录下的音频文件列表（用于播放列表）
 const audioPlaylist = computed(() => {
   const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
@@ -261,19 +264,14 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
   }
 }
 
-/** 分享处理：先检查是否已分享，已分享则展示详情，未分享则打开配置 */
+/** 分享处理：查询已有链接分享信息，始终打开配置对话框 */
 async function handleShareFile(file: Api.Disk.FileItem) {
-  // 先尝试获取已存在的分享信息
-  const { data, error } = await fetchGetShareInfo(file.fileId);
-
-  if (!error && data) {
-    // 文件已分享，直接展示分享详情
-    shareResult.value = data;
-    shareResultVisible.value = true;
-  } else {
-    // 文件未分享或获取失败，打开分享配置对话框
-    diskStore.openShareDialog(file);
+  existingShareInfo.value = null;
+  const { data } = await fetchGetShareInfo(file.fileId);
+  if (data) {
+    existingShareInfo.value = data;
   }
+  diskStore.openShareDialog(file);
 }
 
 function handleFileAction(action: string, file: Api.Disk.FileItem) {
@@ -780,7 +778,7 @@ onMounted(async () => {
     <!-- Move/Copy Dialog -->
     <MoveCopyDialog @success="getFileList" />
     <!-- Share Dialog -->
-    <ShareDialog @success="handleShareSuccess" />
+    <ShareDialog :existing-share="existingShareInfo" @success="handleShareSuccess" />
     <!-- Share Result Dialog -->
     <ShareResultDialog
       v-model:visible="shareResultVisible"

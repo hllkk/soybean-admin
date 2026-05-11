@@ -1,16 +1,25 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import { fetchCreateShare } from '@/service/api/disk/share';
+import { fetchCreateShare, fetchCancelShare } from '@/service/api/disk/share';
 import { fetchGetUserSelect } from '@/service/api/system/user';
 import { fetchCreateInternalShare } from '@/service/api/disk/internal-share';
 import { formatFileSize } from '@/utils/format';
+import { handleCopy } from '@/utils/copy';
 import DeptTree from '@/components/custom/dept-tree.vue';
 import FileIcon from './file-icon.vue';
 
 defineOptions({
   name: 'ShareDialog'
+});
+
+interface Props {
+  existingShare?: Api.Disk.ShareResult | null;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  existingShare: null
 });
 
 interface Emits {
@@ -29,13 +38,11 @@ const validityOptions = computed(() => [
   { label: $t('page.disk.share.forever'), value: 'forever' }
 ]);
 
-// 分享形式选项
 const shareTypeOptions = computed(() => [
   { label: $t('page.disk.share.publicLink'), value: 'public' },
   { label: $t('page.disk.share.privateLink'), value: 'private' }
 ]);
 
-// 提取码模式选项
 const codeModeOptions = computed(() => [
   { label: $t('page.disk.share.randomGenerate'), value: 'random' },
   { label: $t('page.disk.share.customCode'), value: 'custom' }
@@ -70,24 +77,27 @@ const internalRemark = ref('');
 // 待分享的文件
 const shareFile = computed(() => diskStore.shareFile);
 
+// 是否已有链接分享
+const hasExistingShare = computed(() => !!props.existingShare);
+
+// 已有分享的完整链接
+const existingShareLink = computed(() => {
+  if (!props.existingShare) return '';
+  const baseUrl = window.location.origin;
+  return `${baseUrl}${props.existingShare.link}`;
+});
+
 // 是否私密分享
 const isPrivate = computed(() => shareType.value === 'private');
-
-// 最终提取码（用于显示）
-const _extractionCode = computed(() => {
-  if (!isPrivate.value) return '';
-  return codeMode.value === 'random' ? randomCode.value : customCode.value;
-});
 
 // 提取码验证
 const codeValid = computed(() => {
   if (!isPrivate.value) return true;
   if (codeMode.value === 'random') return randomCode.value.length === 4;
-  // 自定义：4位大小写字母和数字组合
   return /^[a-zA-Z0-9]{4}$/.test(customCode.value);
 });
 
-// 自定义地址验证（字母、数字、中划线、下划线，至少3位）
+// 自定义地址验证
 const addressValid = computed(() => {
   if (!customAddressEnabled.value) return true;
   if (!customAddress.value) return false;
@@ -119,25 +129,17 @@ const fileInfo = computed(() => {
   };
 });
 
-/** 生成随机提取码（4位大小写字母和数字，使用 crypto.getRandomValues） */
 function generateRandomCode(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const length = 4;
-  const array = new Uint8Array(length);
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345789';
+  const array = new Uint8Array(4);
   crypto.getRandomValues(array);
   let code = '';
-  for (let i = 0; i < length; i++) {
+  for (let i = 0; i < 4; i++) {
     code += chars[array[i] % chars.length];
   }
   return code;
 }
 
-/** 重新生成随机提取码 */
-function regenerateCode() {
-  randomCode.value = generateRandomCode();
-}
-
-/** Load user options for share to user tab */
 async function loadUserOptions() {
   if (userOptions.value.length > 0) return;
   userLoading.value = true;
@@ -151,23 +153,17 @@ async function loadUserOptions() {
   userLoading.value = false;
 }
 
-onMounted(() => {
-  loadUserOptions();
-});
-
-/** Computed for submit button state */
 const canSubmit = computed(() => {
   if (!shareFile.value) return false;
+  if (activeTab.value === 'link' && hasExistingShare.value) return false;
   if (activeTab.value === 'link') return formValid.value;
   if (activeTab.value === 'user') return selectedUsers.value.length > 0;
   if (activeTab.value === 'dept') return selectedDepts.value.length > 0;
   return false;
 });
 
-// 监听对话框打开
 watch(() => diskStore.shareDialogVisible, visible => {
   if (visible) {
-    // 重置默认值
     validity.value = '7';
     shareType.value = 'public';
     codeMode.value = 'random';
@@ -175,12 +171,13 @@ watch(() => diskStore.shareDialogVisible, visible => {
     customCode.value = '';
     customAddressEnabled.value = false;
     customAddress.value = '';
-    activeTab.value = 'link';
     selectedUsers.value = [];
     selectedDepts.value = [];
     internalRemark.value = '';
     userPermissions.value = ['DOWNLOAD'];
     deptPermissions.value = ['DOWNLOAD'];
+    // 已有链接分享时默认切到用户分享 Tab
+    activeTab.value = hasExistingShare.value ? 'user' : 'link';
   }
 });
 
@@ -200,14 +197,10 @@ async function handleConfirm() {
 
 async function handleLinkShare() {
   if (!formValid.value || !shareFile.value) return;
-
   loading.value = true;
-
-  // 确保 fileId 为数字类型（后端期望 int64）
   const fileIdNum = typeof shareFile.value.fileId === 'string'
     ? parseInt(shareFile.value.fileId, 10)
     : shareFile.value.fileId;
-
   const params: Api.Disk.CreateShareParams = {
     fileId: fileIdNum,
     isPrivate: isPrivate.value,
@@ -216,11 +209,8 @@ async function handleLinkShare() {
     extractionCode: isPrivate.value ? (codeMode.value === 'custom' ? customCode.value : randomCode.value) : undefined,
     customAddress: customAddressEnabled.value ? customAddress.value : undefined
   };
-
   const { data, error } = await fetchCreateShare(params);
-
   loading.value = false;
-
   if (!error && data) {
     emit('success', data);
     diskStore.closeShareDialog();
@@ -264,6 +254,21 @@ async function handleDeptShare() {
     diskStore.closeShareDialog();
   }
 }
+
+async function handleCancelExistingShare() {
+  if (!props.existingShare?.shareId) return;
+  loading.value = true;
+  const { error } = await fetchCancelShare(props.existingShare.shareId);
+  loading.value = false;
+  if (!error) {
+    window.$message?.success($t('page.disk.share.cancelSuccess'));
+    diskStore.closeShareDialog();
+  }
+}
+
+function handleCopyExistingLink() {
+  handleCopy(existingShareLink.value);
+}
 </script>
 
 <template>
@@ -291,11 +296,34 @@ async function handleDeptShare() {
         </div>
       </div>
 
+      <!-- 已有链接分享状态条 -->
+      <div v-if="hasExistingShare" class="flex items-center gap-8px p-10px rounded bg-primary/8 dark:bg-primary/15">
+        <SvgIcon icon="mdi:link-variant" :size="18" class="text-primary shrink-0" />
+        <div class="flex-1 min-w-0">
+          <div class="text-13px">
+            <span class="opacity-70">链接分享：</span>
+            <span class="font-mono text-12px select-all">{{ existingShareLink }}</span>
+          </div>
+          <div v-if="props.existingShare?.isPrivate && props.existingShare.extractionCode" class="text-12px opacity-60 mt-2px">
+            提取码：{{ props.existingShare.extractionCode }}
+          </div>
+        </div>
+        <NButton quaternary size="tiny" @click="handleCopyExistingLink">
+          <template #icon><SvgIcon icon="mdi:content-copy" :size="14" /></template>
+        </NButton>
+        <NButton quaternary size="tiny" type="error" :loading="loading" @click="handleCancelExistingShare">
+          <template #icon><SvgIcon icon="mdi:close-circle-outline" :size="14" /></template>
+        </NButton>
+      </div>
+
       <!-- Share Type Tabs -->
       <NTabs v-model:value="activeTab" type="line" animated>
         <!-- Link Share Tab -->
-        <NTabPane name="link" tab="链接分享">
-          <div class="flex flex-col gap-16px">
+        <NTabPane name="link" tab="链接分享" :disabled="hasExistingShare">
+          <div v-if="hasExistingShare" class="text-13px opacity-50 py-8px text-center">
+            已创建链接分享，如需修改请先取消现有链接
+          </div>
+          <div v-else class="flex flex-col gap-16px">
             <!-- 有效期设置 -->
             <div>
               <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.validity') }}</div>
@@ -319,19 +347,17 @@ async function handleDeptShare() {
                 <NTabPane v-for="opt in codeModeOptions" :key="opt.value" :name="opt.value" :tab="opt.label" />
               </NTabs>
 
-              <!-- 随机生成模式 -->
               <div v-if="codeMode === 'random'" class="flex items-center gap-12px mt-12px">
                 <div class="flex-1 text-center">
                   <span class="inline-block px-16px py-8px text-18px font-bold tracking-widest rounded bg-primary/10 text-primary">
                     {{ randomCode }}
                   </span>
                 </div>
-                <NButton quaternary size="small" @click="regenerateCode">
+                <NButton quaternary size="small" @click="randomCode = generateRandomCode()">
                   {{ $t('page.disk.share.regenerate') }}
                 </NButton>
               </div>
 
-              <!-- 自定义模式 -->
               <div v-else class="mt-12px">
                 <NInput
                   v-model:value="customCode"
@@ -353,20 +379,19 @@ async function handleDeptShare() {
                 <span class="text-13px opacity-70">{{ $t('page.disk.share.customAddress') }}</span>
                 <NSwitch v-model:value="customAddressEnabled" size="small" />
               </div>
-              <!-- 自定义地址输入框 -->
               <div v-if="customAddressEnabled" class="flex items-center gap-8px">
-                <span class="text-14px opacity-60">/s/</span>
+                <span class="text-14px opacity-60 whitespace-nowrap">/s/</span>
                 <NInput
                   v-model:value="customAddress"
                   :placeholder="$t('page.disk.share.customAddressPlaceholder')"
                   :maxlength="32"
+                  class="flex-1 min-w-0"
                   @input="customAddress = customAddress.replace(/[^a-zA-Z0-9_-]/g, '')"
                 />
               </div>
               <div v-if="customAddressEnabled && customAddress && !addressValid" class="text-12px text-error mt-4px">
                 地址需为3-32位字母、数字、下划线或中划线组合
               </div>
-              <!-- 链接预览 -->
               <div class="text-12px opacity-50 mt-8px">
                 链接预览: {{ shareLinkPreview }}
               </div>
