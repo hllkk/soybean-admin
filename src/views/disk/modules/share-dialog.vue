@@ -178,6 +178,17 @@ watch(() => diskStore.shareDialogVisible, visible => {
     deptPermissions.value = ['DOWNLOAD'];
     // 已有链接分享时默认切到用户分享 Tab
     activeTab.value = hasExistingShare.value ? 'user' : 'link';
+    // 默认 Tab 是用户分享时立即加载
+    if (hasExistingShare.value) {
+      loadUserOptions();
+    }
+  }
+});
+
+// 切换到用户 Tab 时预加载用户列表
+watch(activeTab, tab => {
+  if (tab === 'user') {
+    loadUserOptions();
   }
 });
 

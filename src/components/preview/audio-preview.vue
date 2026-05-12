@@ -54,6 +54,10 @@ const isDraggingProgress = ref(false);
 const volume = ref(80);
 const showVolumeSlider = ref(false);
 
+// 音频加载状态（用于转码时显示加载动画）
+const isLoading = ref(false);
+const loadingProgress = ref(0); // 模拟进度
+
 // 从响应头获取的时长（用于转码音频流）
 const headerDuration = ref(0);
 
@@ -432,6 +436,11 @@ async function handleTrackClick(index: number) {
   isPlaying.value = false;
   stopPulseAnimation();
 
+  // 设置加载状态
+  isLoading.value = true;
+  loadingProgress.value = 0;
+  startLoadingAnimation();
+
   currentTrackIndex.value = index;
   const track = props.playlist[index];
   if (track && audioRef.value) {
@@ -456,6 +465,9 @@ async function handleTrackClick(index: number) {
     const playWhenReady = () => {
       audioRef.value?.removeEventListener('canplaythrough', playWhenReady);
       currentPlayHandler = null;
+      // 清除加载状态
+      isLoading.value = false;
+      stopLoadingAnimation();
       audioRef.value?.play()
         .then(() => {
           isPlaying.value = true;
@@ -475,10 +487,56 @@ async function handleTrackClick(index: number) {
     // 如果媒体已缓存可直接播放，否则等待加载
     if (audioRef.value.readyState >= 3) {
       // HAVE_FUTURE_DATA (3) 或 HAVE_ENOUGH_DATA (4)，可直接播放
+      isLoading.value = false;
+      stopLoadingAnimation();
       playWhenReady();
     } else {
       audioRef.value.addEventListener('canplaythrough', playWhenReady);
     }
+  }
+}
+
+// 加载动画相关
+let loadingInterval: ReturnType<typeof setInterval> | null = null;
+
+function startLoadingAnimation() {
+  if (loadingInterval) return;
+  loadingProgress.value = 0;
+  loadingInterval = setInterval(() => {
+    // 模拟进度增长，最高到 90%（真实进度无法获取）
+    if (loadingProgress.value < 90) {
+      loadingProgress.value += Math.random() * 5 + 2;
+      if (loadingProgress.value > 90) loadingProgress.value = 90;
+    }
+  }, 300);
+}
+
+function stopLoadingAnimation() {
+  if (loadingInterval) {
+    clearInterval(loadingInterval);
+    loadingInterval = null;
+  }
+  loadingProgress.value = 100;
+}
+
+// 音频加载事件处理
+function handleLoadStart() {
+  isLoading.value = true;
+  loadingProgress.value = 0;
+  startLoadingAnimation();
+}
+
+function handleCanPlay() {
+  isLoading.value = false;
+  stopLoadingAnimation();
+}
+
+function handleWaiting() {
+  // 缓冲时显示加载状态
+  if (!isLoading.value) {
+    isLoading.value = true;
+    loadingProgress.value = 0;
+    startLoadingAnimation();
   }
 }
 
@@ -666,6 +724,7 @@ onUnmounted(() => {
   }
 
   stopPulseAnimation();
+  stopLoadingAnimation();
 });
 </script>
 
@@ -826,8 +885,25 @@ onUnmounted(() => {
             class="progress-played absolute left-0 top-0 h-full rd-full bg-gradient-to-r from-[rgb(var(--primary-color))] to-[rgb(var(--primary-400-color))] shadow-sm"
             :style="{ width: `${progressPercent}%` }"
           />
+          <!-- 加载状态覆盖层 -->
+          <Transition name="fade">
+            <div
+              v-if="isLoading"
+              class="absolute inset-0 flex items-center justify-center z-10"
+            >
+              <div class="loading-indicator flex items-center gap-4px px-8px py-2px rd-4px bg-[rgb(var(--primary-color))]/20 dark:bg-[rgb(var(--primary-color))]/30">
+                <div class="loading-spinner flex items-center gap-2px">
+                  <div class="w-3px h-8px rd-full bg-[rgb(var(--primary-color))] animate-pulse" style="animation-delay: 0s;" />
+                  <div class="w-3px h-5px rd-full bg-[rgb(var(--primary-color))] animate-pulse" style="animation-delay: 0.15s;" />
+                  <div class="w-3px h-8px rd-full bg-[rgb(var(--primary-color))] animate-pulse" style="animation-delay: 0.3s;" />
+                </div>
+                <span class="text-11px text-[rgb(var(--primary-color))] font-medium">加载中</span>
+              </div>
+            </div>
+          </Transition>
           <!-- 滑块指示器 -->
           <div
+            v-show="!isLoading"
             class="progress-thumb absolute top-1/2 -translate-y-1/2 w-14px h-14px rd-full bg-white shadow-lg ring-2 ring-[rgb(var(--primary-color))]/70 transition-transform hover:scale-125 hover:ring-[rgb(var(--primary-color))]"
             :style="{ left: `calc(${progressPercent}% - 7px)` }"
           >
@@ -836,7 +912,7 @@ onUnmounted(() => {
         </div>
         <div class="flex justify-between mt-6px text-11px text-gray-500 dark:text-gray-400">
           <span>{{ formatTime(currentTime) }}</span>
-          <span>{{ formatTime(duration) }}</span>
+          <span>{{ isLoading && duration === 0 ? '--:--' : formatTime(duration) }}</span>
         </div>
       </div>
 
@@ -1099,12 +1175,26 @@ onUnmounted(() => {
                 class="absolute left-0 top-0 h-full rd-full bg-gradient-to-r from-[rgb(var(--primary-color))] to-[rgb(var(--primary-400-color))]"
                 :style="{ width: progressPercent + '%' }"
               />
+              <!-- 加载状态指示器 -->
+              <Transition name="fade">
+                <div
+                  v-if="isLoading"
+                  class="absolute inset-0 flex items-center justify-center z-10"
+                >
+                  <div class="loading-spinner-mini flex items-center gap-1px">
+                    <div class="w-2px h-6px rd-full bg-[rgb(var(--primary-color))] animate-pulse" style="animation-delay: 0s;" />
+                    <div class="w-2px h-4px rd-full bg-[rgb(var(--primary-color))] animate-pulse" style="animation-delay: 0.15s;" />
+                    <div class="w-2px h-6px rd-full bg-[rgb(var(--primary-color))] animate-pulse" style="animation-delay: 0.3s;" />
+                  </div>
+                </div>
+              </Transition>
               <div
+                v-show="!isLoading"
                 class="absolute top-1/2 -translate-y-1/2 w-10px h-10px rd-full bg-white shadow ring-1.5 ring-[rgb(var(--primary-color))]/60"
                 :style="{ left: `calc(${progressPercent}% - 5px)` }"
               />
             </div>
-            <span class="text-10px text-gray-400 dark:text-gray-500 flex-shrink-0 w-30px text-right">{{ formatTime(duration) }}</span>
+            <span class="text-10px text-gray-400 dark:text-gray-500 flex-shrink-0 w-30px text-right">{{ isLoading && duration === 0 ? '--:--' : formatTime(duration) }}</span>
 
             <!-- Volume -->
             <div class="relative flex-shrink-0">
@@ -1238,6 +1328,9 @@ onUnmounted(() => {
     @ended="handleEnded"
     @play="handleAudioPlay"
     @pause="handleAudioPause"
+    @loadstart="handleLoadStart"
+    @canplay="handleCanPlay"
+    @waiting="handleWaiting"
   />
 </template>
 
@@ -1247,6 +1340,24 @@ onUnmounted(() => {
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+// 加载过渡动画
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+// 加载指示器样式
+.loading-indicator {
+  backdrop-filter: blur(4px);
+}
+
+.loading-spinner {
+  animation: loading-pulse 0.6s ease-in-out infinite;
+}
+
+@keyframes loading-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
 
 // 主播放按钮 - 白色外圈样式
 .play-btn-main {
