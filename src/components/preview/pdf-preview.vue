@@ -33,22 +33,48 @@ const { darkMode } = storeToRefs(themeStore);
 const { locale } = storeToRefs(appStore);
 
 const viewerReady = ref(false);
+const pdfBlobUrl = ref('');
+const loadError = ref('');
 let unsubscribe: (() => void) | null = null;
 let i18nCap: I18nCapability | null = null;
-
-const pdfUrl = computed(() => {
-  if (!props.fileId) return '';
-  return getPreviewUrl(props.fileId);
-});
 
 const embedLocale = computed(() => (locale.value === 'zh-CN' ? 'zh-CN' : 'en'));
 
 const themePreference = computed(() => (darkMode.value ? 'dark' as const : 'light' as const));
 
 const viewerConfig = computed(() => ({
-  src: pdfUrl.value,
+  src: pdfBlobUrl.value,
   theme: { preference: themePreference.value }
 }));
+
+async function fetchPdfData() {
+  if (!props.fileId) return;
+
+  loadError.value = '';
+  viewerReady.value = false;
+  revokeBlobUrl();
+
+  try {
+    const url = getPreviewUrl(props.fileId);
+    const response = await fetch(url, { credentials: 'include' });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    pdfBlobUrl.value = URL.createObjectURL(blob);
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : 'PDF加载失败';
+  }
+}
+
+function revokeBlobUrl() {
+  if (pdfBlobUrl.value) {
+    URL.revokeObjectURL(pdfBlobUrl.value);
+    pdfBlobUrl.value = '';
+  }
+}
 
 function handleReady(registry: PluginRegistry) {
   setupCloseListener(registry);
@@ -97,16 +123,16 @@ watch(
   () => props.fileId,
   (newId) => {
     if (!newId) return;
-    viewerReady.value = false;
-    cleanupSubscription();
-    i18nCap = null;
-  }
+    fetchPdfData();
+  },
+  { immediate: true }
 );
 
 onUnmounted(() => {
   viewerReady.value = false;
   cleanupSubscription();
   i18nCap = null;
+  revokeBlobUrl();
 });
 </script>
 
@@ -114,7 +140,7 @@ onUnmounted(() => {
   <div class="pdf-preview-container relative w-full h-full">
     <!-- Loading state -->
     <div
-      v-if="!viewerReady"
+      v-if="!viewerReady && !loadError"
       class="absolute inset-0 flex-center z-10"
     >
       <NSpin size="large">
@@ -124,10 +150,22 @@ onUnmounted(() => {
       </NSpin>
     </div>
 
+    <!-- Error state -->
+    <div
+      v-if="loadError"
+      class="absolute inset-0 flex-center z-10"
+    >
+      <NResult status="error" title="加载失败" :description="loadError">
+        <template #footer>
+          <NButton @click="fetchPdfData">重试</NButton>
+        </template>
+      </NResult>
+    </div>
+
     <!-- PDF Viewer -->
     <PDFViewer
-      v-if="pdfUrl"
-      :key="pdfUrl"
+      v-if="pdfBlobUrl && !loadError"
+      :key="pdfBlobUrl"
       :config="viewerConfig"
       class="w-full h-full"
       @ready="handleReady"
