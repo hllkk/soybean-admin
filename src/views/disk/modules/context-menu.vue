@@ -94,6 +94,15 @@ const fileOptions = computed<DropdownOption[]>(() => {
       label: $t('page.disk.contextMenu.delete'),
       key: 'delete',
       icon: SvgIconVNode({ icon: 'mdi:delete-outline', fontSize: 18 })
+    },
+    {
+      type: 'divider',
+      key: 'd-detail'
+    },
+    {
+      label: $t('page.disk.contextMenu.detail'),
+      key: 'detail',
+      icon: SvgIconVNode({ icon: 'mdi:information-outline', fontSize: 18 })
     }
   ];
 });
@@ -182,7 +191,24 @@ function handleSelect(key: string) {
     :x="x"
     :y="y"
     :options="options"
+    :menu-props="() => ({ class: 'disk-ctx-glass' })"
     @clickoutside="hide"
     @select="handleSelect"
   />
 </template>
+
+<style>
+/* 右键菜单毛玻璃效果 */
+.n-dropdown-menu.disk-ctx-glass {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+}
+
+html.dark .n-dropdown-menu.disk-ctx-glass {
+  background: rgba(30, 30, 30, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+</style>

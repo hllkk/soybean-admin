@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, nextTick, watch } from 'vue';
+import { computed, ref, nextTick, watch, onBeforeUnmount } from 'vue';
 import type { DropdownOption } from 'naive-ui';
 
 import { $t } from '@/locales';
-import { formatDateShort, formatFileSize } from '@/utils/format';
+import { formatDateShort, formatFileSize, formatDateTime } from '@/utils/format';
 import { useDiskStore } from '@/store/modules/disk';
 
 import FileIcon from './file-icon.vue';
@@ -55,14 +55,86 @@ const formattedSize = computed(() => {
 
 const isRenamingThis = computed(() => diskStore.renamingFileId === props.file.fileId);
 
-/** 悬停名称 tooltip 详情 */
-const nameTooltipContent = computed(() => {
-  const lines = [`${$t('page.disk.file.name')}: ${props.file.fileName}`];
-  if (!props.file.isFolder) {
-    lines.push(`${$t('page.disk.file.size')}: ${formattedSize.value}`);
-  }
-  lines.push(`${$t('page.disk.file.modifyTime')}: ${props.file.modifyTime}`);
-  return lines.join('\n');
+// --- 悬停信息弹窗 ---
+const fileNameRef = ref<HTMLElement>();
+const hoverVisible = ref(false);
+const hoverPos = ref({ x: 0, y: 0 });
+const hoverPlacement = ref<'left' | 'right'>('left');
+let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+
+const isVideo = computed(() => props.file.fileType === 'video');
+const isAudio = computed(() => props.file.fileType === 'audio');
+const isImage = computed(() => props.file.fileType === 'image');
+
+const videoInfo = computed(() => props.file.video);
+const musicInfo = computed(() => props.file.music);
+
+const hasMediaSection = computed(() => {
+  if (isVideo.value && videoInfo.value) return true;
+  if (isAudio.value && musicInfo.value) return true;
+  if (isImage.value) return true;
+  return false;
+});
+
+function formatDuration(duration: string | undefined) {
+  if (!duration) return '-';
+  const seconds = Number.parseFloat(duration);
+  if (Number.isNaN(seconds)) return duration;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function formatBitrate(bitrate: string | undefined) {
+  if (!bitrate) return '-';
+  const num = Number.parseFloat(bitrate);
+  if (Number.isNaN(num)) return bitrate;
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)} Mbps`;
+  if (num >= 1000) return `${(num / 1000).toFixed(0)} Kbps`;
+  return `${bitrate} bps`;
+}
+
+const imageResolution = computed(() => {
+  if (!isImage.value) return '';
+  const ext = props.file.fileExtension?.toLowerCase() || '';
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'];
+  if (!imageExts.includes(ext)) return '';
+  return ext.toUpperCase();
+});
+
+function showHoverInfo() {
+  if (isRenamingThis.value) return;
+  if (hoverTimer) clearTimeout(hoverTimer);
+  hoverTimer = setTimeout(() => {
+    const el = fileNameRef.value;
+    if (!el) return;
+    const card = el.closest('.group') as HTMLElement;
+    const anchor = card || el;
+    const rect = anchor.getBoundingClientRect();
+    const popW = 220;
+    const spaceLeft = rect.left;
+    const spaceRight = window.innerWidth - rect.right;
+    const centerY = rect.top + rect.height / 2;
+    if (spaceLeft >= popW + 12) {
+      hoverPlacement.value = 'left';
+      hoverPos.value = { x: rect.left - 12, y: centerY };
+    } else {
+      hoverPlacement.value = 'right';
+      hoverPos.value = { x: rect.right + 12, y: centerY };
+    }
+    hoverVisible.value = true;
+  }, 300);
+}
+
+function hideHoverInfo() {
+  if (hoverTimer) clearTimeout(hoverTimer);
+  hoverVisible.value = false;
+}
+
+onBeforeUnmount(() => {
+  if (hoverTimer) clearTimeout(hoverTimer);
 });
 
 /** "..." 更多操作下拉选项 */
@@ -171,6 +243,7 @@ function handleMoreSelect(key: string) {
     :class="{ 'bg-primary/15 dark:bg-primary/25': selected }"
     @click="handleClick"
     @dblclick="handleDblClick"
+    @mouseleave="hideHoverInfo"
   >
     <!-- 顶部操作栏：重命名模式下显示确认/取消按钮 -->
     <div
@@ -265,34 +338,172 @@ function handleMoreSelect(key: string) {
         @keydown="handleRenameKeydown"
       />
     </div>
-    <!-- 名称：普通展示模式 -->
-    <div v-else class="file-name-tooltip w-full text-center text-13px px-4px">
-      <NTooltip trigger="hover" placement="bottom">
-        <template #trigger>
-          <NEllipsis :line-clamp="2" :tooltip="false">
-            {{ file.fileName }}
-          </NEllipsis>
-        </template>
-        <div class="whitespace-pre-line text-13px leading-5">{{ nameTooltipContent }}</div>
-      </NTooltip>
+    <!-- 名称：普通展示模式（悬停展示详情） -->
+    <div
+      v-else
+      ref="fileNameRef"
+      class="file-name-area w-full text-center text-13px px-4px"
+      @mouseenter="showHoverInfo"
+      @mouseleave="hideHoverInfo"
+    >
+      <NEllipsis :line-clamp="2" :tooltip="false">
+        {{ file.fileName }}
+      </NEllipsis>
     </div>
 
     <!-- 时间 -->
     <div class="text-12px mt-4px text-gray-500">
       {{ formattedTime }}
     </div>
+
+    <!-- 悬停信息弹窗 (Teleport to body) -->
+    <Teleport to="body">
+      <Transition name="hover-pop">
+        <div
+          v-if="hoverVisible"
+          class="fixed z-9999"
+          :style="{
+            left: `${hoverPos.x}px`,
+            top: `${hoverPos.y}px`,
+            transform: hoverPlacement === 'left' ? 'translate(-100%, -50%)' : 'translate(0, -50%)'
+          }"
+        >
+          <div
+            class="file-hover-pop min-w-200px max-w-320px rd-10px px-16px py-12px shadow-lg"
+            @mouseenter="hoverVisible = true"
+            @mouseleave="hideHoverInfo"
+          >
+          <!-- 基本信息 -->
+          <div class="space-y-6px">
+            <div class="flex">
+              <span class="info-label">{{ $t('page.disk.file.name') }}</span>
+              <span class="info-value flex-1 break-all">{{ file.fileName }}</span>
+            </div>
+            <div v-if="!file.isFolder" class="flex">
+              <span class="info-label">{{ $t('page.disk.file.size') }}</span>
+              <span class="info-value">{{ formattedSize }}</span>
+            </div>
+            <div class="flex">
+              <span class="info-label">{{ $t('page.disk.file.path') }}</span>
+              <span class="info-value flex-1 break-all">{{ file.filePath || '-' }}</span>
+            </div>
+            <div class="flex">
+              <span class="info-label">{{ $t('page.disk.file.createTime') }}</span>
+              <span class="info-value">{{ formatDateTime(file.createTime) || '-' }}</span>
+            </div>
+            <div class="flex">
+              <span class="info-label">{{ $t('page.disk.file.modifyTime') }}</span>
+              <span class="info-value">{{ formatDateTime(file.updateTime) }}</span>
+            </div>
+          </div>
+
+          <!-- 视频信息 -->
+          <template v-if="isVideo && videoInfo">
+            <div class="divider-line" />
+            <div class="space-y-6px">
+              <div v-if="videoInfo.width && videoInfo.height" class="flex">
+                <span class="info-label">{{ $t('page.disk.file.resolution') }}</span>
+                <span class="info-value">{{ videoInfo.width }} x {{ videoInfo.height }}</span>
+              </div>
+              <div v-if="videoInfo.bitrate" class="flex">
+                <span class="info-label">{{ $t('page.disk.file.bitrate') }}</span>
+                <span class="info-value">{{ formatBitrate(videoInfo.bitrate) }}</span>
+              </div>
+              <div v-if="videoInfo.frameRate" class="flex">
+                <span class="info-label">{{ $t('page.disk.file.frameRate') }}</span>
+                <span class="info-value">{{ videoInfo.frameRate }} fps</span>
+              </div>
+              <div v-if="videoInfo.format" class="flex">
+                <span class="info-label">{{ $t('page.disk.file.format') }}</span>
+                <span class="info-value">{{ videoInfo.format }}</span>
+              </div>
+              <div v-if="videoInfo.duration" class="flex">
+                <span class="info-label">{{ $t('page.disk.file.duration') }}</span>
+                <span class="info-value">{{ formatDuration(videoInfo.duration) }}</span>
+              </div>
+            </div>
+          </template>
+
+          <!-- 图片信息 -->
+          <template v-if="isImage && imageResolution">
+            <div class="divider-line" />
+            <div class="space-y-6px">
+              <div class="flex">
+                <span class="info-label">{{ $t('page.disk.file.type') }}</span>
+                <span class="info-value">{{ imageResolution }}</span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </Transition>
+    </Teleport>
   </div>
 </template>
 
 <style scoped lang="scss">
-.file-name-tooltip {
-  :deep(.n-tooltip-trigger) {
-    width: 100%;
+.file-name-area {
+  :deep(.n-ellipsis) {
     transition: color 0.2s;
   }
 
   &:hover :deep(.n-ellipsis) {
     color: rgb(var(--primary-color));
   }
+}
+
+// 毛玻璃弹窗样式
+.file-hover-pop {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+
+  :root.dark & {
+    background: rgba(30, 30, 30, 0.6);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.info-label {
+  flex-shrink: 0;
+  width: 60px;
+  font-size: 12px;
+  color: #888;
+  line-height: 1.6;
+
+  :root.dark & {
+    color: #999;
+  }
+}
+
+.info-value {
+  font-size: 12px;
+  color: #333;
+  line-height: 1.6;
+
+  :root.dark & {
+    color: #ddd;
+  }
+}
+
+.divider-line {
+  margin: 8px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+
+  :root.dark & {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+// 弹窗过渡动画
+.hover-pop-enter-active,
+.hover-pop-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.hover-pop-enter-from,
+.hover-pop-leave-to {
+  opacity: 0;
 }
 </style>

@@ -1208,11 +1208,18 @@ declare namespace App {
             folder: string;
             size: string;
             type: string;
+            path: string;
+            createTime: string;
             modifyTime: string;
             noFiles: string;
             empty: string;
             emptyWithType: string;
             emptyUploadTip: string;
+            resolution: string;
+            bitrate: string;
+            frameRate: string;
+            format: string;
+            duration: string;
           };
           transfer: {
             title: string;
@@ -1253,6 +1260,7 @@ declare namespace App {
             move: string;
             rename: string;
             delete: string;
+            detail: string;
             deleteConfirm: string;
             view: string;
             viewGrid: string;
@@ -1289,6 +1297,31 @@ declare namespace App {
             renamePlaceholder: string;
             deleteConfirm: string;
             deleteSuccess: string;
+          };
+          detail: {
+            title: string;
+            fileName: string;
+            fileType: string;
+            fileSize: string;
+            filePath: string;
+            createTime: string;
+            modifyTime: string;
+            videoInfo: string;
+            videoWidth: string;
+            videoHeight: string;
+            videoBitrate: string;
+            videoFrameRate: string;
+            videoFormat: string;
+            videoDuration: string;
+            audioInfo: string;
+            audioSong: string;
+            audioSinger: string;
+            audioAlbum: string;
+            imageInfo: string;
+            imageResolution: string;
+            imageCamera: string;
+            imageDateTime: string;
+            unknown: string;
           };
           share: {
             configTitle: string;

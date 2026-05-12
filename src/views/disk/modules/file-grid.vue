@@ -43,6 +43,7 @@ interface Emits {
   (e: 'fileFavorite', file: Api.Disk.FileItem): void;
   (e: 'fileAddFavorite', file: Api.Disk.FileItem): void;
   (e: 'fileRemoveFavorite', file: Api.Disk.FileItem): void;
+  (e: 'fileDetail', file: Api.Disk.FileItem): void;
   (e: 'fileRestore', file: Api.Disk.FileItem): void;
   (e: 'refresh'): void;
   (e: 'emptyTrash'): void;
@@ -199,6 +200,7 @@ function handleContextSelect(key: string) {
     case 'move': if (file) emit('fileMove', file); break;
     case 'rename': if (file) emit('fileRename', file); break;
     case 'delete': if (file) emit('fileDelete', file); break;
+    case 'detail': if (file) emit('fileDetail', file); break;
     case 'addFavorite': if (file) emit('fileAddFavorite', file); break;
     case 'removeFavorite': if (file) emit('fileRemoveFavorite', file); break;
     case 'restore': if (file) emit('fileRestore', file); break;

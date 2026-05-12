@@ -20,6 +20,7 @@ import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
 import ShareDialog from './modules/share-dialog.vue';
 import ShareResultDialog from './modules/share-result-dialog.vue';
+import FileDetailModal from './modules/file-detail-modal.vue';
 import SharedWithMe from './modules/shared-with-me.vue';
 import MyShared from './modules/my-shared.vue';
 import VideoPreview from '@/components/preview/video-preview.vue';
@@ -50,6 +51,10 @@ const previewFile = ref<Api.Disk.PreviewFileInfo | null>(null);
 // 分享结果
 const shareResultVisible = ref(false);
 const shareResult = ref<Api.Disk.ShareResult | null>(null);
+
+// 文件详情
+const detailVisible = ref(false);
+const detailFile = ref<Api.Disk.FileItem | null>(null);
 
 // 已有链接分享信息（传入 share-dialog 供展示）
 const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
@@ -298,6 +303,10 @@ function handleFileAction(action: string, file: Api.Disk.FileItem) {
       break;
     case 'download':
       handleDownload([file]);
+      break;
+    case 'detail':
+      detailFile.value = file;
+      detailVisible.value = true;
       break;
     default:
       break;
@@ -745,6 +754,7 @@ onMounted(async () => {
             @file-favorite="handleFileFavorite"
             @file-add-favorite="handleAddFavorite"
             @file-remove-favorite="handleRemoveFavorite"
+            @file-detail="handleFileAction('detail', $event)"
             @refresh="handleRefresh"
           />
           <FileList
@@ -766,6 +776,7 @@ onMounted(async () => {
             @file-favorite="handleFileFavorite"
             @file-add-favorite="handleAddFavorite"
             @file-remove-favorite="handleRemoveFavorite"
+            @file-detail="handleFileAction('detail', $event)"
             @refresh="handleRefresh"
           />
         </template>
@@ -788,6 +799,11 @@ onMounted(async () => {
       v-model:visible="shareResultVisible"
       :result="shareResult"
       @cancelled="handleShareCancelled"
+    />
+    <!-- File Detail Modal -->
+    <FileDetailModal
+      v-model:visible="detailVisible"
+      :file="detailFile"
     />
     <!-- File Preview Overlay -->
     <FilePreviewOverlay
