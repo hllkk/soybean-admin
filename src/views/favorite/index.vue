@@ -9,7 +9,7 @@ import { mapBackendFileList } from '@/service/api/disk/file';
 import SimpleToolbar from '../disk/modules/simple-toolbar.vue';
 import FileGrid from '../disk/modules/file-grid.vue';
 import FileList from '../disk/modules/file-list.vue';
-import FileEmpty from '../disk/modules/file-empty.vue';
+import FileEmpty from '@/components/disk/file-empty.vue';
 
 defineOptions({
   name: 'FavoritePage'
@@ -139,7 +139,7 @@ getData();
         />
 
         <div class="flex-1 overflow-hidden lt-sm:flex-initial lt-sm:overflow-auto">
-          <FileEmpty v-if="showEmpty" />
+          <FileEmpty v-if="showEmpty" :description="$t('page.disk.favorite.empty')" />
 
           <FileGrid
             v-if="!showEmpty && diskStore.viewMode === 'grid'"

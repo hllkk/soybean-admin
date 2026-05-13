@@ -1582,15 +1582,23 @@ const local: App.I18n.Schema = {
         cancelConfirm: 'Confirm to cancel this share?',
         cancelSuccess: 'Share cancelled successfully',
         noShare: 'No share records',
+        empty: 'No share records',
         forever: 'Forever',
         expired: 'Expired',
         viewCount: 'Views',
         downloadCount: 'Downloads'
       },
+      groupShare: {
+        empty: 'No group shares'
+      },
+      sharedWithMe: {
+        empty: 'No files shared with me'
+      },
       recent: {
         title: 'Recent',
         remove: 'Remove',
-        clearAll: 'Clear All'
+        clearAll: 'Clear All',
+        empty: 'No recent files'
       },
       trash: {
         title: 'Trash',
@@ -1608,7 +1616,8 @@ const local: App.I18n.Schema = {
         restoreSuccess: 'Files restored',
         emptyConfirm: 'This action cannot be undone. Empty the trash?',
         emptySuccess: 'Trash emptied',
-        cannotDownload: 'Files in trash cannot be downloaded'
+        cannotDownload: 'Files in trash cannot be downloaded',
+        noData: 'Trash is empty'
       },
       favorite: {
         title: 'Favorites',
@@ -1618,7 +1627,8 @@ const local: App.I18n.Schema = {
         removeConfirmMultiple: 'Remove {count} files from favorites?',
         removeSuccess: 'Removed from favorites',
         removeFailed: 'Failed to remove from favorites',
-        downloadNotReady: 'Download feature is not ready'
+        downloadNotReady: 'Download feature is not ready',
+        empty: 'No favorite files'
       }
     },
     share: {

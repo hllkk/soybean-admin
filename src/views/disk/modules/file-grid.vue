@@ -5,7 +5,7 @@ import { useDiskStore } from '@/store/modules/disk';
 import { resolveNameConflict } from '../utils/resolve-name-conflict';
 import { getSelectId } from '../utils/file-select';
 import FileCard from './file-card.vue';
-import FileEmpty from './file-empty.vue';
+import FileEmpty from '@/components/disk/file-empty.vue';
 import DiskContextMenu from './context-menu.vue';
 import FileIcon from './file-icon.vue';
 
@@ -315,72 +315,73 @@ watch(
 </script>
 
 <template>
-  <NSpin :show="loading">
+  <div class="h-full">
     <!-- 空状态 -->
     <FileEmpty v-if="showEmpty" />
 
     <!-- 文件网格 - 滚动容器 -->
-    <div
-      v-else
-      ref="gridScrollRef"
-      class="file-grid-scroll overflow-y-auto pr-4px"
-      :style="scrollStyle"
-      @contextmenu.prevent="handleContextMenu"
-    >
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-16px px-16px pt-16px pb-48px">
-        <!-- 内联创建占位卡片 -->
-        <div
-          v-if="!disableCreate && diskStore.creatingType"
-          class="flex flex-col items-center px-8px py-16px rd-8px bg-primary/5 dark:bg-primary/10"
-        >
-          <div class="mb-8px mt-16px">
-            <FileIcon
-              :file-type="diskStore.creatingType === 'folder' ? 'folder' : 'other'"
-              size="large"
-            />
+    <NSpin v-else :show="loading">
+      <div
+        ref="gridScrollRef"
+        class="file-grid-scroll overflow-y-auto pr-4px"
+        :style="scrollStyle"
+        @contextmenu.prevent="handleContextMenu"
+      >
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-16px px-16px pt-16px pb-48px">
+          <!-- 内联创建占位卡片 -->
+          <div
+            v-if="!disableCreate && diskStore.creatingType"
+            class="flex flex-col items-center px-8px py-16px rd-8px bg-primary/5 dark:bg-primary/10"
+          >
+            <div class="mb-8px mt-16px">
+              <FileIcon
+                :file-type="diskStore.creatingType === 'folder' ? 'folder' : 'other'"
+                size="large"
+              />
+            </div>
+            <div class="w-full px-4px">
+              <NInput
+                ref="createInputRef"
+                v-model:value="createName"
+                size="small"
+                @keydown="handleCreateKeydown"
+                @blur="handleCreateCancel"
+              />
+            </div>
           </div>
-          <div class="w-full px-4px">
-            <NInput
-              ref="createInputRef"
-              v-model:value="createName"
-              size="small"
-              @keydown="handleCreateKeydown"
-              @blur="handleCreateCancel"
-            />
-          </div>
+
+          <FileCard
+            v-for="file in files"
+            :key="file.fileId"
+            :file="file"
+            :selected="isSelected(getSelectId(file))"
+            :data-file-id="String(getSelectId(file))"
+            @click="handleFileClick(file)"
+            @dblclick="handleFileDblClick(file)"
+            @select="handleSelect(file)"
+            @share="handleAction('share', file)"
+            @download="handleAction('download', file)"
+            @delete="handleAction('delete', file)"
+            @rename="handleAction('rename', file)"
+            @rename-confirm="(_fileId, newName) => emit('fileRenameConfirm', newName)"
+            @rename-cancel="emit('fileRenameCancel')"
+            @copy="handleAction('copy', file)"
+            @move="handleAction('move', file)"
+          />
         </div>
-
-        <FileCard
-          v-for="file in files"
-          :key="file.fileId"
-          :file="file"
-          :selected="isSelected(getSelectId(file))"
-          :data-file-id="String(getSelectId(file))"
-          @click="handleFileClick(file)"
-          @dblclick="handleFileDblClick(file)"
-          @select="handleSelect(file)"
-          @share="handleAction('share', file)"
-          @download="handleAction('download', file)"
-          @delete="handleAction('delete', file)"
-          @rename="handleAction('rename', file)"
-          @rename-confirm="(_fileId, newName) => emit('fileRenameConfirm', newName)"
-          @rename-cancel="emit('fileRenameCancel')"
-          @copy="handleAction('copy', file)"
-          @move="handleAction('move', file)"
-        />
       </div>
-    </div>
-  </NSpin>
+    </NSpin>
 
-  <DiskContextMenu
-    v-model:visible="ctxState.visible"
-    :x="ctxState.x"
-    :y="ctxState.y"
-    :type="ctxState.type"
-    :page-type="pageType"
-    :file-is-favorite="ctxState.targetFile?.isFavorite"
-    @select="handleContextSelect"
-  />
+    <DiskContextMenu
+      v-model:visible="ctxState.visible"
+      :x="ctxState.x"
+      :y="ctxState.y"
+      :type="ctxState.type"
+      :page-type="pageType"
+      :file-is-favorite="ctxState.targetFile?.isFavorite"
+      @select="handleContextSelect"
+    />
+  </div>
 </template>
 
 <style scoped lang="scss">

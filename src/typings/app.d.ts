@@ -1364,15 +1364,23 @@ declare namespace App {
             cancelConfirm: string;
             cancelSuccess: string;
             noShare: string;
+            empty: string;
             forever: string;
             expired: string;
             viewCount: string;
             downloadCount: string;
           };
+          groupShare: {
+            empty: string;
+          };
+          sharedWithMe: {
+            empty: string;
+          };
           recent: {
             title: string;
             remove: string;
             clearAll: string;
+            empty: string;
           };
           trash: {
             title: string;
@@ -1391,6 +1399,7 @@ declare namespace App {
             emptyConfirm: string;
             emptySuccess: string;
             cannotDownload: string;
+            noData: string;
           };
           favorite: {
             title: string;
@@ -1401,6 +1410,7 @@ declare namespace App {
             removeSuccess: string;
             removeFailed: string;
             downloadNotReady: string;
+            empty: string;
           };
         };
         share: {

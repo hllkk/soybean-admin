@@ -1574,15 +1574,23 @@ const local: App.I18n.Schema = {
         cancelConfirm: '确认取消此分享？',
         cancelSuccess: '取消分享成功',
         noShare: '暂无分享记录',
+        empty: '暂无分享记录',
         forever: '永久有效',
         expired: '已过期',
         viewCount: '访问',
         downloadCount: '下载'
       },
+      groupShare: {
+        empty: '暂无群组分享'
+      },
+      sharedWithMe: {
+        empty: '暂无他人分享的文件'
+      },
       recent: {
         title: '最近访问',
         remove: '移除记录',
-        clearAll: '清空全部'
+        clearAll: '清空全部',
+        empty: '暂无最近访问的文件'
       },
       trash: {
         title: '回收站',
@@ -1600,7 +1608,8 @@ const local: App.I18n.Schema = {
         restoreSuccess: '文件已恢复',
         emptyConfirm: '此操作不可撤销，确定清空回收站？',
         emptySuccess: '回收站已清空',
-        cannotDownload: '回收站文件无法下载'
+        cannotDownload: '回收站文件无法下载',
+        noData: '回收站是空的'
       },
       favorite: {
         title: '我的收藏',
@@ -1610,7 +1619,8 @@ const local: App.I18n.Schema = {
         removeConfirmMultiple: '确定取消收藏 {count} 个文件？',
         removeSuccess: '已取消收藏',
         removeFailed: '取消收藏失败',
-        downloadNotReady: '下载功能开发中'
+        downloadNotReady: '下载功能开发中',
+        empty: '暂无收藏的文件'
       }
     },
     share: {

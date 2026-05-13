@@ -7,13 +7,22 @@ defineOptions({
   name: 'FileEmpty'
 });
 
+interface Props {
+  /** Custom empty text, overrides diskStore-based auto text */
+  description?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  description: undefined
+});
+
 const diskStore = useDiskStore();
 
-// 当前查询的文件类型
 const queryType = computed(() => diskStore.currentFileType);
 
-// 根据文件类型生成空状态文案
 const emptyText = computed(() => {
+  if (props.description) return props.description;
+
   const typeMap: Record<string, string> = {
     all: '',
     image: '图片',
@@ -26,18 +35,15 @@ const emptyText = computed(() => {
   return typeName ? $t('page.disk.file.emptyWithType', { type: typeName }) : $t('page.disk.file.empty');
 });
 
-// 是否显示上传提示
-const showUploadTip = computed(() => queryType.value === 'all');
+const showUploadTip = computed(() => !props.description && queryType.value === 'all');
 </script>
 
 <template>
-  <div class="h-full flex flex-col items-center justify-center py-40px">
-    <!-- 空状态图标 -->
+  <div class="flex flex-col items-center justify-center" style="min-height: calc(100vh - 320px);">
     <div class="mb-16px opacity-60">
       <icon-local-kongkong class="text-[var(--n-text-color-disabled)] size-60" />
     </div>
 
-    <!-- 空状态文案 -->
     <div class="text-center">
       <p class="text-16px text-[var(--n-text-color-disabled)] mb-8px">
         {{ emptyText }}
@@ -48,6 +54,3 @@ const showUploadTip = computed(() => queryType.value === 'all');
     </div>
   </div>
 </template>
-
-<style scoped lang="scss">
-</style>

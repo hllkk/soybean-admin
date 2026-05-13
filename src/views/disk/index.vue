@@ -730,7 +730,7 @@ onMounted(async () => {
       />
     </template>
     <div class="h-full flex-col-stretch gap-12px overflow-hidden lt-sm:overflow-auto">
-      <NCard :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
+      <NCard :bordered="false" size="small" class="card-wrapper flex-1-hidden">
         <!-- Toolbar -->
         <Toolbar
           @search="handleSearch"
@@ -746,6 +746,7 @@ onMounted(async () => {
         />
         <!-- Breadcrumb -->
         <Breadcrumb
+          v-if="fileList.length > 0"
           :total-count="totalCount"
         />
         <!-- File Content -->

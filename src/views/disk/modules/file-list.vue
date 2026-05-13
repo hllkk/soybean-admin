@@ -10,7 +10,7 @@ import SvgIcon from '@/components/custom/svg-icon.vue';
 import { resolveNameConflict } from '../utils/resolve-name-conflict';
 import { getSelectId } from '../utils/file-select';
 import FileIcon from './file-icon.vue';
-import FileEmpty from './file-empty.vue';
+import FileEmpty from '@/components/disk/file-empty.vue';
 import DiskContextMenu from './context-menu.vue';
 
 defineOptions({

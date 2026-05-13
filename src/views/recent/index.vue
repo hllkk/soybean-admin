@@ -15,7 +15,7 @@ import { getServiceBaseURL } from '@/utils/service';
 import SimpleToolbar from '../disk/modules/simple-toolbar.vue';
 import FileGrid from '../disk/modules/file-grid.vue';
 import FileList from '../disk/modules/file-list.vue';
-import FileEmpty from '../disk/modules/file-empty.vue';
+import FileEmpty from '@/components/disk/file-empty.vue';
 import FilePreviewOverlay from '@/components/preview/file-preview-overlay.vue';
 import ImagePreview from '@/components/preview/image-preview.vue';
 import VideoPreview from '@/components/preview/video-preview.vue';
@@ -365,7 +365,7 @@ getData();
         <!-- 内容区域 -->
         <div class="flex-1 overflow-hidden lt-sm:flex-initial lt-sm:overflow-auto">
           <!-- 空状态 -->
-          <FileEmpty v-if="showEmpty" />
+          <FileEmpty v-if="showEmpty" :description="$t('page.disk.recent.empty')" />
 
           <!-- 网格视图 -->
           <FileGrid

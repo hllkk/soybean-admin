@@ -6,6 +6,7 @@ import { $t } from '@/locales';
 import { fetchGetMyShareList, fetchCancelShare } from '@/service/api/disk/share';
 import { handleCopy } from '@/utils/copy';
 import FileIcon from '../disk/modules/file-icon.vue';
+import FileEmpty from '@/components/disk/file-empty.vue';
 
 defineOptions({
   name: 'MySharePage'
@@ -234,7 +235,7 @@ getData();
 
         <!-- 内容区域 -->
         <div class="flex-1 min-h-0 overflow-auto">
-          <NEmpty v-if="showEmpty" description="暂无分享记录" />
+          <FileEmpty v-if="showEmpty" :description="$t('page.disk.myShare.empty')" />
 
           <!-- PC端：表格视图 -->
           <NDataTable
