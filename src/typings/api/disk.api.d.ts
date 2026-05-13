@@ -51,6 +51,8 @@ declare namespace Api {
       contentType?: string;
       /** 是否已收藏 */
       isFavorite?: boolean;
+      /** 是否已分享 */
+      isShare?: boolean;
     }> & {
       /** 兼容属性: 文件ID别名 */
       id?: CommonType.IdType;

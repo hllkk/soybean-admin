@@ -24,6 +24,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 interface Emits {
   (e: 'success', result: Api.Disk.ShareResult): void;
+  (e: 'cancelShare', fileId: CommonType.IdType): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -267,12 +268,13 @@ async function handleDeptShare() {
 }
 
 async function handleCancelExistingShare() {
-  if (!props.existingShare?.shareId) return;
+  if (!props.existingShare?.shareId || !shareFile.value) return;
   loading.value = true;
   const { error } = await fetchCancelShare(props.existingShare.shareId);
   loading.value = false;
   if (!error) {
     window.$message?.success($t('page.disk.share.cancelSuccess'));
+    emit('cancelShare', shareFile.value.fileId);
     diskStore.closeShareDialog();
   }
 }

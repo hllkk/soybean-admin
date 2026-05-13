@@ -21,8 +21,6 @@ import MoveCopyDialog from './modules/move-copy-dialog.vue';
 import ShareDialog from './modules/share-dialog.vue';
 import ShareResultDialog from './modules/share-result-dialog.vue';
 import FileDetailModal from './modules/file-detail-modal.vue';
-import SharedWithMe from './modules/shared-with-me.vue';
-import MyShared from './modules/my-shared.vue';
 import VideoPreview from '@/components/preview/video-preview.vue';
 import FilePreviewOverlay from '@/components/preview/file-preview-overlay.vue';
 import ImagePreview from '@/components/preview/image-preview.vue';
@@ -398,16 +396,40 @@ function handleToolbarBatchShare() {
   handleShareFile(selectedFiles[0]);
 }
 
-/** 分享成功处理 */
+/** 分享成功处理 - 乐观更新文件的 isShare 状态 */
 function handleShareSuccess(result: Api.Disk.ShareResult) {
+  // 乐观更新：立即更新文件的分享状态
+  const shareFileId = diskStore.shareFile?.fileId;
+  if (shareFileId) {
+    const fileIndex = fileList.value.findIndex(f => f.fileId === shareFileId);
+    if (fileIndex !== -1) {
+      fileList.value[fileIndex].isShare = true;
+    }
+  }
   shareResult.value = result;
   shareResultVisible.value = true;
 }
 
-/** 分享取消处理 */
+/** 分享取消处理 - 乐观更新文件的 isShare 状态 */
 function handleShareCancelled() {
+  // 乐观更新：立即取消文件的分享状态
+  const shareFileId = diskStore.shareFile?.fileId;
+  if (shareFileId) {
+    const fileIndex = fileList.value.findIndex(f => f.fileId === shareFileId);
+    if (fileIndex !== -1) {
+      fileList.value[fileIndex].isShare = false;
+    }
+  }
   shareResult.value = null;
-  getFileList();
+}
+
+/** 取消分享处理（从 share-dialog 触发） - 乐观更新 */
+function handleCancelShare(fileId: CommonType.IdType) {
+  const fileIndex = fileList.value.findIndex(f => f.fileId === fileId);
+  if (fileIndex !== -1) {
+    fileList.value[fileIndex].isShare = false;
+  }
+  existingShareInfo.value = null;
 }
 
 function handleToolbarRename() {
@@ -626,10 +648,6 @@ function handleToolbarDelete() {
 
 // Watch file type changes
 watch(() => diskStore.currentFileType, () => {
-  // 共享页面不需要加载文件列表
-  if (diskStore.currentFileType === 'shared-with-me' || diskStore.currentFileType === 'my-shared') {
-    return;
-  }
   getFileList();
 });
 
@@ -713,9 +731,8 @@ onMounted(async () => {
     </template>
     <div class="h-full flex-col-stretch gap-12px overflow-hidden lt-sm:overflow-auto">
       <NCard :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
-        <!-- Toolbar - 隐藏在共享页面 -->
+        <!-- Toolbar -->
         <Toolbar
-          v-if="diskStore.currentFileType !== 'shared-with-me' && diskStore.currentFileType !== 'my-shared'"
           @search="handleSearch"
           @refresh="handleRefresh"
           @share="handleToolbarShare"
@@ -727,14 +744,12 @@ onMounted(async () => {
           @remove-favorite="handleToolbarRemoveFavorite"
           @show-transfer="transferPanelRef?.showDefault()"
         />
-        <!-- Breadcrumb - 隐藏在共享页面 -->
+        <!-- Breadcrumb -->
         <Breadcrumb
-          v-if="diskStore.currentFileType !== 'shared-with-me' && diskStore.currentFileType !== 'my-shared'"
           :total-count="totalCount"
         />
-        <!-- File Content - 隐藏在共享页面 -->
-        <template v-if="diskStore.currentFileType !== 'shared-with-me' && diskStore.currentFileType !== 'my-shared'">
-          <FileGrid
+        <!-- File Content -->
+        <FileGrid
             v-if="diskStore.viewMode === 'grid'"
             :files="fileList"
             :loading="loading"
@@ -779,13 +794,6 @@ onMounted(async () => {
             @file-detail="handleFileAction('detail', $event)"
             @refresh="handleRefresh"
           />
-        </template>
-
-        <!-- Shared with me view -->
-        <SharedWithMe v-if="diskStore.currentFileType === 'shared-with-me'" />
-
-        <!-- My shared view -->
-        <MyShared v-if="diskStore.currentFileType === 'my-shared'" />
       </NCard>
     </div>
     <!-- Transfer Panel -->
@@ -793,7 +801,7 @@ onMounted(async () => {
     <!-- Move/Copy Dialog -->
     <MoveCopyDialog @success="getFileList" />
     <!-- Share Dialog -->
-    <ShareDialog :existing-share="existingShareInfo" @success="handleShareSuccess" />
+    <ShareDialog :existing-share="existingShareInfo" @success="handleShareSuccess" @cancel-share="handleCancelShare" />
     <!-- Share Result Dialog -->
     <ShareResultDialog
       v-model:visible="shareResultVisible"

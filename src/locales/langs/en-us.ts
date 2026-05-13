@@ -322,7 +322,9 @@ const local: App.I18n.Schema = {
     manage_settings: 'Settings Management',
     manage_user: 'User Management',
     manage_notice: 'Notice Management',
-    'my-share': 'My Shares'
+    'my-share': 'My Shares',
+    'shared-with-me': 'Shared with Me',
+    'group-share': 'Group Share'
   },
   menu: {
     root: 'Root',

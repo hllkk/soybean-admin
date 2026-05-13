@@ -327,6 +327,13 @@ function handleMoreSelect(key: string) {
       >
         <SvgIcon icon="mdi:star" :size="12" class="text-white" />
       </div>
+      <!-- 分享图标（右上角） -->
+      <div
+        v-if="file.isShare"
+        class="absolute top-0 right-0 z-10 bg-green-500 dark:bg-green-600 rd-full p-2px shadow-sm"
+      >
+        <SvgIcon icon="mdi:share-variant" :size="12" class="text-white" />
+      </div>
     </div>
 
     <!-- 名称：内联重命名模式 -->

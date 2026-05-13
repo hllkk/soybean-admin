@@ -86,6 +86,16 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'group-share',
+    path: '/group-share',
+    component: 'layout.disk$view.group-share',
+    meta: {
+      title: 'group-share',
+      i18nKey: 'route.group-share',
+      module: 'disk'
+    }
+  },
+  {
     name: 'iframe-page',
     path: '/iframe-page/:url',
     component: 'layout.base$view.iframe-page',
@@ -293,6 +303,16 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'share',
       i18nKey: 'route.share'
+    }
+  },
+  {
+    name: 'shared-with-me',
+    path: '/shared-with-me',
+    component: 'layout.disk$view.shared-with-me',
+    meta: {
+      title: 'shared-with-me',
+      i18nKey: 'route.shared-with-me',
+      module: 'disk'
     }
   },
   {

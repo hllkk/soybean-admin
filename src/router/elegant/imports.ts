@@ -29,6 +29,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   admin: () => import("@/views/admin/index.vue"),
   disk: () => import("@/views/disk/index.vue"),
   favorite: () => import("@/views/favorite/index.vue"),
+  "group-share": () => import("@/views/group-share/index.vue"),
   log_login: () => import("@/views/log/login/index.vue"),
   log_operation: () => import("@/views/log/operation/index.vue"),
   manage_dept: () => import("@/views/manage/dept/index.vue"),
@@ -42,5 +43,6 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   "my-share": () => import("@/views/my-share/index.vue"),
   recent: () => import("@/views/recent/index.vue"),
   share: () => import("@/views/share/index.vue"),
+  "shared-with-me": () => import("@/views/shared-with-me/index.vue"),
   trash: () => import("@/views/trash/index.vue"),
 };

@@ -318,7 +318,9 @@ const local: App.I18n.Schema = {
     manage_settings: '项目设置',
     manage_user: '用户管理',
     manage_notice: '通知公告',
-    'my-share': '我的分享'
+    'my-share': '我的分享',
+    'shared-with-me': '共享给我',
+    'group-share': '群组共享'
   },
   menu: {
     root: '根目录',

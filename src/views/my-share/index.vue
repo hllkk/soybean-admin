@@ -1,233 +1,219 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { h, ref, computed } from 'vue';
+import { NTag } from 'naive-ui';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
-import { useDiskStore } from '@/store/modules/disk';
 import { fetchGetMyShareList, fetchCancelShare } from '@/service/api/disk/share';
 import { handleCopy } from '@/utils/copy';
-import SimpleToolbar from '../disk/modules/simple-toolbar.vue';
-import FileGrid from '../disk/modules/file-grid.vue';
-import FileList from '../disk/modules/file-list.vue';
-import FileEmpty from '../disk/modules/file-empty.vue';
+import FileIcon from '../disk/modules/file-icon.vue';
 
 defineOptions({
   name: 'MySharePage'
 });
 
-const diskStore = useDiskStore();
 const { loading, startLoading, endLoading } = useLoading();
 
-// 搜索参数
-const searchParams = ref<Api.Disk.MyShareListParams>({
-  pageNum: 1,
-  pageSize: 100,
-  sortField: null,
-  sortOrder: null
-});
-
-// 分享列表数据
 const shareList = ref<Api.Disk.MyShareItem[]>([]);
+const total = ref(0);
+const pagination = ref({ pageNum: 1, pageSize: 20 });
+const checkedRowKeys = ref<number[]>([]);
 
-// 本地选中状态（不污染 diskStore）
-const selectedFiles = ref<CommonType.IdType[]>([]);
+const checkedCount = computed(() => checkedRowKeys.value.length);
 
-// 将 MyShareItem 转换为 FileItem 格式（用于复用 FileGrid/FileList）
-function convertToFileItem(item: Api.Disk.MyShareItem): Api.Disk.FileItem {
-  // 根据 contentType 推断 fileType
-  let fileType = 'other';
-  const contentType = item.contentType?.toLowerCase() || '';
-  if (contentType.includes('image')) fileType = 'image';
-  else if (contentType.includes('video')) fileType = 'video';
-  else if (contentType.includes('audio')) fileType = 'audio';
-  else if (contentType.includes('pdf') || contentType.includes('document') || contentType.includes('text')) fileType = 'document';
-
-  return {
-    fileId: item.shareId, // 使用 shareId 作为临时 fileId
-    fileName: item.fileName,
-    fileType: fileType,
-    fileExtension: contentType.split('/').pop(),
-    fileSize: 0, // MyShareItem 没有 fileSize
-    filePath: '',
-    parentId: null,
-    isFolder: item.isFolder,
-    modifyTime: item.createDate,
-    createTime: item.createDate,
-    updateTime: item.createDate,
-    createBy: '',
-    updateBy: ''
-  };
+function buildShareLink(shortId: string) {
+  return `${window.location.origin}/s/${shortId}`;
 }
 
-// 转换后的文件列表
-const fileList = computed(() => shareList.value.map(convertToFileItem));
+function contentTypeToFileType(contentType: string, isFolder: boolean): string {
+  if (isFolder) return 'folder';
+  const ct = (contentType || '').toLowerCase();
+  if (ct.includes('image')) return 'image';
+  if (ct.includes('video')) return 'video';
+  if (ct.includes('audio')) return 'audio';
+  if (ct.includes('pdf') || ct.includes('document') || ct.includes('word') || ct.includes('text')) return 'document';
+  if (ct.includes('spreadsheet') || ct.includes('excel') || ct.includes('xls')) return 'document';
+  if (ct.includes('presentation') || ct.includes('ppt') || ct.includes('powerpoint')) return 'document';
+  if (ct.includes('zip') || ct.includes('rar') || ct.includes('7z') || ct.includes('tar') || ct.includes('compressed')) return 'other';
+  return 'other';
+}
 
-// 选中数量
-const selectedCount = computed(() => selectedFiles.value.length);
+function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
-// 是否显示空状态
+function formatDateShort(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+const columns = [
+  {
+    type: 'selection' as const,
+    width: 48
+  },
+  {
+    key: 'fileName',
+    title: '分享文件',
+    width: 200,
+    ellipsis: { tooltip: true },
+    render(row: Api.Disk.MyShareItem) {
+      return h('div', { class: 'flex items-center gap-8px' }, [
+        h(FileIcon, {
+          fileType: contentTypeToFileType(row.contentType, row.isFolder),
+          extension: row.contentType,
+          size: 'small'
+        }),
+        h('span', { class: 'truncate' }, row.fileName)
+      ]);
+    }
+  },
+  {
+    key: 'shareLink',
+    title: '分享链接',
+    width: 380,
+    render(row: Api.Disk.MyShareItem) {
+      const link = buildShareLink(row.shortId);
+      return h('div', { class: 'flex items-center gap-8px group' }, [
+        h(
+          'span',
+          {
+            class: 'flex-1 truncate text-13px opacity-70 cursor-pointer hover:text-primary hover:opacity-100 transition-colors',
+            onClick: () => handleCopy(link)
+          },
+          link
+        ),
+        h(
+          'button',
+          {
+            class: 'opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:opacity-80 p-0 bg-transparent border-none',
+            onClick: (e: MouseEvent) => {
+              e.stopPropagation();
+              handleCancelSingle(row.shareId, row.fileName);
+            }
+          },
+          h('svg', {
+            xmlns: 'http://www.w3.org/2000/svg',
+            viewBox: '0 0 24 24',
+            width: '16',
+            height: '16',
+            class: 'text-error'
+          }, [
+            h('path', {
+              d: 'M6.5 6.5L17.5 17.5M17.5 6.5L6.5 17.5',
+              stroke: 'currentColor',
+              'stroke-width': '2',
+              'stroke-linecap': 'round',
+              fill: 'none'
+            })
+          ])
+        )
+      ]);
+    }
+  },
+  {
+    key: 'createDate',
+    title: '创建时间',
+    width: 170,
+    render(row: Api.Disk.MyShareItem) {
+      return h('span', { class: 'text-13px opacity-70' }, formatDateTime(row.createDate));
+    }
+  },
+  {
+    key: 'isPrivate',
+    title: '分享形式',
+    width: 90,
+    align: 'center' as const,
+    render(row: Api.Disk.MyShareItem) {
+      return h(NTag, { size: 'small', type: row.isPrivate ? 'warning' : 'success' }, () =>
+        row.isPrivate ? '私密' : '公开'
+      );
+    }
+  },
+  {
+    key: 'expireDate',
+    title: '过期时间',
+    width: 150,
+    align: 'center' as const,
+    render(row: Api.Disk.MyShareItem) {
+      return h('span', { class: 'text-13px opacity-70' }, row.expireDate ? formatDateTime(row.expireDate) : '永久');
+    }
+  }
+];
+
+const rowKey = (row: Api.Disk.MyShareItem) => row.shareId;
+
 const showEmpty = computed(() => shareList.value.length === 0 && !loading.value);
 
-// 获取分享列表
 async function getData() {
   startLoading();
-  const { data, error } = await fetchGetMyShareList(searchParams.value);
+  checkedRowKeys.value = [];
+  const { data, error } = await fetchGetMyShareList(pagination.value);
   endLoading();
 
   if (!error && data) {
     shareList.value = data.rows || [];
-  } else {
-    // 使用 mock 数据测试
-    shareList.value = getMockShareList();
+    total.value = data.total;
   }
 }
 
-// Mock 数据
-function getMockShareList(): Api.Disk.MyShareItem[] {
-  return [
-    {
-      shareId: 1,
-      shortId: 'abc123',
-      fileName: '项目文档.zip',
-      contentType: 'application/zip',
-      isFolder: false,
-      createDate: '2024-04-20 10:30:00',
-      expireDate: '2024-05-20 10:30:00',
-      isPrivate: false,
-      viewCount: 15,
-      downloadCount: 5
-    },
-    {
-      shareId: 2,
-      shortId: 'def456',
-      fileName: '设计素材',
-      contentType: 'folder',
-      isFolder: true,
-      createDate: '2024-04-18 14:20:00',
-      expireDate: null,
-      isPrivate: true,
-      viewCount: 30,
-      downloadCount: 10
-    },
-    {
-      shareId: 3,
-      shortId: 'ghi789',
-      fileName: '会议纪要.pdf',
-      contentType: 'application/pdf',
-      isFolder: false,
-      createDate: '2024-04-15 09:00:00',
-      expireDate: '2024-04-30 09:00:00',
-      isPrivate: false,
-      viewCount: 8,
-      downloadCount: 3
-    },
-    {
-      shareId: 4,
-      shortId: 'jkl012',
-      fileName: '产品截图.png',
-      contentType: 'image/png',
-      isFolder: false,
-      createDate: '2024-04-10 16:45:00',
-      expireDate: '2024-05-10 16:45:00',
-      isPrivate: false,
-      viewCount: 22,
-      downloadCount: 8
-    },
-    {
-      shareId: 5,
-      shortId: 'mno345',
-      fileName: '演示视频.mp4',
-      contentType: 'video/mp4',
-      isFolder: false,
-      createDate: '2024-04-05 11:30:00',
-      expireDate: null,
-      isPrivate: false,
-      viewCount: 45,
-      downloadCount: 20
-    }
-  ];
-}
-
-// 处理排序
-function handleSort(field: string, order: 'asc' | 'desc') {
-  searchParams.value.sortField = field as 'fileName' | 'createDate';
-  searchParams.value.sortOrder = order;
-  getData();
-}
-
-// 切换视图
-function toggleView() {
-  diskStore.setViewMode(diskStore.viewMode === 'grid' ? 'list' : 'grid');
-}
-
-// 取消选中
-function handleClearSelection() {
-  selectedFiles.value = [];
-}
-
-// 处理选中状态变化
-function handleSelectionChange(files: CommonType.IdType[]) {
-  selectedFiles.value = files;
-}
-
-// 取消分享（单选或多选）
-async function handleRemoveShare() {
-  const selectedIds = selectedFiles.value;
-  if (selectedIds.length === 0) return;
+async function handleBatchCancel() {
+  if (checkedRowKeys.value.length === 0) return;
 
   window.$dialog?.warning({
     title: $t('page.disk.myShare.cancelShare'),
-    content: selectedIds.length === 1
+    content: checkedRowKeys.value.length === 1
       ? $t('page.disk.myShare.cancelConfirm')
-      : `确定取消分享 ${selectedIds.length} 个文件？`,
+      : `确定取消分享 ${checkedRowKeys.value.length} 个文件？`,
     positiveText: $t('common.confirm'),
     negativeText: $t('common.cancel'),
     onPositiveClick: async () => {
       startLoading();
-      // 批量取消分享
-      for (const shareId of selectedIds) {
-        await fetchCancelShare(shareId);
+      let failCount = 0;
+      for (const shareId of checkedRowKeys.value) {
+        const { error } = await fetchCancelShare(shareId);
+        if (error) failCount++;
       }
       endLoading();
-      window.$message?.success($t('page.disk.myShare.cancelSuccess'));
-      selectedFiles.value = [];
+      if (failCount === 0) {
+        window.$message?.success($t('page.disk.myShare.cancelSuccess'));
+      } else {
+        window.$message?.warning(`${failCount} 个分享取消失败`);
+      }
       getData();
     }
   });
 }
 
-// 复制分享链接
-function handleCopyLink(shareId: CommonType.IdType) {
-  const item = shareList.value.find(s => s.shareId === shareId);
-  if (item) {
-    handleCopy(`${window.location.origin}/s/${item.shortId}`);
-  }
+async function handleCancelSingle(shareId: number, fileName: string) {
+  window.$dialog?.warning({
+    title: $t('page.disk.myShare.cancelShare'),
+    content: `确定取消分享 "${fileName}"？`,
+    positiveText: $t('common.confirm'),
+    negativeText: $t('common.cancel'),
+    onPositiveClick: async () => {
+      const { error } = await fetchCancelShare(shareId);
+      if (!error) {
+        window.$message?.success($t('page.disk.myShare.cancelSuccess'));
+        getData();
+      }
+    }
+  });
 }
 
-// 处理文件双击
-function handleFileDblClick(file: Api.Disk.FileItem) {
-  // 找到对应的分享项，复制链接
-  handleCopyLink(file.fileId);
+function handleCopyLink(shortId: string) {
+  handleCopy(buildShareLink(shortId));
 }
 
-// 处理文件操作
-function handleFileAction(action: string, file: Api.Disk.FileItem) {
-  switch (action) {
-    case 'share':
-      handleCopyLink(file.fileId);
-      break;
-    case 'delete':
-      handleRemoveShare();
-      break;
-    case 'download':
-      // TODO: 实现分享下载
-      window.$message?.info('下载功能开发中');
-      break;
-  }
-}
-
-// 下载功能提示
-function handleDownloadTip() {
-  window.$message?.info('下载功能开发中');
+function handlePageChange(page: number) {
+  pagination.value.pageNum = page;
+  getData();
 }
 
 // 初始化
@@ -238,51 +224,92 @@ getData();
   <div class="min-h-500px h-full flex-col-stretch gap-0 overflow-hidden lt-lg:overflow-auto">
     <NCard :bordered="false" size="small" class="card-wrapper h-full flex-1-hidden">
       <div class="h-full flex flex-col">
-        <!-- 简化工具栏 -->
-        <SimpleToolbar
-          page-type="my-share"
-          :selected-count="selectedCount"
-          @sort="handleSort"
-          @toggle-view="toggleView"
-          @refresh="getData"
-          @clear-selection="handleClearSelection"
-          @remove-share="handleRemoveShare"
-          @download="handleDownloadTip"
-        />
+        <!-- 选中操作栏 -->
+        <div v-if="checkedCount > 0" class="flex items-center gap-12px px-4px py-8px">
+          <span class="text-13px opacity-70">已选中 {{ checkedCount }} 项</span>
+          <NButton size="small" type="error" @click="handleBatchCancel">
+            取消分享
+          </NButton>
+        </div>
 
         <!-- 内容区域 -->
-        <div class="flex-1 overflow-hidden lt-sm:flex-initial lt-sm:overflow-auto">
-          <!-- 空状态 -->
-          <FileEmpty v-if="showEmpty" />
+        <div class="flex-1 min-h-0 overflow-auto">
+          <NEmpty v-if="showEmpty" description="暂无分享记录" />
 
-          <!-- 网格视图 -->
-          <FileGrid
-            v-if="!showEmpty && diskStore.viewMode === 'grid'"
-            :files="fileList"
+          <!-- PC端：表格视图 -->
+          <NDataTable
+            v-if="!showEmpty"
+            class="lt-sm:hidden"
+            :columns="columns"
+            :data="shareList"
+            :row-key="rowKey"
             :loading="loading"
-            :selected-files="selectedFiles"
-            disable-create
-            @file-dbl-click="handleFileDblClick"
-            @file-share="handleFileAction('share', $event)"
-            @file-delete="handleFileAction('delete', $event)"
-            @file-download="handleFileAction('download', $event)"
-            @selection-change="handleSelectionChange"
-            @refresh="getData"
+            :checked-row-keys="checkedRowKeys"
+            :max-height="500"
+            :scroll-x="900"
+            @update:checked-row-keys="checkedRowKeys = $event as number[]"
           />
 
-          <!-- 列表视图 -->
-          <FileList
-            v-if="!showEmpty && diskStore.viewMode === 'list'"
-            :files="fileList"
-            :loading="loading"
-            :selected-files="selectedFiles"
-            disable-create
-            @file-dbl-click="handleFileDblClick"
-            @file-share="handleFileAction('share', $event)"
-            @file-delete="handleFileAction('delete', $event)"
-            @file-download="handleFileAction('download', $event)"
-            @selection-change="handleSelectionChange"
-            @refresh="getData"
+          <!-- 手机端：卡片列表视图 -->
+          <NSpin v-if="!showEmpty" :show="loading" class="sm:hidden lt-sm:block">
+            <div v-if="shareList.length > 0" class="flex flex-col gap-12px p-12px">
+              <div
+                v-for="item in shareList"
+                :key="item.shareId"
+                class="flex flex-col gap-8px p-12px rd-8px bg-gray-50 dark:bg-gray-800"
+              >
+                <!-- 文件信息 -->
+                <div class="flex items-center gap-8px">
+                  <FileIcon
+                    :file-type="contentTypeToFileType(item.contentType, item.isFolder)"
+                    :extension="item.contentType"
+                    size="small"
+                  />
+                  <span class="flex-1 truncate text-14px font-medium">{{ item.fileName }}</span>
+                  <NTag size="small" :type="item.isPrivate ? 'warning' : 'success'">
+                    {{ item.isPrivate ? '私密' : '公开' }}
+                  </NTag>
+                </div>
+
+                <!-- 分享链接 -->
+                <div class="flex items-center gap-8px text-12px">
+                  <span class="opacity-50">链接：</span>
+                  <span
+                    class="flex-1 truncate opacity-70 cursor-pointer hover:text-primary"
+                    @click="handleCopyLink(item.shortId)"
+                  >
+                    /s/{{ item.shortId }}
+                  </span>
+                </div>
+
+                <!-- 时间信息 -->
+                <div class="flex items-center justify-between text-12px opacity-60">
+                  <span>{{ formatDateShort(item.createDate) }} 创建</span>
+                  <span>{{ item.expireDate ? formatDateShort(item.expireDate) + ' 过期' : '永久有效' }}</span>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="flex items-center justify-end gap-8px pt-4px">
+                  <NButton size="tiny" quaternary @click="handleCopyLink(item.shortId)">
+                    复制链接
+                  </NButton>
+                  <NButton size="tiny" type="error" quaternary @click="handleCancelSingle(item.shareId, item.fileName)">
+                    取消
+                  </NButton>
+                </div>
+              </div>
+            </div>
+          </NSpin>
+        </div>
+
+        <!-- 分页 -->
+        <div v-if="total > pagination.pageSize" class="flex justify-end px-4px py-12px">
+          <NPagination
+            :page="pagination.pageNum"
+            :page-count="Math.ceil(total / pagination.pageSize)"
+            :page-size="pagination.pageSize"
+            simple
+            @update:page="handlePageChange"
           />
         </div>
       </div>

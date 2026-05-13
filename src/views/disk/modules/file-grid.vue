@@ -77,11 +77,6 @@ function updateScrollHeight() {
   const el = gridScrollRef.value;
   if (!el) return;
 
-  if (window.innerWidth < 640) {
-    scrollStyle.value = {};
-    return;
-  }
-
   const top = el.getBoundingClientRect().top;
   const maxH = window.innerHeight - top - 24;
   scrollStyle.value = { maxHeight: `${maxH}px` };
@@ -328,7 +323,7 @@ watch(
     <div
       v-else
       ref="gridScrollRef"
-      class="file-grid-scroll overflow-y-auto pr-4px lt-sm:overflow-visible lt-sm:pr-0px"
+      class="file-grid-scroll overflow-y-auto pr-4px"
       :style="scrollStyle"
       @contextmenu.prevent="handleContextMenu"
     >

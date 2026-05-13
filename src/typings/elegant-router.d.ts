@@ -24,6 +24,7 @@ declare module "@elegant-router/types" {
     "admin": "/admin";
     "disk": "/disk";
     "favorite": "/favorite";
+    "group-share": "/group-share";
     "iframe-page": "/iframe-page/:url";
     "init": "/init";
     "log": "/log";
@@ -43,6 +44,7 @@ declare module "@elegant-router/types" {
     "notice-user": "/notice-user";
     "recent": "/recent";
     "share": "/share";
+    "shared-with-me": "/shared-with-me";
     "trash": "/trash";
     "user-center": "/user-center";
   };
@@ -83,6 +85,7 @@ declare module "@elegant-router/types" {
     | "admin"
     | "disk"
     | "favorite"
+    | "group-share"
     | "iframe-page"
     | "init"
     | "log"
@@ -92,6 +95,7 @@ declare module "@elegant-router/types" {
     | "notice-user"
     | "recent"
     | "share"
+    | "shared-with-me"
     | "trash"
     | "user-center"
   >;
@@ -122,6 +126,7 @@ declare module "@elegant-router/types" {
     | "admin"
     | "disk"
     | "favorite"
+    | "group-share"
     | "log_login"
     | "log_operation"
     | "manage_dept"
@@ -135,6 +140,7 @@ declare module "@elegant-router/types" {
     | "my-share"
     | "recent"
     | "share"
+    | "shared-with-me"
     | "trash"
   >;
 

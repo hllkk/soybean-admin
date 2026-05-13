@@ -209,7 +209,7 @@ function handleClearAll() {
           <template #trigger>
             <NButton type="warning" @click="handleClearAll">
               <template #icon>
-                <SvgIcon :icon="pageType === 'recent' ? 'icon-park-outline-clear' : 'mdi-delete-sweep'" :size="18" />
+                <SvgIcon :icon="pageType === 'recent' ? 'mdi:broom' : 'mdi:delete-sweep'" :size="18" />
               </template>
             </NButton>
           </template>
