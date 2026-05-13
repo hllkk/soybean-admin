@@ -494,5 +494,45 @@ declare namespace Api {
     type FavoriteOperationParams = {
       fileIds: number[];
     };
+
+    /** 共享给我的列表项 */
+    type SharedWithMeItem = {
+      /** 分享记录ID */
+      fileShareId: number;
+      /** 文件ID */
+      fileId: number;
+      /** 文件名 */
+      fileName: string;
+      /** 是否文件夹 */
+      isFolder: boolean;
+      /** 文件MIME类型 */
+      contentType: string;
+      /** 文件大小（字节） */
+      size: number;
+      /** 分享者用户ID */
+      shareUserId: number;
+      /** 分享者昵称 */
+      shareUserName: string;
+      /** 分享类型 (user/dept) */
+      shareType: 'user' | 'dept';
+      /** 权限列表 */
+      permissions: string[];
+      /** 过期时间 */
+      expireDate?: string | null;
+      /** 状态 */
+      status: string;
+      /** 备注 */
+      remark?: string;
+      /** 创建时间 */
+      createdAt: string;
+    };
+
+    /** 共享给我的列表响应 */
+    type SharedWithMeList = {
+      total: number;
+      rows: SharedWithMeItem[];
+      pageNum: number;
+      pageSize: number;
+    };
   }
 }

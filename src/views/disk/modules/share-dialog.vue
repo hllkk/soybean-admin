@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, h } from 'vue';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { fetchCreateShare, fetchCancelShare } from '@/service/api/disk/share';
@@ -64,7 +64,12 @@ const activeTab = ref('link');
 
 // Share to user tab
 const selectedUsers = ref<number[]>([]);
-const userOptions = ref<{ label: string; value: number }[]>([]);
+interface UserOption {
+  label: string;
+  value: number;
+  avatar?: string;
+}
+const userOptions = ref<UserOption[]>([]);
 const userLoading = ref(false);
 const userPermissions = ref<string[]>(['DOWNLOAD']);
 
@@ -130,6 +135,18 @@ const fileInfo = computed(() => {
   };
 });
 
+// 根据文件类型过滤可用权限
+const availablePermissions = computed(() => {
+  const all = [
+    { label: '下载', value: 'DOWNLOAD' },
+    { label: '上传', value: 'UPLOAD' },
+    { label: '编辑', value: 'PUT' },
+    { label: '删除', value: 'DELETE' }
+  ];
+  if (shareFile.value?.isFolder) return all;
+  return all.filter(p => p.value !== 'UPLOAD');
+});
+
 function generateRandomCode(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345789';
   const array = new Uint8Array(4);
@@ -148,10 +165,40 @@ async function loadUserOptions() {
   if (data) {
     userOptions.value = data.map(u => ({
       label: u.nickName ? `${u.nickName}（${u.userName}）` : u.userName,
-      value: u.userId as number
+      value: u.userId as number,
+      avatar: u.avatar
     }));
   }
   userLoading.value = false;
+}
+
+function getUserAvatar(option: UserOption) {
+  return h('img', {
+    src: option.avatar || '',
+    style: 'width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#e5e7eb;'
+  });
+}
+
+function getUserDefaultAvatar(label: string) {
+  const initial = label.charAt(0).toUpperCase();
+  return h(
+    'span',
+    {
+      style:
+        'width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;background:#e5e7eb;flex-shrink:0;'
+    },
+    initial
+  );
+}
+
+function renderUserLabel(option: UserOption) {
+  const avatar = option.avatar ? getUserAvatar(option) : getUserDefaultAvatar(option.label);
+  return h('div', { style: 'display:flex;align-items:center;gap:8px;' }, [avatar, option.label]);
+}
+
+function renderUserTag({ option }: { option: UserOption }) {
+  const avatar = option.avatar ? getUserAvatar(option) : getUserDefaultAvatar(option.label);
+  return h('div', { style: 'display:flex;align-items:center;gap:4px;padding:0 4px;' }, [avatar, option.label]);
 }
 
 const canSubmit = computed(() => {
@@ -421,6 +468,8 @@ function handleCopyExistingLink() {
                 v-model:value="selectedUsers"
                 :options="userOptions"
                 :loading="userLoading"
+                :render-label="renderUserLabel"
+                :render-tag="renderUserTag as any"
                 multiple
                 filterable
                 placeholder="搜索并选择用户"
@@ -430,10 +479,7 @@ function handleCopyExistingLink() {
               <div class="text-13px opacity-70 mb-8px">权限</div>
               <NCheckboxGroup v-model:value="userPermissions">
                 <NSpace>
-                  <NCheckbox value="DOWNLOAD">下载</NCheckbox>
-                  <NCheckbox value="UPLOAD">上传</NCheckbox>
-                  <NCheckbox value="PUT">编辑</NCheckbox>
-                  <NCheckbox value="DELETE">删除</NCheckbox>
+                  <NCheckbox v-for="p in availablePermissions" :key="p.value" :value="p.value">{{ p.label }}</NCheckbox>
                 </NSpace>
               </NCheckboxGroup>
             </div>
@@ -455,10 +501,7 @@ function handleCopyExistingLink() {
               <div class="text-13px opacity-70 mb-8px">权限</div>
               <NCheckboxGroup v-model:value="deptPermissions">
                 <NSpace>
-                  <NCheckbox value="DOWNLOAD">下载</NCheckbox>
-                  <NCheckbox value="UPLOAD">上传</NCheckbox>
-                  <NCheckbox value="PUT">编辑</NCheckbox>
-                  <NCheckbox value="DELETE">删除</NCheckbox>
+                  <NCheckbox v-for="p in availablePermissions" :key="p.value" :value="p.value">{{ p.label }}</NCheckbox>
                 </NSpace>
               </NCheckboxGroup>
             </div>

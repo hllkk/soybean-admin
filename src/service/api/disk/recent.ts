@@ -14,7 +14,7 @@ export function fetchAddRecent(fileId: CommonType.IdType) {
   return request<boolean>({
     url: '/disk/recent/add',
     method: 'post',
-    data: { fileId }
+    data: { fileId: String(fileId) }
   });
 }
 
