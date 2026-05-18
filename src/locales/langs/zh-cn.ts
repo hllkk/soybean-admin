@@ -44,6 +44,7 @@ const local: App.I18n.Schema = {
     download: '下载',
     warning: '警告',
     error: '错误',
+    serverShutdown: '服务器正在关闭，请保存数据',
     index: '序号',
     keywordSearch: '请输入关键词搜索',
     logout: '退出登录',

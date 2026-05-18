@@ -44,6 +44,7 @@ const local: App.I18n.Schema = {
     download: 'Download',
     warning: 'Warning',
     error: 'Error',
+    serverShutdown: 'Server is shutting down, please save your data',
     index: 'Index',
     keywordSearch: 'Please enter keyword',
     logout: 'Logout',

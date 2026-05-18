@@ -372,6 +372,7 @@ declare namespace App {
         download: string;
         warning: string;
         error: string;
+        serverShutdown: string;
         index: string;
         keywordSearch: string;
         logout: string;

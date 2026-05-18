@@ -7,7 +7,8 @@ import { $t } from '@/locales';
 
 interface SSEMessage {
   type: string;
-  data: unknown;
+  data?: unknown;
+  message?: string;
   timestamp: number;
 }
 
@@ -83,6 +84,13 @@ function handleMessage(event: MessageEvent) {
   }
 
   if (msg.type === 'heartbeat') return;
+
+  // 服务器关闭通知
+  if (msg.type === 'server_shutdown') {
+    window.$message?.warning((msg as { message?: string }).message || '服务器正在关闭，请保存数据');
+    // 不设置 intentionalClose，保持自动重连机制，等待后端重启后自动恢复连接
+    return;
+  }
 
   if (msg.type === 'share_notification') {
     const noticeStore = useNoticeStore();

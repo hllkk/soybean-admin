@@ -86,17 +86,35 @@ export function fetchGetSharedFolderContents(params: {
   sortBy?: string;
   sortOrder?: string;
 }) {
-  return request<{ list: Api.Disk.FileItem[]; total: number; page: number; size: number }>({
+  return request<{ list: any[]; total: number; page: number; size: number }>({
     url: '/share/internal/folder',
     method: 'post',
     data: params
   }).then(res => {
-    // 将后端的 list 字段映射为 rows，以符合前端 PaginatingQueryRecord 格式
+    // 将后端的字段名映射为前端期望的字段名
     if (res.data) {
+      const mappedList = (res.data.list || []).map(item => ({
+        createBy: '',
+        createTime: item.createTime || '',
+        updateBy: '',
+        updateTime: item.updateTime || '',
+        fileId: item.id,
+        fileName: item.name,
+        fileType: item.isDir ? 'folder' : 'other',
+        fileExtension: item.extendName,
+        fileSize: item.size,
+        filePath: item.filePath,
+        parentId: null,
+        isFolder: item.isDir,
+        isDir: item.isDir,
+        modifyTime: item.updateTime,
+        contentType: item.contentType,
+        mediaCover: item.mediaCover || false
+      }));
       return {
         ...res,
         data: {
-          rows: res.data.list || [],
+          rows: mappedList,
           total: res.data.total || 0,
           pageNum: res.data.page || 1,
           pageSize: res.data.size || 50
