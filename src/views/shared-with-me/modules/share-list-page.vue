@@ -356,7 +356,17 @@ async function handleShareFileDblClick(item: Api.Disk.SharedWithMeItem) {
 
 async function handleFolderFileDblClick(file: Api.Disk.FileItem) {
   if (file.isDir || file.isFolder) {
-    const newPath = folderPath.value ? `${folderPath.value}/${file.fileName || file.name}` : file.filePath;
+    // 计算正确的子文件夹路径
+    // 当 folderPath 为空时，表示在共享文件夹根目录，需要拼接共享文件夹名 + 子文件夹名
+    // 当 folderPath 不为空时，直接拼接当前路径 + 子文件夹名
+    let newPath: string;
+    if (folderPath.value) {
+      newPath = `${folderPath.value}/${file.fileName || file.name}`;
+    } else {
+      // 在共享文件夹根目录，子文件夹的完整路径是: /共享文件夹名/子文件夹名
+      const shareFolderName = browsingFolder.value?.fileName || '';
+      newPath = shareFolderName ? `${shareFolderName}/${file.fileName || file.name}` : (file.fileName || file.name || '');
+    }
     folderPagination.value.pageNum = 1;
     getFolderContents(newPath);
     return;
