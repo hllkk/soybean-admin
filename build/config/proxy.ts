@@ -34,6 +34,13 @@ function createProxyItem(item: App.Service.ServiceConfigItem, enableLog: boolean
     target: item.baseURL,
     changeOrigin: true,
     configure: (_proxy, options) => {
+      // Disable buffering for SSE endpoints to prevent proxy timeout
+      _proxy.on('proxyRes', (_proxyRes, req) => {
+        if (req.url?.includes('/sse/')) {
+          _proxyRes.headers['cache-control'] = 'no-cache';
+          _proxyRes.headers['x-accel-buffering'] = 'no';
+        }
+      });
       _proxy.on('proxyReq', (_proxyReq, req, _res) => {
         if (!enableLog) return;
 

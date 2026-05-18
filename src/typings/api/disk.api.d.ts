@@ -521,10 +521,16 @@ declare namespace Api {
       expireDate?: string | null;
       /** 状态 */
       status: string;
+      /** 当前用户对此共享的接收状态 */
+      targetStatus: 'pending' | 'active' | 'rejected';
+      /** 来源标签 (直接分享 / 部门: XX) */
+      sourceLabel?: string;
       /** 备注 */
       remark?: string;
       /** 创建时间 */
       createdAt: string;
+      /** 是否有媒体封面 */
+      mediaCover?: boolean;
     };
 
     /** 共享给我的列表响应 */

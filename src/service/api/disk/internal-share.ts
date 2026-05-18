@@ -34,6 +34,24 @@ export function fetchRejectInternalShare(fileShareId: number) {
   });
 }
 
+/** 接受共享 */
+export function fetchAcceptInternalShare(fileShareId: number) {
+  return request<boolean>({
+    url: '/share/internal/accept',
+    method: 'put',
+    data: { fileShareId }
+  });
+}
+
+/** 保存到我的网盘 */
+export function fetchSaveToMyDrive(fileShareId: number, targetPath?: string) {
+  return request<boolean>({
+    url: '/share/internal/save-to-drive',
+    method: 'post',
+    data: { fileShareId, targetPath: targetPath || '/' }
+  });
+}
+
 /** 获取我发起的共享列表 */
 export function fetchGetMySharedList(params: { pageNum: number; pageSize: number }) {
   return request<{ total: number; rows: any[]; pageNum: number; pageSize: number }>({
@@ -44,7 +62,14 @@ export function fetchGetMySharedList(params: { pageNum: number; pageSize: number
 }
 
 /** 获取共享给我的列表 */
-export function fetchGetSharedWithMeList(params: { pageNum: number; pageSize: number; shareType?: string }) {
+export function fetchGetSharedWithMeList(params: {
+  pageNum: number;
+  pageSize: number;
+  shareType?: string;
+  keyword?: string;
+  contentType?: string;
+  targetStatus?: string;
+}) {
   return request<Api.Disk.SharedWithMeList>({
     url: '/share/internal/shared-with-me',
     method: 'post',

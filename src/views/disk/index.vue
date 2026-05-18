@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList, fetchGetQuota, fetchAddFavorite, fetchRemoveFavorite } from '@/service/api/disk';
 import { fetchIsAllowDownload, fetchIsAllowPackageDownload } from '@/service/api/disk/file';
-import { fetchGenerateStreamToken } from '@/service/api/disk';
 import { fetchGetShareInfo } from '@/service/api/disk/share';
 import { fetchAddRecent } from '@/service/api/disk/recent';
 import { getServiceBaseURL } from '@/utils/service';
-import { getPreviewCategory } from '@/utils/file-type';
+import { useFilePreview } from '@/hooks/business/disk/use-file-preview';
+import ImagePreview from '@/components/preview/image-preview.vue';
+import FilePreviewOverlays from '@/components/disk/file-preview-overlays.vue';
 import FileTypeMenu from './modules/file-type-menu.vue';
 import Toolbar from './modules/toolbar.vue';
 import Breadcrumb from './modules/breadcrumb.vue';
@@ -21,9 +22,6 @@ import MoveCopyDialog from './modules/move-copy-dialog.vue';
 import ShareDialog from './modules/share-dialog.vue';
 import ShareResultDialog from './modules/share-result-dialog.vue';
 import FileDetailModal from './modules/file-detail-modal.vue';
-import VideoPreview from '@/components/preview/video-preview.vue';
-import FilePreviewOverlay from '@/components/preview/file-preview-overlay.vue';
-import ImagePreview from '@/components/preview/image-preview.vue';
 
 defineOptions({
   name: 'DiskPage'
@@ -39,12 +37,11 @@ const transferPanelRef = ref<InstanceType<typeof TransferPanel>>();
 const imagePreviewRef = ref<InstanceType<typeof ImagePreview>>();
 const totalCount = ref(0);
 
+// 文件预览 hook
+const preview = reactive(useFilePreview({ fileList, imagePreviewRef, audioFilterMode: 'fileType' }));
+
 // 重命名状态
 const renamingFile = ref<Api.Disk.FileItem | null>(null);
-
-// 文件预览
-const previewVisible = ref(false);
-const previewFile = ref<Api.Disk.PreviewFileInfo | null>(null);
 
 // 分享结果
 const shareResultVisible = ref(false);
@@ -57,92 +54,8 @@ const detailFile = ref<Api.Disk.FileItem | null>(null);
 // 已有链接分享信息（传入 share-dialog 供展示）
 const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
 
-// 当前目录下的音频文件列表（用于播放列表）
-const audioPlaylist = computed(() => {
-  const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
-  const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
-
-  return fileList.value
-    .filter(file => file.fileType === 'audio' && !file.isFolder)
-    .map(file => ({
-      id: file.fileId,
-      title: file.music?.songName || file.fileName.replace(/\.[^.]+$/, ''),
-      artist: file.music?.singer || '未知歌手',
-      album: file.music?.album || '',
-      cover: file.mediaCover ? `${baseURL}/view/cover?id=${file.fileId}` : '',
-      src: `${baseURL}/preview/file/${file.fileId}`,
-      duration: undefined, // 后端暂未返回时长，由 audio 元素获取
-      lyrics: undefined // 后端暂不支持歌词，可后续扩展单独接口获取
-    }));
-});
-
-// 当前播放曲目在播放列表中的索引
-const currentAudioIndex = computed(() => {
-  if (!diskStore.audioPreviewRow) return 0;
-  return audioPlaylist.value.findIndex(item => String(item.id) === String(diskStore.audioPreviewRow?.fileId));
-});
-
 // 显示容量开关
 const showCapacity = ref(true);
-
-// Audio compact mode state
-const isAudioCompact = ref(false);
-
-// 视频预览状态
-const videoStreamToken = ref('');
-const videoStreamBaseUrl = computed(() => {
-  const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
-  const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
-  return `${baseURL}/stream/video/${diskStore.videoPreviewRow?.fileId}`;
-});
-
-function handleVideoClose() {
-  diskStore.videoPreviewVisible = false;
-  diskStore.videoPreviewRow = null;
-  videoStreamToken.value = '';
-}
-
-function handleVideoTokenUpdate(token: string) {
-  videoStreamToken.value = token;
-}
-
-async function openVideoPreview(file: Api.Disk.FileItem) {
-  if (diskStore.videoPreviewVisible) {
-    window.$message?.info('请先关闭当前播放的视频');
-    return;
-  }
-  const res = await fetchGenerateStreamToken(String(file.fileId));
-  if (res.data) {
-    videoStreamToken.value = res.data.token;
-    diskStore.videoPreviewRow = file;
-    diskStore.videoPreviewVisible = true;
-  }
-}
-
-function openImagePreview(file: Api.Disk.FileItem) {
-  const images = fileList.value
-    .filter(f => !f.isFolder && getPreviewCategory(f.fileName) === 'image')
-    .map(f => ({ fileId: f.fileId, fileName: f.fileName }));
-
-  const initialIndex = images.findIndex(img => String(img.fileId) === String(file.fileId));
-
-  nextTick(() => {
-    imagePreviewRef.value?.show(images, initialIndex >= 0 ? initialIndex : 0);
-  });
-}
-
-function handleAudioOverlayClick() {
-  if (!isAudioCompact.value) {
-    diskStore.audioPreviewVisible = false;
-    diskStore.audioPreviewRow = null;
-  }
-}
-
-function handleAudioClose() {
-  diskStore.audioPreviewVisible = false;
-  diskStore.audioPreviewRow = null;
-  isAudioCompact.value = false;
-}
 
 // 配额信息（从 disk store 共享）
 const quotaInfo = computed(() => diskStore.quotaInfo);
@@ -232,43 +145,8 @@ function handleRefresh() {
 
 function handleFileDblClick(file: Api.Disk.FileItem) {
   if (file.isFolder) return;
-
-  // 记录最近访问
   fetchAddRecent(file.fileId);
-
-  const category = getPreviewCategory(file.fileName);
-
-  // 代码和 Markdown 文件使用新的 TextPreview
-  if (category === 'code' || category === 'markdown') {
-    diskStore.textPreviewRow = file;
-    diskStore.textPreviewVisible = true;
-  } else if (category === 'audio') {
-    // 音频文件使用 AudioPreview
-    diskStore.audioPreviewRow = file;
-    diskStore.audioPreviewVisible = true;
-  } else if (category === 'video') {
-    // 视频文件使用 VideoPreview
-    openVideoPreview(file);
-  } else if (category === 'image') {
-    // 图片文件使用 ImagePreview
-    openImagePreview(file);
-  } else if (category === 'office' || category === 'pdf') {
-    // Office 和 PDF 文件使用预览 Modal
-    previewFile.value = {
-      fileId: file.fileId,
-      fileName: file.fileName,
-      fileSize: file.fileSize,
-      fileExtension: file.fileExtension,
-      filePath: file.filePath
-    };
-    previewVisible.value = true;
-  } else {
-    window.$notification?.destroyAll();
-    window.$notification?.warning({
-      content: '暂不支持预览此类型文件',
-      duration: 3000
-    });
-  }
+  preview.previewByCategory(file);
 }
 
 /** 分享处理：查询已有链接分享信息，始终打开配置对话框 */
@@ -814,43 +692,27 @@ onMounted(async () => {
       v-model:visible="detailVisible"
       :file="detailFile"
     />
-    <!-- File Preview Overlay -->
-    <FilePreviewOverlay
-      v-model:visible="previewVisible"
-      :file="previewFile"
-    />
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="diskStore.audioPreviewVisible"
-          class="fixed inset-0 z-9999 flex items-center justify-center"
-          :class="isAudioCompact ? 'pointer-events-none' : 'bg-black/40 backdrop-blur-sm'"
-          @click.self="handleAudioOverlayClick"
-        >
-          <AudioPreview
-            v-if="diskStore.audioPreviewRow && audioPlaylist.length > 0"
-            :playlist="audioPlaylist"
-            :initial-index="currentAudioIndex"
-            @close="handleAudioClose"
-            @compact-change="isAudioCompact = $event"
-          />
-        </div>
-      </Transition>
-    </Teleport>
-    <!-- Video Preview Overlay -->
-    <Teleport to="body">
-      <VideoPreview
-        v-if="diskStore.videoPreviewVisible && diskStore.videoPreviewRow && videoStreamToken"
-        :src="videoStreamBaseUrl"
-        :file-name="diskStore.videoPreviewRow.fileName"
-        :stream-token="videoStreamToken"
-        @close="handleVideoClose"
-        @token-update="handleVideoTokenUpdate"
-      />
-    </Teleport>
     <!-- Image Preview -->
     <ImagePreview ref="imagePreviewRef" />
-    <TextPreview />
+    <FilePreviewOverlays
+      :video-preview-file="preview.videoPreviewFile"
+      :video-preview-visible="preview.videoPreviewVisible"
+      :video-stream-token="preview.videoStreamToken"
+      :video-stream-base-url="preview.videoStreamBaseUrl"
+      :audio-preview-file="preview.audioPreviewFile"
+      :audio-preview-visible="preview.audioPreviewVisible"
+      :audio-playlist="preview.audioPlaylist"
+      :current-audio-index="preview.currentAudioIndex"
+      :is-audio-compact="preview.isAudioCompact"
+      :preview-visible="preview.previewVisible"
+      :preview-file="preview.previewFile"
+      @close-video="preview.closeVideoPreview"
+      @video-token-update="preview.handleVideoTokenUpdate"
+      @close-audio="preview.closeAudioPreview"
+      @audio-overlay-click="preview.handleAudioOverlayClick"
+      @update:is-audio-compact="preview.isAudioCompact = $event"
+      @update:preview-visible="preview.previewVisible = $event"
+    />
   </TableSiderLayout>
 </template>
 
@@ -863,16 +725,5 @@ onMounted(async () => {
 }
 :deep(.n-divider) {
   margin: 0 !important;
-}
-
-// 音频预览遮罩层过渡动画
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 </style>

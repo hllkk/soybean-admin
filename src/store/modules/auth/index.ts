@@ -60,6 +60,9 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   async function resetStore(reason?: 'session_expired' | 'auth_failure') {
     recordUserId();
 
+    // Disconnect SSE
+    import('@/hooks/common/sse').then(({ disconnectSSE }) => disconnectSSE());
+
     clearProactiveRefreshTimer();
     localStg.remove('tokenExpiresAt');
     clearAuthStorage();

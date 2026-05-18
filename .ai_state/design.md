@@ -1,63 +1,133 @@
-# Design Spec — 内部分享功能完善
+# Design: 网盘模块组件复用优化
 
-## 需求 (MUST/SHOULD/COULD)
+## Status: APPROVED
+## Date: 2026-05-17
+## Supersedes: 内部分享功能完善 (已完成)
 
-### MUST (必须实现)
-- 分享对话框根据文件类型过滤权限：文件隐藏 UPLOAD，文件夹显示全部4项
-- shared-with-me 表格页：展示共享给当前用户的文件列表
-- group-share 表格页：展示部门级别的分享（shareType=dept）
-- 前端 TypeScript 类型定义：新增 SharedWithMeItem
+## Overview
+网盘模块（disk, favorite, recent, trash, my-share, shared-with-me, group-share）存在大量重复代码。
+通过渐进式提取 composable 和合并相似组件，预计消除 ~1200 行重复代码。
 
-### SHOULD (应该实现)
-- 移动端响应式：shared-with-me 和 group-share 页面适配卡片布局
-- 双击文件触发下载（有 DOWNLOAD 权限时）
+## Constraints
+- **MUST**: 功能不变，所有现有行为完整保留
+- **MUST**: 每个阶段独立可验证
+- **MUST**: 统一国际化（消除硬编码中文）
+- **SHOULD**: TSX 渲染函数尽量放入 composable，页面使用 lang="ts"
+- **COULD**: 简化 toolbar 的重复逻辑
 
-### COULD (可以实现)
-- 后端文件操作权限验证（单独排期）
-- 接受/拒绝分享交互（后续迭代）
-- shared-with-me 页面按 shareType 参数后端过滤
+## Phases
 
-## 技术方案
+### Phase 1: 合并 shared-with-me + group-share
+**Priority**: P0 (收益最大 ~500 行)
 
-### 1. 分享对话框权限过滤
-- `share-dialog.vue` 新增 computed `availablePermissions`
-- 根据 `shareFile.isFolder` 返回不同权限选项
-- 用户分享和部门分享 Tab 均使用该 computed
-- 文件类型时过滤掉 UPLOAD；文件夹时保留全部
+**核心差异点与参数化**:
+| 差异 | shared-with-me | group-share | 参数化方式 |
+|---|---|---|---|
+| API shareType | `'user'` | `'dept'` | prop: `shareType` |
+| 取消分享 API | fetchRejectInternalShare | fetchCancelInternalShare | 根据 shareType 自动切换 |
+| 搜索/过滤栏 | 有 | 无 | prop: `showFilter` |
+| Pending 状态 | 有（接受/拒绝） | 无 | 根据 shareType 条件渲染 |
+| 保存到网盘 | 有 | 无 | 根据 shareType 条件渲染 |
+| 来源列 | 有 | 无 | 根据 shareType 条件渲染 |
+| 上下文菜单 | 动态权限过滤 | 静态 | 统一为动态方式 |
+| 国际化 | 完全 i18n | 混合硬编码 | 统一 i18n |
 
-### 2. shared-with-me 表格页
-- 调用 `fetchGetSharedWithMeList` API
-- 表格列：文件名(图标+名称)、分享者、权限(NTag)、大小、分享时间、过期时间
-- 分页 + 排序
-- 移动端切换卡片布局
+**文件变更**:
+| 文件 | 操作 |
+|---|---|
+| `src/views/shared-with-me/modules/share-list-page.vue` | 新建：通用分享列表组件 |
+| `src/views/shared-with-me/index.vue` | 重写：引用通用组件，shareType='user' |
+| `src/views/group-share/index.vue` | 重写：引用通用组件，shareType='dept' |
 
-### 3. group-share 表格页
-- 调用同一 API，前端过滤 `shareType === 'dept'`
-- 表格列与 shared-with-me 一致
-- 独立页面，结构复用
+**Acceptance**:
+- [ ] shared-with-me 功能与优化前完全一致
+- [ ] group-share 功能与优化前完全一致
+- [ ] 硬编码中文全部替换为 i18n
 
-### 4. 类型定义
-- `disk.api.d.ts` 新增 `SharedWithMeItem` 类型，对齐后端 `SharedWithMeItem` 响应
+### Phase 2: 提取 useFilePreview composable
+**Priority**: P1 (~150 行 × 4 文件受益)
 
-## 改动文件清单
-| 文件 | 改动 |
-|------|------|
-| `src/views/disk/modules/share-dialog.vue` | 权限选项改为 computed，按文件类型过滤 |
-| `src/views/shared-with-me/index.vue` | 重写，表格展示共享给我的文件 |
-| `src/views/group-share/index.vue` | 重写，表格展示部门分享 |
-| `src/typings/api/disk.api.d.ts` | 新增 SharedWithMeItem 类型 |
+**新建文件**: `src/hooks/business/disk/use-file-preview.ts`
 
-## 验收标准
-- [ ] 分享文件时权限选项只有 DOWNLOAD/PUT/DELETE（无 UPLOAD）
-- [ ] 分享文件夹时权限选项有全部4项
-- [ ] shared-with-me 页面正确展示共享给我的文件列表
-- [ ] group-share 页面只展示部门级别的分享
-- [ ] 权限以 NTag 标签形式展示
-- [ ] 分页正常工作
-- [ ] 移动端卡片布局正常
+**导出接口**:
+```typescript
+interface UseFilePreviewOptions {
+  fileList: Ref<Api.Disk.FileItem[]>;
+  onPreviewFile?: (file: Api.Disk.FileItem) => void;  // 文本/Office/PDF 预览回调
+}
+
+function useFilePreview(options: UseFilePreviewOptions) {
+  return {
+    // 视频
+    videoPreviewFile, videoPreviewVisible, videoStreamBaseUrl,
+    openVideoPreview, closeVideoPreview, handleVideoTokenUpdate,
+    // 音频
+    audioPreviewVisible, currentAudioIndex, audioPlaylist,
+    openAudioPreview, closeAudioPreview, handleAudioOverlayClick,
+    // 图片
+    imagePreviewRef, openImagePreview,
+    // 通用
+    handleFileDblClick,
+  };
+}
+```
+
+**修改文件**: disk/index.vue, recent/index.vue, 合并后的 share-list-page.vue
+
+**Acceptance**:
+- [ ] disk 页面预览功能不变
+- [ ] recent 页面预览功能不变
+- [ ] 分享页面预览功能不变
+
+### Phase 3: 提取工具 composables
+**Priority**: P2 (~100 行)
+
+**新建文件**:
+- `src/hooks/business/disk/use-file-download.ts` — triggerBrowserDownload + 下载权限检查
+- `src/utils/disk-format.ts` — formatDateTime, formatDateShort, contentTypeToFileType
+
+**修改文件**: disk/index.vue, share-list-page.vue, my-share/index.vue
+
+**Acceptance**:
+- [ ] 下载功能不变
+- [ ] 格式化显示不变
+
+### Phase 4: 提取 useSimpleFileListPage composable
+**Priority**: P3 (~40 行 × 3)
+
+**新建文件**: `src/hooks/business/disk/use-simple-file-list.ts`
+
+**导出接口**:
+```typescript
+interface UseSimpleFileListOptions {
+  fileList: Ref<any[]>;
+  loading: Ref<boolean>;
+  sortFields: Record<string, string>;
+  onGetData: () => Promise<void>;
+}
+
+function useSimpleFileList(options) {
+  return {
+    toggleView, handleClearSelection, handleSelectionChange,
+    showEmpty, handleSort,
+  };
+}
+```
+
+**修改文件**: favorite/index.vue, trash/index.vue
+
+**Acceptance**:
+- [ ] favorite 功能不变
+- [ ] trash 功能不变
+
+## Global Acceptance Criteria
 - [ ] pnpm typecheck 通过
 - [ ] pnpm lint 通过
+- [ ] 无硬编码中文（统一 i18n）
+- [ ] 每阶段完成后用户手动验证功能
 
-## 非功能需求
-- 性能: 列表分页加载，无一次性全量查询
-- 安全: 前端权限过滤为 UX 优化，非安全措施；后端验证后续补充
+## TSX 影响评估
+- 当前 18 个文件使用 lang="tsx"，主要用于 NDataTable 的 column render 函数
+- 提取 composable 后，TSX render 函数放入 composable 返回，页面只需 lang="ts"
+- 合并 shared-with-me/group-share 后少维护一份 TSX 代码
+- TSX 不影响组件提取，因为 render 函数本质是普通 TypeScript 函数

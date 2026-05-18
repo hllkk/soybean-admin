@@ -3,6 +3,7 @@ import { computed, ref, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useNoticeStore } from '@/store/modules/notice';
 import { useSharedPageNav } from '@/hooks/common/router';
+import { connectSSE } from '@/hooks/common/sse';
 
 defineOptions({
   name: 'MessgaeButton'
@@ -28,10 +29,11 @@ const handleNoticeClick = (notice: any) => {
   noticeStore.readNotice(notice.noticeId);
 };
 
-// 初始化时获取未读数量
+// 初始化时获取未读数量并建立SSE连接
 onMounted(() => {
   noticeStore.fetchUnreadCount();
   noticeStore.fetchMyNotices();
+  connectSSE();
 });
 </script>
 

@@ -310,7 +310,7 @@ export function fetchIsAllowDownload(fileIds: CommonType.IdType[]) {
   return request<Api.Disk.DownloadResponse>({
     url: '/file-meta/isAllowDownload',
     method: 'post',
-    data: { userId, fileIds }
+    data: { userId, fileIds: fileIds.map(String) }
   });
 }
 
@@ -320,7 +320,7 @@ export function fetchIsAllowPackageDownload(fileIds: CommonType.IdType[]) {
   return request<Api.Disk.PackageDownloadResponse>({
     url: '/file-meta/isAllowPackageDownload',
     method: 'post',
-    data: { userId, fileIds }
+    data: { userId, fileIds: fileIds.map(String) }
   });
 }
 
