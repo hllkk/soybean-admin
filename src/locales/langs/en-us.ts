@@ -1615,6 +1615,7 @@ const local: App.I18n.Schema = {
         refresh: 'Refresh',
         needAcceptFirst: 'Please accept the share first to preview or open',
         noPreviewPermission: 'No preview permission, please contact the sharer',
+        noUploadPermission: 'No upload permission, please contact the sharer',
         searchPlaceholder: 'Search shared files',
         from: 'From',
         folderEmpty: 'Folder is empty',
@@ -1641,7 +1642,12 @@ const local: App.I18n.Schema = {
         backToShareList: 'Back to share list',
         newShareTitle: 'New Share Received',
         newShareContent: '{user} shared file "{file}" with you. Click to accept and view.',
-        viewNow: 'View Now'
+        viewNow: 'View Now',
+        upload: 'Upload',
+        newFolder: 'New Folder',
+        uploadSuccess: 'Upload successful',
+        createFolderSuccess: 'Folder created successfully',
+        folderNamePlaceholder: 'Enter folder name'
       },
       recent: {
         title: 'Recent',

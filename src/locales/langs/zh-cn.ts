@@ -1607,6 +1607,7 @@ const local: App.I18n.Schema = {
         refresh: '刷新',
         needAcceptFirst: '请先接受共享后再预览或打开',
         noPreviewPermission: '没有预览权限，请联系分享者授权',
+        noUploadPermission: '没有上传权限，请联系分享者授权',
         searchPlaceholder: '搜索共享文件',
         from: '来自',
         folderEmpty: '文件夹为空',
@@ -1633,7 +1634,12 @@ const local: App.I18n.Schema = {
         backToShareList: '返回共享列表',
         newShareTitle: '收到新共享',
         newShareContent: '{user} 向你共享了文件 "{file}"，请点击接受后查看',
-        viewNow: '立即查看'
+        viewNow: '立即查看',
+        upload: '上传',
+        newFolder: '新建文件夹',
+        uploadSuccess: '上传成功',
+        createFolderSuccess: '文件夹创建成功',
+        folderNamePlaceholder: '请输入文件夹名称'
       },
       recent: {
         title: '最近访问',

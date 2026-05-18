@@ -17,7 +17,9 @@ import {
   fetchIsAllowPackageDownload,
   fetchRenameFile,
   fetchGetShareInfo,
-  fetchAddRecent
+  fetchAddRecent,
+  fetchUploadToShareFolder,
+  fetchCreateShareFolder
 } from '@/service/api/disk';
 import { formatFileSize } from '@/utils/format';
 import { getServiceBaseURL } from '@/utils/service';
@@ -83,9 +85,33 @@ const imagePreviewRef = ref<InstanceType<typeof ImagePreview>>();
 
 const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
 
+// --- Upload state ---
+const uploadFileInputRef = ref<HTMLInputElement>();
+const uploading = ref(false);
+const createFolderDialogVisible = ref(false);
+const newFolderName = ref('');
+
 // --- Computed ---
 const checkedCount = computed(() => checkedRowKeys.value.length);
 const isBrowsingFolder = computed(() => browsingFolder.value !== null);
+
+// 检查当前浏览的共享文件夹是否有上传权限
+const hasUploadPermission = computed(() => {
+  if (!browsingFolder.value) return false;
+  return browsingFolder.value.permissions.includes('UPLOAD');
+});
+
+// 检查是否有编辑权限（PUT）
+const hasPutPermission = computed(() => {
+  if (!browsingFolder.value) return false;
+  return browsingFolder.value.permissions.includes('PUT');
+});
+
+// 检查是否有删除权限（DELETE）
+const hasDeletePermission = computed(() => {
+  if (!browsingFolder.value) return false;
+  return browsingFolder.value.permissions.includes('DELETE');
+});
 
 const currentList = computed(() => {
   if (isBrowsingFolder.value) return folderContents.value;
@@ -247,6 +273,62 @@ function exitSharedFolder() {
 function handleBreadcrumbClick(path: string) {
   folderPagination.value.pageNum = 1;
   getFolderContents(path || '');
+}
+
+// --- Upload to share folder ---
+function handleUploadClick() {
+  if (!hasUploadPermission.value) {
+    window.$message?.warning($t('page.disk.sharedWithMe.noUploadPermission'));
+    return;
+  }
+  uploadFileInputRef.value?.click();
+}
+
+async function handleUploadFileChange(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file || !browsingFolder.value) return;
+
+  uploading.value = true;
+  try {
+    const { error } = await fetchUploadToShareFolder({
+      shareFileId: browsingFolder.value.fileId,
+      relativePath: folderPath.value,
+      file
+    });
+    if (!error) {
+      window.$message?.success($t('page.disk.sharedWithMe.uploadSuccess'));
+      getFolderContents();
+    }
+  } finally {
+    uploading.value = false;
+    input.value = '';
+  }
+}
+
+// --- Create folder in share folder ---
+function handleCreateFolderClick() {
+  if (!hasUploadPermission.value) {
+    window.$message?.warning($t('page.disk.sharedWithMe.noUploadPermission'));
+    return;
+  }
+  newFolderName.value = '';
+  createFolderDialogVisible.value = true;
+}
+
+async function handleCreateFolderConfirm() {
+  if (!newFolderName.value.trim() || !browsingFolder.value) return;
+
+  const { error } = await fetchCreateShareFolder({
+    shareFileId: browsingFolder.value.fileId,
+    folderName: newFolderName.value.trim(),
+    parentPath: folderPath.value
+  });
+  if (!error) {
+    window.$message?.success($t('page.disk.sharedWithMe.createFolderSuccess'));
+    createFolderDialogVisible.value = false;
+    getFolderContents();
+  }
 }
 
 // --- Context menu ---
@@ -734,6 +816,17 @@ getData();
               </NButton>
             </template>
           </div>
+          <!-- Upload and Create folder buttons (when has permission) -->
+          <NButton v-if="hasUploadPermission" size="small" type="primary" :loading="uploading" @click="handleUploadClick">
+            <template #icon><icon-mdi-upload class="text-16px" /></template>
+            {{ $t('page.disk.sharedWithMe.upload') }}
+          </NButton>
+          <NButton v-if="hasUploadPermission" size="small" quaternary @click="handleCreateFolderClick">
+            <template #icon><icon-mdi-folder-plus class="text-16px" /></template>
+            {{ $t('page.disk.sharedWithMe.newFolder') }}
+          </NButton>
+          <!-- Hidden file input for upload -->
+          <input ref="uploadFileInputRef" type="file" class="hidden" @change="handleUploadFileChange" />
         </div>
 
         <!-- Selection action bar -->
@@ -875,6 +968,14 @@ getData();
       @update:is-audio-compact="preview.isAudioCompact = $event"
       @update:preview-visible="preview.previewVisible = $event"
     />
+    <!-- Create folder dialog -->
+    <NModal v-model:show="createFolderDialogVisible" preset="dialog" :title="$t('page.disk.sharedWithMe.newFolder')">
+      <NInput v-model:value="newFolderName" :placeholder="$t('page.disk.sharedWithMe.folderNamePlaceholder')" clearable />
+      <template #action>
+        <NButton @click="createFolderDialogVisible = false">{{ $t('common.cancel') }}</NButton>
+        <NButton type="primary" @click="handleCreateFolderConfirm">{{ $t('common.confirm') }}</NButton>
+      </template>
+    </NModal>
   </div>
 </template>
 

@@ -1398,6 +1398,7 @@ declare namespace App {
             refresh: string;
             needAcceptFirst: string;
             noPreviewPermission: string;
+            noUploadPermission: string;
             searchPlaceholder: string;
             from: string;
             folderEmpty: string;
@@ -1424,6 +1425,11 @@ declare namespace App {
             newShareTitle: string;
             newShareContent: string;
             viewNow: string;
+            upload: string;
+            newFolder: string;
+            uploadSuccess: string;
+            createFolderSuccess: string;
+            folderNamePlaceholder: string;
           };
           recent: {
             title: string;

@@ -124,3 +124,51 @@ export function fetchGetSharedFolderContents(params: {
     return res;
   });
 }
+
+/** 上传文件到共享文件夹 */
+export function fetchUploadToShareFolder(data: {
+  shareFileId: number;
+  relativePath?: string;
+  file: File;
+}) {
+  const formData = new FormData();
+  formData.append('shareFileId', data.shareFileId.toString());
+  if (data.relativePath) {
+    formData.append('relativePath', data.relativePath);
+  }
+  formData.append('file', data.file);
+
+  return request<{
+    fileId: number;
+    fileName: string;
+    filePath: string;
+    fileSize: number;
+    contentType: string;
+    operationId: number;
+  }>({
+    url: '/share/internal/upload',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
+
+/** 在共享文件夹内创建子文件夹 */
+export function fetchCreateShareFolder(data: {
+  shareFileId: number;
+  folderName: string;
+  parentPath?: string;
+}) {
+  return request<{
+    folderId: number;
+    folderName: string;
+    folderPath: string;
+    operationId: number;
+  }>({
+    url: '/share/internal/create-folder',
+    method: 'post',
+    data
+  });
+}
