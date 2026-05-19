@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { h, ref, computed, reactive } from 'vue';
+import { h, ref, computed, reactive, watch, onMounted } from 'vue';
 import type { DropdownOption } from 'naive-ui';
 import { NTag } from 'naive-ui';
+import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { useSvgIcon } from '@/hooks/common/icon';
 import { $t } from '@/locales';
@@ -44,6 +45,8 @@ const props = withDefaults(
 
 const isUserShare = computed(() => props.shareType === 'user');
 
+const route = useRoute();
+const router = useRouter();
 const diskStore = useDiskStore();
 const { loading, startLoading, endLoading } = useLoading();
 const { SvgIconVNode } = useSvgIcon();
@@ -254,6 +257,7 @@ async function getFolderContents(path?: string) {
     folderContents.value = data.rows || [];
     folderTotal.value = data.total;
     folderPath.value = newPath;
+    syncUrlState();
   }
 }
 
@@ -262,6 +266,7 @@ function enterSharedFolder(item: Api.Disk.SharedWithMeItem) {
   browsingFolder.value = item;
   folderPath.value = '';
   folderPagination.value.pageNum = 1;
+  syncUrlState();
   getFolderContents();
 }
 
@@ -269,12 +274,73 @@ function exitSharedFolder() {
   browsingFolder.value = null;
   folderContents.value = [];
   folderPath.value = '';
+  syncUrlState();
 }
 
 function handleBreadcrumbClick(path: string) {
   folderPagination.value.pageNum = 1;
   getFolderContents(path || '');
 }
+
+// --- URL state sync ---
+function syncUrlState() {
+  const query: Record<string, string> = {};
+  if (browsingFolder.value) {
+    query.shareId = String(browsingFolder.value.fileShareId);
+    if (folderPath.value) {
+      query.path = folderPath.value;
+    }
+  }
+  router.replace({ name: route.name as string, query });
+}
+
+async function restoreFromUrl() {
+  const shareId = route.query.shareId as string;
+  if (!shareId) return;
+
+  const params: Record<string, unknown> = { pageNum: 1, pageSize: 200, shareType: props.shareType };
+  const { data } = await fetchGetSharedWithMeList(params as Parameters<typeof fetchGetSharedWithMeList>[0]);
+  if (!data?.rows) return;
+
+  const item = data.rows.find((r: Api.Disk.SharedWithMeItem) => String(r.fileShareId) === shareId);
+  if (!item) return;
+
+  browsingFolder.value = item;
+  const urlPath = (route.query.path as string) || '';
+  folderPath.value = urlPath;
+  folderPagination.value.pageNum = 1;
+  if (urlPath) {
+    getFolderContents(urlPath);
+  } else {
+    getFolderContents();
+  }
+}
+
+// Watch for browser back/forward
+watch(() => route.query.shareId, async (newShareId, oldShareId) => {
+  if (newShareId === oldShareId) return;
+  // Skip during initial mount (handled by onMounted)
+  if (!oldShareId && newShareId) return;
+
+  if (!newShareId) {
+    browsingFolder.value = null;
+    folderContents.value = [];
+    folderPath.value = '';
+  } else {
+    const shareId = newShareId as string;
+    const path = (route.query.path as string) || '';
+    const params: Record<string, unknown> = { pageNum: 1, pageSize: 200, shareType: props.shareType };
+    const { data } = await fetchGetSharedWithMeList(params as Parameters<typeof fetchGetSharedWithMeList>[0]);
+    if (data?.rows) {
+      const item = data.rows.find((r: Api.Disk.SharedWithMeItem) => String(r.fileShareId) === shareId);
+      if (item) {
+        browsingFolder.value = item;
+        folderPath.value = path;
+        getFolderContents(path || undefined);
+      }
+    }
+  }
+});
 
 // --- Upload to share folder ---
 function handleUploadClick() {
@@ -826,7 +892,12 @@ function handlePageChange(page: number) {
 }
 
 // --- Init ---
-getData();
+onMounted(async () => {
+  await getData();
+  if (route.query.shareId) {
+    await restoreFromUrl();
+  }
+});
 </script>
 
 <template>
