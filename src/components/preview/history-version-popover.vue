@@ -31,6 +31,7 @@ interface UserInfoMap {
 
 const props = defineProps<{
   fileId?: CommonType.IdType;
+  activeVersionId?: CommonType.IdType;
 }>();
 
 const emit = defineEmits<{
@@ -185,7 +186,8 @@ watch(
     trigger="click"
     placement="bottom-end"
     :width="420"
-    :style="{ maxHeight: '480px', padding: 0 }"
+    :style="{ maxHeight: '480px' }"
+    :content-style="{ padding: 0 }"
   >
     <template #trigger>
       <slot />
@@ -219,6 +221,7 @@ watch(
           v-for="version in historyList"
           :key="version.id"
           class="history-item"
+          :class="{ 'history-item--active': activeVersionId === version.id }"
         >
           <!-- 左侧头像 -->
           <div class="flex-shrink-0">
@@ -271,19 +274,23 @@ watch(
 
 <style scoped lang="scss">
 .history-popover {
-  margin: -12px;
+  overflow: hidden;
+  border-radius: var(--n-border-radius, 3px);
 }
 
 .history-list {
   max-height: 400px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .history-item {
   display: flex;
   align-items: center;
   padding: 10px 16px;
+  border-left: 3px solid transparent;
   border-bottom: 1px solid var(--n-border-color, #efeff1);
+  box-sizing: border-box;
 
   &:last-child {
     border-bottom: none;
@@ -291,6 +298,15 @@ watch(
 
   &:hover {
     background-color: var(--n-td-color-hover, #f5f5f5);
+  }
+
+  &--active {
+    background-color: rgba(var(--primary-color-rgb, 46, 96, 214), 0.08);
+    border-left-color: var(--primary-color, #2e60d6);
+
+    &:hover {
+      background-color: rgba(var(--primary-color-rgb, 46, 96, 214), 0.12);
+    }
   }
 }
 </style>

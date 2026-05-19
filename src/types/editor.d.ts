@@ -42,7 +42,6 @@ export namespace Editor {
 
   /** 恢复结果 */
   interface RestoreResult {
-    success: boolean;
-    message: string;
+    [key: string]: unknown;
   }
 }

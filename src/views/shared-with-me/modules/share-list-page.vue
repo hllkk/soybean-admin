@@ -16,6 +16,7 @@ import {
   fetchIsAllowDownload,
   fetchIsAllowPackageDownload,
   fetchRenameFile,
+  fetchDeleteFile,
   fetchGetShareInfo,
   fetchAddRecent,
   fetchUploadToShareFolder,
@@ -362,6 +363,14 @@ function getFolderCtxMenu(parentPermissions: string[]): DropdownOption[] {
   if (parentPermissions.includes('DOWNLOAD')) {
     options.push({ label: $t('page.disk.contextMenu.download'), key: 'download', icon: SvgIconVNode({ icon: 'mdi:download-outline', fontSize: 18 }) });
   }
+  if (parentPermissions.includes('PUT')) {
+    options.push({ label: $t('page.disk.contextMenu.rename'), key: 'rename', icon: SvgIconVNode({ icon: 'mdi:pencil-outline', fontSize: 18 }) });
+    options.push({ label: $t('page.disk.contextMenu.copy'), key: 'copy', icon: SvgIconVNode({ icon: 'mdi:content-copy', fontSize: 18 }) });
+    options.push({ label: $t('page.disk.contextMenu.move'), key: 'move', icon: SvgIconVNode({ icon: 'mdi:folder-move-outline', fontSize: 18 }) });
+  }
+  if (parentPermissions.includes('DELETE')) {
+    options.push({ label: $t('page.disk.contextMenu.delete'), key: 'delete', icon: SvgIconVNode({ icon: 'mdi:delete-outline', fontSize: 18 }) });
+  }
   return options;
 }
 
@@ -391,6 +400,13 @@ function handleCtxMenuSelect(key: string) {
     switch (key) {
       case 'open': handleFolderFileDblClick(file); break;
       case 'download': if (!file.isDir) handleFolderFileDownload(file); break;
+      case 'rename':
+        diskStore.startRenaming(file.fileId, file.fileName || file.name || '');
+        renamingFile.value = file;
+        break;
+      case 'copy': diskStore.openMoveCopyDialog('copy', [file]); break;
+      case 'move': diskStore.openMoveCopyDialog('move', [file]); break;
+      case 'delete': handleFolderFileDelete(file); break;
     }
     return;
   }
@@ -501,6 +517,23 @@ async function handleFolderFileDownload(file: Api.Disk.FileItem) {
   triggerBrowserDownload(data.downloadUrl);
 }
 
+async function handleFolderFileDelete(file: Api.Disk.FileItem) {
+  const fileName = file.fileName || file.name || '';
+  window.$dialog?.warning({
+    title: $t('page.disk.contextMenu.delete'),
+    content: `${fileName}`,
+    positiveText: $t('common.confirm'),
+    negativeText: $t('common.cancel'),
+    onPositiveClick: async () => {
+      const { error } = await fetchDeleteFile([file.fileId]);
+      if (!error) {
+        window.$message?.success($t('common.deleteSuccess'));
+        getFolderContents();
+      }
+    }
+  });
+}
+
 // --- File operations ---
 async function handleRenameConfirm(newName: string) {
   if (!renamingFile.value || !newName.trim()) return;
@@ -514,7 +547,11 @@ async function handleRenameConfirm(newName: string) {
     window.$message?.success($t('page.disk.moveCopy.renameSuccess'));
     diskStore.cancelRenaming();
     renamingFile.value = null;
-    getData();
+    if (isBrowsingFolder.value) {
+      getFolderContents();
+    } else {
+      getData();
+    }
   }
 }
 
@@ -705,7 +742,33 @@ const folderColumns = [
   {
     key: 'fileName',
     title: $t('page.disk.sharedWithMe.fileName'),
+    width: 300,
     render(row: Api.Disk.FileItem) {
+      const isRenaming = diskStore.renamingFileId === row.fileId;
+      if (isRenaming) {
+        return h('div', { class: 'flex items-center gap-8px' }, [
+          h(FileIcon, { fileType: row.isDir ? 'folder' : contentTypeToFileType(row.contentType || '', false), extension: row.fileExtension || row.extendName, size: 'medium', fileId: row.fileId, mediaCover: row.mediaCover }),
+          h('input', {
+            class: 'flex-1 min-w-0 h-28px px-8px text-14px border border-primary rounded outline-none bg-transparent',
+            value: row.fileName || row.name,
+            onKeyup: (e: KeyboardEvent) => {
+              if (e.key === 'Enter') {
+                handleRenameConfirm((e.target as HTMLInputElement).value);
+              } else if (e.key === 'Escape') {
+                diskStore.cancelRenaming();
+                renamingFile.value = null;
+              }
+            },
+            onBlur: (e: FocusEvent) => {
+              const val = (e.target as HTMLInputElement).value.trim();
+              const originalName = row.fileName || row.name || '';
+              if (val && val !== originalName) handleRenameConfirm(val);
+              else { diskStore.cancelRenaming(); renamingFile.value = null; }
+            },
+            autofocus: true
+          })
+        ]);
+      }
       return h('div', { class: 'flex items-center gap-8px' }, [
         h(FileIcon, { fileType: row.isDir ? 'folder' : contentTypeToFileType(row.contentType || '', false), extension: row.fileExtension || row.extendName, size: 'medium', fileId: row.fileId, mediaCover: row.mediaCover }),
         h('span', { class: 'flex-1 truncate', style: 'min-width:0' }, row.fileName || row.name)

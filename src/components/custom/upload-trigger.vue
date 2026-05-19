@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useUploader } from '@/hooks/business/upload/use-uploader';
 
 defineOptions({
   name: 'UploadTrigger'
 });
 
+const route = useRoute();
 const { upload } = useUploader();
+
+/** 仅在"我的网盘"页面启用拖拽上传 */
+const dragEnabledRoutes = ['/disk'];
 
 const isDragging = ref(false);
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
@@ -18,6 +23,7 @@ function generateFolderId(): string {
 }
 
 function showOverlay() {
+  if (!dragEnabledRoutes.some(r => route.path.startsWith(r))) return;
   if (hideTimer) {
     clearTimeout(hideTimer);
     hideTimer = null;
@@ -47,6 +53,7 @@ function handleDragOver(e: DragEvent) {
 
 function handleDragLeave(e: DragEvent) {
   e.preventDefault();
+  if (!dragEnabledRoutes.some(r => route.path.startsWith(r))) return;
   hideOverlay();
 }
 
@@ -127,6 +134,7 @@ function handleDrop(e: DragEvent) {
     clearTimeout(hideTimer);
     hideTimer = null;
   }
+  if (!dragEnabledRoutes.some(r => route.path.startsWith(r))) return;
   if (!e.dataTransfer) return;
   extractAndUpload(e.dataTransfer);
 }

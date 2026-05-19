@@ -18,6 +18,7 @@ import HistoryVersionPopover from './history-version-popover.vue';
 
 const VditorEditor = defineAsyncComponent(() => import('@/components/preview/vditor-editor.vue'));
 const MonacoEditor = defineAsyncComponent(() => import('@/components/preview/monaco-editor.vue'));
+const MonacoDiffEditor = defineAsyncComponent(() => import('@/components/preview/monaco-diff-editor.vue'));
 
 defineOptions({
   name: 'TextPreview'
@@ -349,22 +350,28 @@ interface HistoryVersion {
   createTime: string;
 }
 
-const historyPreviewContent = ref<string | null>(null);
-const historyPreviewVersion = ref<HistoryVersion | null>(null);
+const diffMode = ref(false);
+const diffOriginalContent = ref('');
+const diffModifiedContent = ref('');
+const diffVersionInfo = ref<HistoryVersion | null>(null);
 
-const showHistoryPreview = computed({
-  get: () => historyPreviewContent.value !== null,
-  set: (val: boolean) => {
-    if (!val) {
-      historyPreviewContent.value = null;
-      historyPreviewVersion.value = null;
-    }
-  }
-});
+const activeDiffVersionId = computed(() => (diffMode.value && diffVersionInfo.value?.id) || undefined);
 
 function handleHistoryPreview(content: string, version: HistoryVersion) {
-  historyPreviewContent.value = content;
-  historyPreviewVersion.value = version;
+  const tab = currentTab.value;
+  if (!tab) return;
+
+  diffOriginalContent.value = tab.content;
+  diffModifiedContent.value = content;
+  diffVersionInfo.value = version;
+  diffMode.value = true;
+}
+
+function handleExitDiffMode() {
+  diffMode.value = false;
+  diffOriginalContent.value = '';
+  diffModifiedContent.value = '';
+  diffVersionInfo.value = null;
 }
 
 async function handleHistoryRestore(version: HistoryVersion) {
@@ -372,17 +379,16 @@ async function handleHistoryRestore(version: HistoryVersion) {
   if (!tab) return;
 
   try {
-    const { data, error } = await fetchRestoreHistory(version.id);
-    if (error || !data?.success) {
+    const { error } = await fetchRestoreHistory(version.id);
+    if (error) {
       window.$message?.error('恢复历史版本失败');
       return;
     }
-    // 更新编辑器内容为恢复后的内容
-    tab.content = historyPreviewContent.value || '';
+    // 更新编辑器内容为恢复后的内容（diffModifiedContent 即历史版本内容）
+    tab.content = diffModifiedContent.value;
     tab.originalContent = tab.content;
     tab.isModified = false;
-    historyPreviewContent.value = null;
-    historyPreviewVersion.value = null;
+    handleExitDiffMode();
     window.$message?.success('已恢复到历史版本');
   } catch {
     window.$message?.error('恢复历史版本失败');
@@ -870,6 +876,7 @@ function handleTabChange(path: string) {
     currentContent.value = tab.content;
     markdownMode.value = path.toLowerCase().endsWith('.md');
   }
+  handleExitDiffMode();
 }
 
 // 监听当前文件变化
@@ -932,6 +939,7 @@ watch(visible, show => {
         <HistoryVersionPopover
           v-if="!isShare && hasHistoryVersion"
           :file-id="currentTab?.fileId"
+          :active-version-id="activeDiffVersionId"
           @preview="handleHistoryPreview"
           @restore="handleHistoryRestore"
           @delete="handleHistoryDelete"
@@ -1033,18 +1041,46 @@ watch(visible, show => {
               </NTabPane>
             </NTabs>
           </div>
-          <!-- 这里放置内容预览组件，暂时留空或根据逻辑补充 -->
-          <div
-            class="relative min-h-0 flex-1 overflow-auto p-4"
-            :class="{ '!p-0 !overflow-hidden': isMarkdown && markdownMode }"
-          >
-            <VditorEditor
-              v-if="isMarkdown && markdownMode"
-              v-model="currentTab.content"
-              class="absolute inset-0 size-full"
+          <!-- Diff 对比模式 -->
+          <template v-if="diffMode">
+            <div class="flex-none flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-3 py-1 bg-gray-50 dark:bg-[#252529]">
+              <div class="flex items-center gap-3 text-xs text-gray-500">
+                <NTag size="small" type="info">对比模式</NTag>
+                <span>当前内容 (左) vs 历史版本：{{ diffVersionInfo?.createTime }} (右)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <NButton size="tiny" type="primary" @click="handleHistoryRestore(diffVersionInfo!)">
+                  恢复此版本
+                </NButton>
+                <NButton size="tiny" quaternary @click="handleExitDiffMode">
+                  <template #icon>
+                    <icon-mdi-close />
+                  </template>
+                  退出对比
+                </NButton>
+              </div>
+            </div>
+            <MonacoDiffEditor
+              :original="diffOriginalContent"
+              :modified="diffModifiedContent"
+              :language="currentTab.language"
+              class="min-h-0 flex-1 w-full"
             />
-            <MonacoEditor v-else v-model="currentTab.content" :language="currentTab.language" class="h-full" />
-          </div>
+          </template>
+          <!-- 正常编辑模式 -->
+          <template v-else>
+            <div
+              class="relative min-h-0 flex-1 overflow-auto p-4"
+              :class="{ '!p-0 !overflow-hidden': isMarkdown && markdownMode }"
+            >
+              <VditorEditor
+                v-if="isMarkdown && markdownMode"
+                v-model="currentTab.content"
+                class="absolute inset-0 size-full"
+              />
+              <MonacoEditor v-else v-model="currentTab.content" :language="currentTab.language" class="h-full" />
+            </div>
+          </template>
         </div>
         <div v-else class="h-full flex items-center justify-center text-gray-400">
           <div class="flex flex-col items-center gap-2">
@@ -1067,26 +1103,6 @@ watch(visible, show => {
         </div>
       </div>
     </template>
-  </NModal>
-
-  <!-- 历史版本预览对话框 -->
-  <NModal
-    v-model:show="showHistoryPreview"
-    preset="card"
-    title="历史版本预览"
-    :width="600"
-    :style="{ maxHeight: '80vh' }"
-  >
-    <div class="text-sm text-gray-500 mb-2">
-      版本时间：{{ historyPreviewVersion?.createTime }}
-    </div>
-    <NInput
-      :value="historyPreviewContent"
-      type="textarea"
-      readonly
-      :autosize="{ minRows: 10, maxRows: 20 }"
-      placeholder="加载中..."
-    />
   </NModal>
 </template>
 

@@ -624,7 +624,7 @@ onMounted(async () => {
         />
         <!-- Breadcrumb -->
         <Breadcrumb
-          v-if="fileList.length > 0"
+          v-if="fileList.length > 0 || diskStore.currentPath.length > 0"
           :total-count="totalCount"
         />
         <!-- File Content -->
