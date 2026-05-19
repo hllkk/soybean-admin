@@ -1350,6 +1350,27 @@ declare namespace App {
             oneDay: string;
             sevenDays: string;
             thirtyDays: string;
+            shareSuccess: string;
+            linkShare: string;
+            existingShareTip: string;
+            codeFormat: string;
+            addressFormat: string;
+            linkPreview: string;
+            selectUser: string;
+            searchUser: string;
+            batchSet: string;
+            all: string;
+            user: string;
+            remark: string;
+            remarkPlaceholder: string;
+            selectDept: string;
+            shareToUser: string;
+            shareToDept: string;
+            permissions: string;
+            dept: string;
+            sharedUsers: string;
+            sharedDepts: string;
+            addUser: string;
           };
           myShare: {
             title: string;

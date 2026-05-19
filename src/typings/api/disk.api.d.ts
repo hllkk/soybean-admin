@@ -540,5 +540,16 @@ declare namespace Api {
       pageNum: number;
       pageSize: number;
     };
+
+    /** 文件共享目标项（回显用） */
+    type FileShareTargetItem = {
+      fileShareId: number;
+      shareType: string;
+      targetType: string;
+      targetId: number;
+      targetName: string;
+      permissions: string[];
+      status: string;
+    };
   }
 }

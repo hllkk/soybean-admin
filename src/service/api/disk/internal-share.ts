@@ -4,8 +4,7 @@ import { request } from '@/service/request';
 export function fetchCreateInternalShare(data: {
   fileId: number;
   shareType: 'user' | 'dept';
-  targetIds: number[];
-  permissions?: string[];
+  targets: { targetId: number; permissions: string[] }[];
   expireDate?: string;
   remark?: string;
 }) {
@@ -49,6 +48,15 @@ export function fetchSaveToMyDrive(fileShareId: number, targetPath?: string) {
     url: '/share/internal/save-to-drive',
     method: 'post',
     data: { fileShareId, targetPath: targetPath || '/' }
+  });
+}
+
+/** 获取文件已有共享目标 */
+export function fetchGetFileShareTargets(fileId: number) {
+  return request<Api.Disk.FileShareTargetItem[]>({
+    url: '/share/internal/targets',
+    method: 'post',
+    data: { fileId }
   });
 }
 

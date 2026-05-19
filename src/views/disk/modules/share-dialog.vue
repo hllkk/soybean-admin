@@ -3,8 +3,8 @@ import { ref, computed, watch, h } from 'vue';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { fetchCreateShare, fetchCancelShare } from '@/service/api/disk/share';
+import { fetchCreateInternalShare, fetchGetFileShareTargets } from '@/service/api/disk/internal-share';
 import { fetchGetUserSelect } from '@/service/api/system/user';
-import { fetchCreateInternalShare } from '@/service/api/disk/internal-share';
 import { formatFileSize } from '@/utils/format';
 import { handleCopy } from '@/utils/copy';
 import DeptTree from '@/components/custom/dept-tree.vue';
@@ -31,7 +31,7 @@ const emit = defineEmits<Emits>();
 
 const diskStore = useDiskStore();
 
-// 有效期选项（后端期望的值：1/7/30/365/forever）
+// 有效期选项
 const validityOptions = computed(() => [
   { label: $t('page.disk.share.oneDay'), value: '1' },
   { label: $t('page.disk.share.sevenDays'), value: '7' },
@@ -49,7 +49,7 @@ const codeModeOptions = computed(() => [
   { label: $t('page.disk.share.customCode'), value: 'custom' }
 ]);
 
-// 配置状态
+// 链接分享配置
 const validity = ref('7');
 const shareType = ref('public');
 const codeMode = ref('random');
@@ -59,10 +59,10 @@ const customAddressEnabled = ref(false);
 const customAddress = ref('');
 const loading = ref(false);
 
-// Tab management
+// Tab
 const activeTab = ref('link');
 
-// Share to user tab
+// 共享给用户 — 逐用户权限
 const selectedUsers = ref<number[]>([]);
 interface UserOption {
   label: string;
@@ -71,14 +71,67 @@ interface UserOption {
 }
 const userOptions = ref<UserOption[]>([]);
 const userLoading = ref(false);
-const userPermissions = ref<string[]>(['DOWNLOAD']);
-
-// Share to dept tab
-const selectedDepts = ref<number[]>([]);
-const deptPermissions = ref<string[]>(['DOWNLOAD']);
-
-// Common for internal share
+const userPermissionMap = ref<Record<number, string[]>>({});
 const internalRemark = ref('');
+
+// 已有共享目标（回显用）
+const existingTargets = ref<Api.Disk.FileShareTargetItem[]>([]);
+
+// 共享给部门 — 逐部门权限
+const selectedDepts = ref<number[]>([]);
+const deptOptions = ref<any[]>([]);
+const deptPermissionMap = ref<Record<number, string[]>>({});
+
+// 根据文件类型过滤可用权限
+const availablePermissions = computed(() => {
+  const all = [
+    { label: $t('page.disk.sharedWithMe.permDownload'), value: 'DOWNLOAD' },
+    { label: $t('page.disk.sharedWithMe.permUpload'), value: 'UPLOAD' },
+    { label: $t('page.disk.sharedWithMe.permEdit'), value: 'PUT' },
+    { label: $t('page.disk.sharedWithMe.permDelete'), value: 'DELETE' }
+  ];
+  if (shareFile.value?.isFolder) return all;
+  return all.filter(p => p.value !== 'UPLOAD');
+});
+
+const defaultNewUserPermissions = computed(() => {
+  const perms = availablePermissions.value.map(p => p.value);
+  return ['DOWNLOAD', ...perms.filter(p => p !== 'DOWNLOAD')].slice(0, 1);
+});
+
+// 部门ID到名称的映射
+const deptNameMap = computed(() => {
+  const map: Record<number, string> = {};
+  function walk(nodes: any[]) {
+    for (const node of nodes) {
+      if (node.id && node.label) {
+        map[node.id] = node.label;
+      }
+      if (node.children) walk(node.children);
+    }
+  }
+  walk(deptOptions.value);
+  return map;
+});
+
+// 已有共享的用户目标
+const existingUserTargets = computed(() =>
+  existingTargets.value.filter(t => t.targetType === 'user')
+);
+
+// 已有共享的部门目标
+const existingDeptTargets = computed(() =>
+  existingTargets.value.filter(t => t.targetType === 'dept')
+);
+
+// 下拉框过滤：排除已选用户和已有共享用户
+const filteredUserOptions = computed(() => {
+  const excludeIds = new Set([
+    ...selectedUsers.value,
+    ...existingUserTargets.value.map(t => t.targetId)
+  ]);
+  return userOptions.value.filter(u => !excludeIds.has(u.value));
+});
 
 // 待分享的文件
 const shareFile = computed(() => diskStore.shareFile);
@@ -110,13 +163,13 @@ const addressValid = computed(() => {
   return /^[a-zA-Z0-9_-]{3,32}$/.test(customAddress.value);
 });
 
-// 最终分享链接预览
+// 链接预览
 const shareLinkPreview = computed(() => {
   const shortId = customAddressEnabled.value && customAddress.value ? customAddress.value : 'xxxxxx';
   return `/s/${shortId}`;
 });
 
-// 整体表单验证
+// 链接分享表单验证
 const formValid = computed(() => {
   if (!shareFile.value) return false;
   if (!codeValid.value) return false;
@@ -135,20 +188,17 @@ const fileInfo = computed(() => {
   };
 });
 
-// 根据文件类型过滤可用权限
-const availablePermissions = computed(() => {
-  const all = [
-    { label: '下载', value: 'DOWNLOAD' },
-    { label: '上传', value: 'UPLOAD' },
-    { label: '编辑', value: 'PUT' },
-    { label: '删除', value: 'DELETE' }
-  ];
-  if (shareFile.value?.isFolder) return all;
-  return all.filter(p => p.value !== 'UPLOAD');
+// 用户选项名 map
+const userOptionMap = computed(() => {
+  const map: Record<number, UserOption> = {};
+  userOptions.value.forEach(u => {
+    map[u.value] = u;
+  });
+  return map;
 });
 
 function generateRandomCode(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345789';
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   const array = new Uint8Array(4);
   crypto.getRandomValues(array);
   let code = '';
@@ -196,21 +246,102 @@ function renderUserLabel(option: UserOption) {
   return h('div', { style: 'display:flex;align-items:center;gap:8px;' }, [avatar, option.label]);
 }
 
-function renderUserTag({ option }: { option: UserOption }) {
-  const avatar = option.avatar ? getUserAvatar(option) : getUserDefaultAvatar(option.label);
-  return h('div', { style: 'display:flex;align-items:center;gap:4px;padding:0 4px;' }, [avatar, option.label]);
+// 切换用户权限
+function toggleUserPermission(userId: number, perm: string) {
+  const current = userPermissionMap.value[userId] || [];
+  if (current.includes(perm)) {
+    userPermissionMap.value = {
+      ...userPermissionMap.value,
+      [userId]: current.filter(p => p !== perm)
+    };
+  } else {
+    userPermissionMap.value = {
+      ...userPermissionMap.value,
+      [userId]: [...current, perm]
+    };
+  }
+}
+
+// 移除已选用户
+function removeUser(userId: number) {
+  selectedUsers.value = selectedUsers.value.filter(id => id !== userId);
+  const updated = { ...userPermissionMap.value };
+  delete updated[userId];
+  userPermissionMap.value = updated;
+}
+
+// 批量设置用户权限
+function setAllUsersPermission(perm: string, checked: boolean) {
+  const updated = { ...userPermissionMap.value };
+  for (const userId of selectedUsers.value) {
+    const current = updated[userId] || [];
+    if (checked && !current.includes(perm)) {
+      updated[userId] = [...current, perm];
+    } else if (!checked) {
+      updated[userId] = current.filter(p => p !== perm);
+    }
+  }
+  userPermissionMap.value = updated;
+}
+
+// 切换部门权限
+function toggleDeptPermission(deptId: number, perm: string) {
+  const current = deptPermissionMap.value[deptId] || [];
+  if (current.includes(perm)) {
+    deptPermissionMap.value = {
+      ...deptPermissionMap.value,
+      [deptId]: current.filter(p => p !== perm)
+    };
+  } else {
+    deptPermissionMap.value = {
+      ...deptPermissionMap.value,
+      [deptId]: [...current, perm]
+    };
+  }
+}
+
+// 批量设置部门权限
+function setAllDeptsPermission(perm: string, checked: boolean) {
+  const updated = { ...deptPermissionMap.value };
+  for (const deptId of selectedDepts.value) {
+    const current = updated[deptId] || [];
+    if (checked && !current.includes(perm)) {
+      updated[deptId] = [...current, perm];
+    } else if (!checked) {
+      updated[deptId] = current.filter(p => p !== perm);
+    }
+  }
+  deptPermissionMap.value = updated;
 }
 
 const canSubmit = computed(() => {
   if (!shareFile.value) return false;
   if (activeTab.value === 'link' && hasExistingShare.value) return false;
   if (activeTab.value === 'link') return formValid.value;
-  if (activeTab.value === 'user') return selectedUsers.value.length > 0;
-  if (activeTab.value === 'dept') return selectedDepts.value.length > 0;
+  if (activeTab.value === 'user') {
+    if (selectedUsers.value.length === 0) return false;
+    return selectedUsers.value.every(uid => (userPermissionMap.value[uid] || []).length > 0);
+  }
+  if (activeTab.value === 'dept') {
+    if (selectedDepts.value.length === 0) return false;
+    return selectedDepts.value.every(did => (deptPermissionMap.value[did] || []).length > 0);
+  }
   return false;
 });
 
-watch(() => diskStore.shareDialogVisible, visible => {
+// 加载已有共享目标
+async function loadExistingTargets() {
+  if (!shareFile.value) return;
+  const fileIdNum = typeof shareFile.value.fileId === 'string'
+    ? parseInt(shareFile.value.fileId, 10)
+    : shareFile.value.fileId;
+  const { data } = await fetchGetFileShareTargets(fileIdNum);
+  if (data) {
+    existingTargets.value = data;
+  }
+}
+
+watch(() => diskStore.shareDialogVisible, async visible => {
   if (visible) {
     validity.value = '7';
     shareType.value = 'public';
@@ -221,24 +352,51 @@ watch(() => diskStore.shareDialogVisible, visible => {
     customAddress.value = '';
     selectedUsers.value = [];
     selectedDepts.value = [];
+    userPermissionMap.value = {};
+    deptPermissionMap.value = {};
     internalRemark.value = '';
-    userPermissions.value = ['DOWNLOAD'];
-    deptPermissions.value = ['DOWNLOAD'];
-    // 已有链接分享时默认切到用户分享 Tab
+    existingTargets.value = [];
     activeTab.value = hasExistingShare.value ? 'user' : 'link';
-    // 默认 Tab 是用户分享时立即加载
-    if (hasExistingShare.value) {
-      loadUserOptions();
-    }
+    loadUserOptions();
+    loadExistingTargets();
   }
 });
 
-// 切换到用户 Tab 时预加载用户列表
 watch(activeTab, tab => {
   if (tab === 'user') {
     loadUserOptions();
   }
 });
+
+// 新选用户时自动分配默认权限
+watch(selectedUsers, (newVal, oldVal) => {
+  const added = newVal.filter(id => !oldVal?.includes(id));
+  if (added.length > 0) {
+    const updated = { ...userPermissionMap.value };
+    const defaultPerms = defaultNewUserPermissions.value;
+    for (const id of added) {
+      if (!updated[id] || updated[id].length === 0) {
+        updated[id] = [...defaultPerms];
+      }
+    }
+    userPermissionMap.value = updated;
+  }
+}, { deep: true });
+
+// 新选部门时自动分配默认权限
+watch(selectedDepts, (newVal, oldVal) => {
+  const added = newVal.filter(id => !oldVal?.includes(id));
+  if (added.length > 0) {
+    const updated = { ...deptPermissionMap.value };
+    const defaultPerms = defaultNewUserPermissions.value;
+    for (const id of added) {
+      if (!updated[id] || updated[id].length === 0) {
+        updated[id] = [...defaultPerms];
+      }
+    }
+    deptPermissionMap.value = updated;
+  }
+}, { deep: true });
 
 function handleCancel() {
   diskStore.closeShareDialog();
@@ -281,16 +439,19 @@ async function handleUserShare() {
   loading.value = true;
   const fileIdNum = typeof shareFile.value.fileId === 'string'
     ? parseInt(shareFile.value.fileId, 10) : shareFile.value.fileId;
+  const targets = selectedUsers.value.map(uid => ({
+    targetId: uid,
+    permissions: userPermissionMap.value[uid] || ['DOWNLOAD']
+  }));
   const { error } = await fetchCreateInternalShare({
     fileId: fileIdNum,
     shareType: 'user',
-    targetIds: selectedUsers.value,
-    permissions: userPermissions.value,
+    targets,
     remark: internalRemark.value
   });
   loading.value = false;
   if (!error) {
-    window.$message?.success('共享成功');
+    window.$message?.success($t('page.disk.share.shareSuccess'));
     diskStore.closeShareDialog();
   }
 }
@@ -300,16 +461,19 @@ async function handleDeptShare() {
   loading.value = true;
   const fileIdNum = typeof shareFile.value.fileId === 'string'
     ? parseInt(shareFile.value.fileId, 10) : shareFile.value.fileId;
+  const targets = selectedDepts.value.map(did => ({
+    targetId: did,
+    permissions: deptPermissionMap.value[did] || ['DOWNLOAD']
+  }));
   const { error } = await fetchCreateInternalShare({
     fileId: fileIdNum,
     shareType: 'dept',
-    targetIds: selectedDepts.value,
-    permissions: deptPermissions.value,
+    targets,
     remark: internalRemark.value
   });
   loading.value = false;
   if (!error) {
-    window.$message?.success('共享成功');
+    window.$message?.success($t('page.disk.share.shareSuccess'));
     diskStore.closeShareDialog();
   }
 }
@@ -329,6 +493,15 @@ async function handleCancelExistingShare() {
 function handleCopyExistingLink() {
   handleCopy(existingShareLink.value);
 }
+
+// 权限标签映射
+const permLabelMap: Record<string, string> = {
+  DOWNLOAD: $t('page.disk.sharedWithMe.permDownload'),
+  UPLOAD: $t('page.disk.sharedWithMe.permUpload'),
+  PUT: $t('page.disk.sharedWithMe.permEdit'),
+  DELETE: $t('page.disk.sharedWithMe.permDelete'),
+  SHARE: $t('page.disk.sharedWithMe.permShare')
+};
 </script>
 
 <template>
@@ -336,7 +509,7 @@ function handleCopyExistingLink() {
     v-model:show="diskStore.shareDialogVisible"
     preset="card"
     :title="$t('page.disk.share.configTitle')"
-    style="width: 90%; max-width: 480px"
+    style="width: 90%; max-width: 560px"
     :mask-closable="false"
     :bordered="false"
   >
@@ -361,11 +534,11 @@ function handleCopyExistingLink() {
         <SvgIcon icon="mdi:link-variant" :size="18" class="text-primary shrink-0" />
         <div class="flex-1 min-w-0">
           <div class="text-13px">
-            <span class="opacity-70">链接分享：</span>
+            <span class="opacity-70">{{ $t('page.disk.share.linkShare') }}：</span>
             <span class="font-mono text-12px select-all">{{ existingShareLink }}</span>
           </div>
           <div v-if="props.existingShare?.isPrivate && props.existingShare.extractionCode" class="text-12px opacity-60 mt-2px">
-            提取码：{{ props.existingShare.extractionCode }}
+            {{ $t('page.disk.share.extractionCode') }}：{{ props.existingShare.extractionCode }}
           </div>
         </div>
         <NButton quaternary size="tiny" @click="handleCopyExistingLink">
@@ -379,12 +552,12 @@ function handleCopyExistingLink() {
       <!-- Share Type Tabs -->
       <NTabs v-model:value="activeTab" type="line" animated>
         <!-- Link Share Tab -->
-        <NTabPane name="link" tab="链接分享" :disabled="hasExistingShare">
+        <NTabPane name="link" :tab="$t('page.disk.share.linkShare')" :disabled="hasExistingShare">
           <div v-if="hasExistingShare" class="text-13px opacity-50 py-8px text-center">
-            已创建链接分享，如需修改请先取消现有链接
+            {{ $t('page.disk.share.existingShareTip') }}
           </div>
           <div v-else class="flex flex-col gap-16px">
-            <!-- 有效期设置 -->
+            <!-- 有效期 -->
             <div>
               <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.validity') }}</div>
               <NTabs v-model:value="validity" type="segment" size="small">
@@ -400,7 +573,7 @@ function handleCopyExistingLink() {
               </NTabs>
             </div>
 
-            <!-- 提取码设置（私密分享时显示） -->
+            <!-- 提取码设置 -->
             <div v-if="isPrivate">
               <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.extractionCode') }}</div>
               <NTabs v-model:value="codeMode" type="segment" size="small">
@@ -428,7 +601,7 @@ function handleCopyExistingLink() {
                   @input="customCode = customCode.replace(/[^a-zA-Z0-9]/g, '')"
                 />
                 <div v-if="customCode && !codeValid" class="text-12px text-error mt-4px">
-                  提取码需为4位字母或数字组合
+                  {{ $t('page.disk.share.codeFormat') }}
                 </div>
               </div>
             </div>
@@ -450,64 +623,250 @@ function handleCopyExistingLink() {
                 />
               </div>
               <div v-if="customAddressEnabled && customAddress && !addressValid" class="text-12px text-error mt-4px">
-                地址需为3-32位字母、数字、下划线或中划线组合
+                {{ $t('page.disk.share.addressFormat') }}
               </div>
               <div class="text-12px opacity-50 mt-8px">
-                链接预览: {{ shareLinkPreview }}
+                {{ $t('page.disk.share.linkPreview') }}: {{ shareLinkPreview }}
               </div>
             </div>
           </div>
         </NTabPane>
 
         <!-- Share to User Tab -->
-        <NTabPane name="user" tab="共享给用户">
+        <NTabPane name="user" :tab="$t('page.disk.share.shareToUser')">
           <div class="flex flex-col gap-12px mt-8px">
+            <!-- 已有共享用户展示 -->
+            <div v-if="existingUserTargets.length > 0" class="mb-4px">
+              <div class="text-12px opacity-50 mb-6px">{{ $t('page.disk.share.sharedUsers') }}</div>
+              <div class="flex flex-wrap gap-8px">
+                <div
+                  v-for="target in existingUserTargets"
+                  :key="target.targetId"
+                  class="flex items-center gap-6px px-8px py-4px rounded-full bg-primary/10 text-13px"
+                >
+                  <img
+                    v-if="userOptionMap[target.targetId]?.avatar"
+                    :src="userOptionMap[target.targetId]!.avatar"
+                    class="w-20px h-20px rd-full object-cover shrink-0 bg-gray-200"
+                  />
+                  <div v-else class="w-20px h-20px rd-full bg-primary/20 text-primary flex items-center justify-center text-11px shrink-0">
+                    {{ (target.targetName || '?').charAt(0) }}
+                  </div>
+                  <span class="max-w-80px truncate">{{ target.targetName }}</span>
+                  <div class="flex gap-2px">
+                    <NTag
+                      v-for="p in target.permissions"
+                      :key="p"
+                      size="tiny"
+                      :bordered="false"
+                      class="text-10px!"
+                    >
+                      {{ permLabelMap[p] || p }}
+                    </NTag>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 选择新用户 -->
             <div>
-              <div class="text-13px opacity-70 mb-8px">选择用户</div>
+              <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.addUser') }}</div>
               <NSelect
                 v-model:value="selectedUsers"
-                :options="userOptions"
+                :options="filteredUserOptions"
                 :loading="userLoading"
                 :render-label="renderUserLabel"
-                :render-tag="renderUserTag as any"
                 multiple
                 filterable
-                placeholder="搜索并选择用户"
+                :placeholder="$t('page.disk.share.searchUser')"
+                :max-tag-count="0"
               />
             </div>
-            <div>
-              <div class="text-13px opacity-70 mb-8px">权限</div>
-              <NCheckboxGroup v-model:value="userPermissions">
-                <NSpace>
-                  <NCheckbox v-for="p in availablePermissions" :key="p.value" :value="p.value">{{ p.label }}</NCheckbox>
-                </NSpace>
-              </NCheckboxGroup>
+
+            <!-- 新选用户头像展示 -->
+            <div v-if="selectedUsers.length > 0" class="flex flex-wrap gap-8px">
+              <div
+                v-for="userId in selectedUsers"
+                :key="userId"
+                class="flex items-center gap-6px px-8px py-4px rounded-full bg-gray-100 dark:bg-gray-700 text-13px group"
+              >
+                <img
+                  v-if="userOptionMap[userId]?.avatar"
+                  :src="userOptionMap[userId]!.avatar"
+                  class="w-20px h-20px rd-full object-cover shrink-0 bg-gray-200"
+                />
+                <div v-else class="w-20px h-20px rd-full bg-primary/20 text-primary flex items-center justify-center text-11px shrink-0">
+                  {{ (userOptionMap[userId]?.label || '?').charAt(0) }}
+                </div>
+                <span class="max-w-80px truncate">{{ userOptionMap[userId]?.label || userId }}</span>
+                <button
+                  class="w-16px h-16px flex items-center justify-center rounded-full opacity-40 hover:opacity-100 hover:bg-error/20 hover:text-error transition shrink-0"
+                  @click="removeUser(userId)"
+                >
+                  <SvgIcon icon="mdi:close" :size="12" />
+                </button>
+              </div>
             </div>
+
+            <!-- 逐用户权限配置表 -->
+            <div v-if="selectedUsers.length > 0">
+              <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.permissions') }}</div>
+
+              <!-- 批量操作栏 -->
+              <div class="flex items-center gap-8px mb-8px">
+                <span class="text-12px opacity-50">{{ $t('page.disk.share.batchSet') }}:</span>
+                <NButton
+                  v-for="perm in availablePermissions"
+                  :key="perm.value"
+                  size="tiny"
+                  quaternary
+                  @click="setAllUsersPermission(perm.value, true)"
+                >
+                  {{ $t('page.disk.share.all') }}{{ perm.label }}
+                </NButton>
+              </div>
+
+              <!-- 权限表格 -->
+              <div class="border rounded dark:border-gray-700 overflow-hidden">
+                <div class="max-h-240px overflow-y-auto">
+                  <table class="w-full text-13px">
+                    <thead class="sticky top-0 z-1">
+                      <tr class="bg-gray-50 dark:bg-gray-800">
+                        <th class="text-left px-12px py-8px font-medium">{{ $t('page.disk.share.user') }}</th>
+                        <th v-for="perm in availablePermissions" :key="perm.value" class="text-center px-8px py-8px font-medium w-64px">
+                          {{ perm.label }}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="userId in selectedUsers"
+                        :key="userId"
+                        class="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      >
+                        <td class="px-12px py-8px">
+                          <div class="flex items-center gap-8px">
+                            <img
+                              v-if="userOptionMap[userId]?.avatar"
+                              :src="userOptionMap[userId]!.avatar"
+                              class="w-22px h-22px rd-full object-cover shrink-0 bg-gray-200"
+                            />
+                            <div v-else class="w-22px h-22px rd-full bg-primary/10 text-primary flex items-center justify-center text-12px shrink-0">
+                              {{ (userOptionMap[userId]?.label || '?').charAt(0) }}
+                            </div>
+                            <span class="truncate max-w-120px">{{ userOptionMap[userId]?.label || userId }}</span>
+                          </div>
+                        </td>
+                        <td v-for="perm in availablePermissions" :key="perm.value" class="text-center px-8px py-8px">
+                          <NCheckbox
+                            :checked="(userPermissionMap[userId] || []).includes(perm.value)"
+                            @update:checked="toggleUserPermission(userId, perm.value)"
+                          />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
             <div>
-              <div class="text-13px opacity-70 mb-8px">备注</div>
-              <NInput v-model:value="internalRemark" type="textarea" placeholder="可选备注" :rows="2" />
+              <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.remark') }}</div>
+              <NInput v-model:value="internalRemark" type="textarea" :placeholder="$t('page.disk.share.remarkPlaceholder')" :rows="2" :maxlength="200" />
             </div>
           </div>
         </NTabPane>
 
         <!-- Share to Dept Tab -->
-        <NTabPane name="dept" tab="共享给部门">
+        <NTabPane name="dept" :tab="$t('page.disk.share.shareToDept')">
           <div class="flex flex-col gap-12px mt-8px">
-            <div>
-              <div class="text-13px opacity-70 mb-8px">选择部门</div>
-              <DeptTree v-model:value="selectedDepts" :immediate="true" />
+            <!-- 已有共享部门展示 -->
+            <div v-if="existingDeptTargets.length > 0" class="mb-4px">
+              <div class="text-12px opacity-50 mb-6px">{{ $t('page.disk.share.sharedDepts') }}</div>
+              <div class="flex flex-wrap gap-8px">
+                <div
+                  v-for="target in existingDeptTargets"
+                  :key="target.targetId"
+                  class="flex items-center gap-6px px-8px py-4px rounded-full bg-blue-500/10 text-13px"
+                >
+                  <SvgIcon icon="mdi:office-building" :size="14" class="shrink-0 opacity-60" />
+                  <span class="max-w-100px truncate">{{ target.targetName }}</span>
+                  <div class="flex gap-2px">
+                    <NTag
+                      v-for="p in target.permissions"
+                      :key="p"
+                      size="tiny"
+                      :bordered="false"
+                      class="text-10px!"
+                    >
+                      {{ permLabelMap[p] || p }}
+                    </NTag>
+                  </div>
+                </div>
+              </div>
             </div>
+
             <div>
-              <div class="text-13px opacity-70 mb-8px">权限</div>
-              <NCheckboxGroup v-model:value="deptPermissions">
-                <NSpace>
-                  <NCheckbox v-for="p in availablePermissions" :key="p.value" :value="p.value">{{ p.label }}</NCheckbox>
-                </NSpace>
-              </NCheckboxGroup>
+              <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.selectDept') }}</div>
+              <DeptTree v-model:value="selectedDepts" v-model:options="deptOptions" :immediate="true" />
             </div>
+
+            <!-- 逐部门权限配置表 -->
+            <div v-if="selectedDepts.length > 0">
+              <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.permissions') }}</div>
+
+              <!-- 批量操作栏 -->
+              <div class="flex items-center gap-8px mb-8px">
+                <span class="text-12px opacity-50">{{ $t('page.disk.share.batchSet') }}:</span>
+                <NButton
+                  v-for="perm in availablePermissions"
+                  :key="perm.value"
+                  size="tiny"
+                  quaternary
+                  @click="setAllDeptsPermission(perm.value, true)"
+                >
+                  {{ $t('page.disk.share.all') }}{{ perm.label }}
+                </NButton>
+              </div>
+
+              <!-- 权限表格 -->
+              <div class="border rounded dark:border-gray-700 overflow-hidden">
+                <table class="w-full text-13px">
+                  <thead>
+                    <tr class="bg-gray-50 dark:bg-gray-800">
+                      <th class="text-left px-12px py-8px font-medium">{{ $t('page.disk.share.dept') }}</th>
+                      <th v-for="perm in availablePermissions" :key="perm.value" class="text-center px-8px py-8px font-medium w-64px">
+                        {{ perm.label }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="deptId in selectedDepts"
+                      :key="deptId"
+                      class="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    >
+                      <td class="px-12px py-8px">
+                        <div class="flex items-center gap-8px">
+                          <SvgIcon icon="mdi:office-building" :size="18" class="shrink-0 opacity-60" />
+                          <span class="truncate">{{ deptNameMap[deptId] || deptId }}</span>
+                        </div>
+                      </td>
+                      <td v-for="perm in availablePermissions" :key="perm.value" class="text-center px-8px py-8px">
+                        <NCheckbox
+                          :checked="(deptPermissionMap[deptId] || []).includes(perm.value)"
+                          @update:checked="toggleDeptPermission(deptId, perm.value)"
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div>
-              <div class="text-13px opacity-70 mb-8px">备注</div>
-              <NInput v-model:value="internalRemark" type="textarea" placeholder="可选备注" :rows="2" />
+              <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.remark') }}</div>
+              <NInput v-model:value="internalRemark" type="textarea" :placeholder="$t('page.disk.share.remarkPlaceholder')" :rows="2" :maxlength="200" />
             </div>
           </div>
         </NTabPane>
