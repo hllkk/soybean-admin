@@ -8,6 +8,8 @@ declare namespace Api {
     /** 检查数据库初始化状态响应 */
     interface CheckDBResponse {
       needInit: boolean;
+      autoInit: boolean;    // Docker环境是否支持自动初始化
+      configReady: boolean; // Docker配置是否完整
     }
 
     /** 初始化数据库请求参数 */

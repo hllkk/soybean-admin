@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { getPaletteColorByNumber, mixColor } from '@sa/color';
-import { fetchCheckDB, fetchInitDB } from '@/service/api/init';
+import { fetchCheckDB, fetchInitDB, fetchAutoInitDB } from '@/service/api/init';
 import { useNaiveForm, createDynamicPwdRule, useFormRules } from '@/hooks/common/form';
 import { useThemeStore } from '@/store/modules/theme';
 import { clearInitStatusCache } from '@/router/guard/route';
@@ -35,6 +35,9 @@ const currentStep = ref(1);
 const loading = ref(false);
 const checking = ref(true);
 const needInit = ref(false);
+const autoInit = ref(false);      // Docker环境支持自动初始化
+const configReady = ref(false);   // Docker配置是否完整
+const autoInitMode = ref(false);  // 用户选择自动初始化模式
 
 // 数据库类型选项
 const dbTypeOptions = [
@@ -154,12 +157,22 @@ async function checkDBStatus() {
 
   if (!error && data) {
     needInit.value = data.needInit;
+    autoInit.value = data.autoInit;
+    configReady.value = data.configReady;
+
     if (!data.needInit) {
-      // 已经初始化过，直接跳转到登录页（不显示提示）
+      // 已经初始化过，直接跳转到登录页
       router.replace('/login/pwd-login');
+    } else if (data.autoInit && data.configReady) {
+      // Docker环境配置完整，默认选择自动初始化模式
+      autoInitMode.value = true;
     }
   }
-  // 如果有错误，框架会自动显示错误消息，needInit 保持 false
+}
+
+// 切换初始化模式
+function toggleInitMode() {
+  autoInitMode.value = !autoInitMode.value;
 }
 
 // 上一步
@@ -181,7 +194,21 @@ async function handleNext() {
   }
 }
 
-// 提交初始化
+// 执行自动初始化
+async function handleAutoInit() {
+  loading.value = true;
+  const { error } = await fetchAutoInitDB();
+  loading.value = false;
+
+  if (!error) {
+    clearInitStatusCache();
+    window.$message?.destroyAll();
+    window.$message?.success('自动初始化成功，请使用环境变量 INIT_ADMIN_PASSWORD 设置的密码登录');
+    router.replace('/login/pwd-login');
+  }
+}
+
+// 提交手动初始化
 async function handleSubmit() {
   try {
     await validate();
@@ -218,13 +245,11 @@ async function handleSubmit() {
   loading.value = false;
 
   if (!error) {
-    // 清除初始化状态缓存（包括内存缓存和 localStorage 缓存），确保跳转到登录页后不会被重定向回来
     clearInitStatusCache();
     window.$message?.destroyAll();
     window.$message?.success('初始化成功，请登录');
     router.replace('/login/pwd-login');
   }
-  // 如果有错误，框架会自动显示错误消息
 }
 
 // 返回登录
@@ -263,159 +288,217 @@ checkDBStatus();
 
         <!-- 初始化表单 -->
         <div v-else-if="needInit">
-          <!-- 步骤条 -->
-          <NSteps :current="currentStep" class="mb-24px">
-            <NStep title="数据库配置" description="配置数据库连接" />
-            <NStep title="缓存配置" description="配置Redis（可选）" />
-            <NStep title="管理员设置" description="设置管理员密码" />
-          </NSteps>
+          <!-- Docker环境自动初始化提示 -->
+          <NAlert v-if="autoInit && configReady" type="success" class="mb-24px">
+            <template #header>
+              <div class="flex items-center gap-8px">
+                <SvgIcon icon="mdi:docker" class="text-20px" />
+                <span>Docker 环境自动初始化</span>
+              </div>
+            </template>
+            检测到 Docker 环境配置完整，可一键完成初始化。管理员密码通过环境变量 INIT_ADMIN_PASSWORD 设置。
+          </NAlert>
 
-          <NForm
-            ref="formRef"
-            :model="model"
-            :rules="rules"
-            label-placement="left"
-            label-width="100px"
-            size="large"
-          >
-            <!-- 步骤1: 数据库配置 -->
-            <div v-show="currentStep === 1">
-              <NFormItem label="部署环境" path="deployEnv">
-                <NRadioGroup v-model:value="model.deployEnv">
-                  <NRadioButton
-                    v-for="option in deployEnvOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </NRadioButton>
-                </NRadioGroup>
-              </NFormItem>
+          <!-- 初始化模式选择 -->
+          <div v-if="autoInit && configReady" class="mb-24px">
+            <NRadioGroup v-model:value="autoInitMode">
+              <NRadioButton :value="true">
+                <div class="flex items-center gap-4px">
+                  <SvgIcon icon="mdi:auto-fix" class="text-16px" />
+                  <span>自动初始化</span>
+                </div>
+              </NRadioButton>
+              <NRadioButton :value="false">
+                <div class="flex items-center gap-4px">
+                  <SvgIcon icon="mdi:cog" class="text-16px" />
+                  <span>手动配置</span>
+                </div>
+              </NRadioButton>
+            </NRadioGroup>
+          </div>
 
-              <NFormItem label="数据库类型" path="dbType">
-                <NSelect v-model:value="model.dbType" :options="dbTypeOptions" />
-              </NFormItem>
-
-              <!-- SQLite配置 -->
-              <template v-if="model.dbType === 'sqlite'">
-                <NFormItem label="数据库名" path="dbName">
-                  <NInput v-model:value="model.dbName" placeholder="请输入数据库名" />
-                </NFormItem>
-                <NFormItem label="数据库路径" path="dbPath">
-                  <NInput v-model:value="model.dbPath" placeholder="例如: /data/sqlite" />
-                </NFormItem>
-              </template>
-
-              <!-- 其他数据库配置 -->
-              <template v-else>
-                <NFormItem label="服务器地址" path="host">
-                  <NInput
-                    v-model:value="model.host"
-                    :placeholder="model.deployEnv === 'docker' ? '容器名称，如: mysql' : 'IP地址，如: 127.0.0.1'"
-                  />
-                </NFormItem>
-                <NFormItem label="端口" path="port">
-                  <NInput v-model:value="model.port" placeholder="数据库端口" />
-                </NFormItem>
-                <NFormItem label="用户名" path="userName">
-                  <NInput v-model:value="model.userName" placeholder="数据库用户名" />
-                </NFormItem>
-                <NFormItem label="密码" path="password">
-                  <NInput
-                    v-model:value="model.password"
-                    type="password"
-                    show-password-on="click"
-                    placeholder="数据库密码"
-                  />
-                </NFormItem>
-                <NFormItem label="数据库名" path="dbName">
-                  <NInput v-model:value="model.dbName" placeholder="数据库名称" />
-                </NFormItem>
-              </template>
-            </div>
-
-            <!-- 步骤2: Redis配置 -->
-            <div v-show="currentStep === 2">
-              <NFormItem label="启用Redis">
-                <NSwitch v-model:value="model.redisEnabled" />
-              </NFormItem>
-
-              <template v-if="model.redisEnabled">
-                <NFormItem label="服务地址">
-                  <NInput
-                    v-model:value="model.redisAddr"
-                    :placeholder="model.deployEnv === 'docker' ? '容器名:端口，如: redis:6379' : 'IP:端口，如: 127.0.0.1:6379'"
-                  />
-                </NFormItem>
-                <NFormItem label="密码">
-                  <NInput
-                    v-model:value="model.redisPassword"
-                    type="password"
-                    show-password-on="click"
-                    placeholder="Redis密码（可为空）"
-                  />
-                </NFormItem>
-                <NFormItem label="数据库">
-                  <NInputNumber v-model:value="model.redisDB" :min="0" :max="15" />
-                </NFormItem>
-              </template>
-
-              <NAlert v-if="!model.redisEnabled" type="info" title="提示">
-                不使用Redis将无法支持多点登录限制、Token黑名单等功能
-              </NAlert>
-            </div>
-
-            <!-- 步骤3: 管理员设置 -->
-            <div v-show="currentStep === 3">
-              <NAlert type="warning" class="mb-16px">
-                请设置管理员密码，用于首次登录系统
-              </NAlert>
-              <NFormItem label="管理员密码" path="adminPassword">
-                <NInput
-                  v-model:value="model.adminPassword"
-                  type="password"
-                  show-password-on="click"
-                  placeholder="请输入管理员密码"
-                />
-              </NFormItem>
-              <NFormItem label="确认密码" path="confirmPassword">
-                <NInput
-                  v-model:value="model.confirmPassword"
-                  type="password"
-                  show-password-on="click"
-                  placeholder="请再次输入密码"
-                />
-              </NFormItem>
-            </div>
-          </NForm>
-
-          <!-- 操作按钮 -->
-          <div class="flex justify-between mt-24px">
-            <NButton v-if="currentStep > 1" size="large" @click="handlePrev">
-              上一步
-            </NButton>
-            <div v-else></div>
-            <div class="flex gap-12px">
-              <NButton size="large" @click="goToLogin">
-                返回登录
-              </NButton>
+          <!-- 自动初始化模式 -->
+          <div v-if="autoInitMode && autoInit && configReady">
+            <div class="text-center py-40px">
+              <SvgIcon icon="mdi:rocket-launch" class="text-80px text-primary" />
+              <p class="mt-16px text-gray-600">
+                Docker 环境已配置完成，点击下方按钮一键初始化
+              </p>
+              <p class="mt-8px text-gray-400 text-sm">
+                默认管理员密码：<span class="text-primary font-medium">Admin@2026</span>
+                （可通过环境变量 INIT_ADMIN_PASSWORD 自定义）
+              </p>
               <NButton
-                v-if="currentStep < 3"
                 type="primary"
                 size="large"
-                @click="handleNext"
-              >
-                下一步
-              </NButton>
-              <NButton
-                v-else
-                type="primary"
-                size="large"
+                class="mt-24px"
                 :loading="loading"
-                @click="handleSubmit"
+                @click="handleAutoInit"
               >
-                开始初始化
+                <template #icon>
+                  <SvgIcon icon="mdi:auto-fix" />
+                </template>
+                一键初始化
               </NButton>
+            </div>
+          </div>
+
+          <!-- 手动初始化模式 -->
+          <div v-else>
+            <!-- 步骤条 -->
+            <NSteps :current="currentStep" class="mb-24px">
+              <NStep title="数据库配置" description="配置数据库连接" />
+              <NStep title="缓存配置" description="配置Redis（可选）" />
+              <NStep title="管理员设置" description="设置管理员密码" />
+            </NSteps>
+
+            <NForm
+              ref="formRef"
+              :model="model"
+              :rules="rules"
+              label-placement="left"
+              label-width="100px"
+              size="large"
+            >
+              <!-- 步骤1: 数据库配置 -->
+              <div v-show="currentStep === 1">
+                <NFormItem label="部署环境" path="deployEnv">
+                  <NRadioGroup v-model:value="model.deployEnv">
+                    <NRadioButton
+                      v-for="option in deployEnvOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </NRadioButton>
+                  </NRadioGroup>
+                </NFormItem>
+
+                <NFormItem label="数据库类型" path="dbType">
+                  <NSelect v-model:value="model.dbType" :options="dbTypeOptions" />
+                </NFormItem>
+
+                <!-- SQLite配置 -->
+                <template v-if="model.dbType === 'sqlite'">
+                  <NFormItem label="数据库名" path="dbName">
+                    <NInput v-model:value="model.dbName" placeholder="请输入数据库名" />
+                  </NFormItem>
+                  <NFormItem label="数据库路径" path="dbPath">
+                    <NInput v-model:value="model.dbPath" placeholder="例如: /data/sqlite" />
+                  </NFormItem>
+                </template>
+
+                <!-- 其他数据库配置 -->
+                <template v-else>
+                  <NFormItem label="服务器地址" path="host">
+                    <NInput
+                      v-model:value="model.host"
+                      :placeholder="model.deployEnv === 'docker' ? '容器名称，如: mysql' : 'IP地址，如: 127.0.0.1'"
+                    />
+                  </NFormItem>
+                  <NFormItem label="端口" path="port">
+                    <NInput v-model:value="model.port" placeholder="数据库端口" />
+                  </NFormItem>
+                  <NFormItem label="用户名" path="userName">
+                    <NInput v-model:value="model.userName" placeholder="数据库用户名" />
+                  </NFormItem>
+                  <NFormItem label="密码" path="password">
+                    <NInput
+                      v-model:value="model.password"
+                      type="password"
+                      show-password-on="click"
+                      placeholder="数据库密码"
+                    />
+                  </NFormItem>
+                  <NFormItem label="数据库名" path="dbName">
+                    <NInput v-model:value="model.dbName" placeholder="数据库名称" />
+                  </NFormItem>
+                </template>
+              </div>
+
+              <!-- 步骤2: Redis配置 -->
+              <div v-show="currentStep === 2">
+                <NFormItem label="启用Redis">
+                  <NSwitch v-model:value="model.redisEnabled" />
+                </NFormItem>
+
+                <template v-if="model.redisEnabled">
+                  <NFormItem label="服务地址">
+                    <NInput
+                      v-model:value="model.redisAddr"
+                      :placeholder="model.deployEnv === 'docker' ? '容器名:端口，如: redis:6379' : 'IP:端口，如: 127.0.0.1:6379'"
+                    />
+                  </NFormItem>
+                  <NFormItem label="密码">
+                    <NInput
+                      v-model:value="model.redisPassword"
+                      type="password"
+                      show-password-on="click"
+                      placeholder="Redis密码（可为空）"
+                    />
+                  </NFormItem>
+                  <NFormItem label="数据库">
+                    <NInputNumber v-model:value="model.redisDB" :min="0" :max="15" />
+                  </NFormItem>
+                </template>
+
+                <NAlert v-if="!model.redisEnabled" type="info" title="提示">
+                  不使用Redis将无法支持多点登录限制、Token黑名单等功能
+                </NAlert>
+              </div>
+
+              <!-- 步骤3: 管理员设置 -->
+              <div v-show="currentStep === 3">
+                <NAlert type="warning" class="mb-16px">
+                  请设置管理员密码，用于首次登录系统
+                </NAlert>
+                <NFormItem label="管理员密码" path="adminPassword">
+                  <NInput
+                    v-model:value="model.adminPassword"
+                    type="password"
+                    show-password-on="click"
+                    placeholder="请输入管理员密码"
+                  />
+                </NFormItem>
+                <NFormItem label="确认密码" path="confirmPassword">
+                  <NInput
+                    v-model:value="model.confirmPassword"
+                    type="password"
+                    show-password-on="click"
+                    placeholder="请再次输入密码"
+                  />
+                </NFormItem>
+              </div>
+            </NForm>
+
+            <!-- 操作按钮 -->
+            <div class="flex justify-between mt-24px">
+              <NButton v-if="currentStep > 1" size="large" @click="handlePrev">
+                上一步
+              </NButton>
+              <div v-else></div>
+              <div class="flex gap-12px">
+                <NButton size="large" @click="goToLogin">
+                  返回登录
+                </NButton>
+                <NButton
+                  v-if="currentStep < 3"
+                  type="primary"
+                  size="large"
+                  @click="handleNext"
+                >
+                  下一步
+                </NButton>
+                <NButton
+                  v-else
+                  type="primary"
+                  size="large"
+                  :loading="loading"
+                  @click="handleSubmit"
+                >
+                  开始初始化
+                </NButton>
+              </div>
             </div>
           </div>
         </div>

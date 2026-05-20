@@ -11,7 +11,19 @@ export function fetchCheckDB() {
 }
 
 /**
- * 初始化数据库
+ * Docker环境自动初始化数据库
+ * 使用docker-compose配置自动完成初始化
+ */
+export function fetchAutoInitDB() {
+  return request<void>({
+    url: '/init/autoInitDB',
+    method: 'post',
+    timeout: 5 * 60 * 1000 // 5分钟超时，初始化可能需要较长时间
+  });
+}
+
+/**
+ * 手动初始化数据库
  * @param data 初始化参数
  * 注意：初始化可能需要较长时间，设置较长的超时时间
  */
