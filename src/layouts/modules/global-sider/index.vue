@@ -3,7 +3,6 @@ import { computed } from 'vue';
 import { GLOBAL_SIDER_MENU_ID } from '@/constants/app';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
-import { useRouteStore } from '@/store/modules/route';
 import GlobalLogo from '../global-logo/index.vue';
 
 defineOptions({
@@ -12,21 +11,14 @@ defineOptions({
 
 const appStore = useAppStore();
 const themeStore = useThemeStore();
-const routeStore = useRouteStore();
 
 const isTopHybridSidebarFirst = computed(() => themeStore.layout.mode === 'top-hybrid-sidebar-first');
 const isTopHybridHeaderFirst = computed(() => themeStore.layout.mode === 'top-hybrid-header-first');
-const isDiskLayout = computed(() => routeStore.currentModule === 'disk');
-
 const darkMenu = computed(
   () =>
     !themeStore.darkMode && !isTopHybridSidebarFirst.value && !isTopHybridHeaderFirst.value && themeStore.sider.inverted
 );
-
-// 只有在 vertical 模式下且不是 disk 布局时才显示 logo
-// disk 布局使用 vertical-mix 模式，logo 由 FirstLevelMenu 组件内部显示
-const showLogo = computed(() => themeStore.layout.mode === 'vertical' && !isDiskLayout.value);
-
+const showLogo = computed(() => themeStore.layout.mode === 'vertical');
 const menuWrapperClass = computed(() => (showLogo.value ? 'flex-1-hidden' : 'h-full'));
 </script>
 

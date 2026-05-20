@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, defineAsyncComponent } from 'vue';
 import { AdminLayout, LAYOUT_SCROLL_EL_ID } from '@sa/materials';
 import type { LayoutMode } from '@sa/materials';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
-import { useRouteStore } from '@/store/modules/route';
 import GlobalHeader from '../modules/global-header/index.vue';
 import GlobalSider from '../modules/global-sider/index.vue';
 import GlobalTab from '../modules/global-tab/index.vue';
 import GlobalContent from '../modules/global-content/index.vue';
 import GlobalFooter from '../modules/global-footer/index.vue';
 import ThemeDrawer from '../modules/theme-drawer/index.vue';
-import UploadTrigger from '@/components/custom/upload-trigger.vue';
 import { provideMixMenuContext } from '../modules/global-menu/context';
 
 defineOptions({
@@ -21,18 +18,6 @@ defineOptions({
 
 const appStore = useAppStore();
 const themeStore = useThemeStore();
-const routeStore = useRouteStore();
-
-const route = useRoute();
-
-// 监听路由变化设置模块（base 布局固定为 admin 模块）
-watch(
-  () => route.path,
-  () => {
-    routeStore.setCurrentModule('admin');
-  },
-  { immediate: true }
-);
 const { secondLevelMenus, childLevelMenus, isActiveFirstLevelMenuHasChildren } = provideMixMenuContext();
 
 const GlobalMenu = defineAsyncComponent(() => import('../modules/global-menu/index.vue'));
@@ -164,7 +149,6 @@ function getSiderAndCollapsedWidth(isCollapsed: boolean) {
     <GlobalMenu />
     <GlobalContent />
     <ThemeDrawer />
-    <UploadTrigger />
     <template #footer>
       <GlobalFooter />
     </template>
